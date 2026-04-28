@@ -1,0 +1,83 @@
+import { NextFunction, Request, Response } from "express";
+
+function secureEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function readBearerToken(req: Request): string | null {
+  const auth = String(req.header("authorization") ?? "");
+  if (auth.toLowerCase().startsWith("bearer ")) {
+    return auth.slice(7).trim();
+  }
+  return null;
+}
+
+function tokenFromRequest(req: Request): string {
+  return (
+    readBearerToken(req) ??
+    String(req.header("x-pairing-token") ?? req.header("x-admin-token") ?? "")
+  ).trim();
+}
+
+export function requirePairingToken(req: Request, res: Response, next: NextFunction) {
+  const expected = String(process.env.FRAME_PAIRING_TOKEN ?? "").trim();
+  if (!expected) {
+    next();
+    return;
+  }
+  const got = tokenFromRequest(req);
+  if (!got || !secureEqual(got, expected)) {
+    res.status(401).json({ ok: false, error: "unauthorized_pairing_token" });
+    return;
+  }
+  next();
+}
+
+export function requireAdminToken(req: Request, res: Response, next: NextFunction) {
+  const expected = String(process.env.ADMIN_TOKEN ?? "").trim();
+  if (!expected) {
+    res.status(503).json({ ok: false, error: "admin_token_not_configured" });
+    return;
+  }
+  const got = tokenFromRequest(req);
+  if (!got || !secureEqual(got, expected)) {
+    res.status(401).json({ ok: false, error: "unauthorized_admin_token" });
+    return;
+  }
+  next();
+}
+
+type Bucket = { count: number; resetAtMs: number };
+const buckets = new Map<string, Bucket>();
+
+export function uploadRateLimit(req: Request, res: Response, next: NextFunction) {
+  const maxPerMinute = Number(process.env.UPLOADS_PER_MINUTE ?? 30);
+  if (!Number.isFinite(maxPerMinute) || maxPerMinute <= 0) {
+    next();
+    return;
+  }
+
+  const now = Date.now();
+  const windowMs = 60_000;
+  const key = `${req.ip}|upload`;
+  const bucket = buckets.get(key);
+  if (!bucket || now >= bucket.resetAtMs) {
+    buckets.set(key, { count: 1, resetAtMs: now + windowMs });
+    next();
+    return;
+  }
+
+  bucket.count += 1;
+  if (bucket.count > maxPerMinute) {
+    const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAtMs - now) / 1000));
+    res.setHeader("retry-after", `${retryAfterSec}`);
+    res.status(429).json({ ok: false, error: "upload_rate_limited", retry_after_sec: retryAfterSec });
+    return;
+  }
+  next();
+}
