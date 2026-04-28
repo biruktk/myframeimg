@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+  Design tokens from `ra/ui/`:
+  - website-official.html: --red #D9222A, --green #0F766E, paper/ink/soft
+  - portal-dashboard-complete.html & mobile-app-dualmode.html: primary #DC2626
+*/
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --myframe-brand: #d9222a;
+  --myframe-brand-dark: #a9141b;
+  --myframe-primary: #dc2626;
+  --myframe-primary-dark: #b91c1c;
+  --myframe-green: #0f766e;
+  --myframe-ink: #171717;
+  --myframe-text: #3f3f3f;
+  --myframe-muted: #777777;
+  --myframe-line: #e6e6e2;
+  --myframe-paper: #ffffff;
+  --myframe-soft: #f7f7f5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-myframe-brand: var(--myframe-brand);
+  --color-myframe-brand-dark: var(--myframe-brand-dark);
+  --color-myframe-primary: var(--myframe-primary);
+  --color-myframe-primary-dark: var(--myframe-primary-dark);
+  --color-myframe-green: var(--myframe-green);
+  --color-myframe-ink: var(--myframe-ink);
+  --color-myframe-text: var(--myframe-text);
+  --color-myframe-muted: var(--myframe-muted);
+  --color-myframe-line: var(--myframe-line);
+  --color-myframe-paper: var(--myframe-paper);
+  --color-myframe-soft: var(--myframe-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: linear-gradient(180deg, var(--myframe-soft) 0%, var(--background) 32%);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}

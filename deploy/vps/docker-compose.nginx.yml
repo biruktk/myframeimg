@@ -1,0 +1,41 @@
+services:
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: myframe-api
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      UPLOAD_DIR: /app/uploads
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      FRAME_PAIRING_TOKEN: ${FRAME_PAIRING_TOKEN}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      UPLOADS_PER_MINUTE: ${UPLOADS_PER_MINUTE}
+      INKJOY_ENABLE: ${INKJOY_ENABLE}
+      INKJOY_SERVER: ${INKJOY_SERVER}
+      INKJOY_BASE_URL: ${INKJOY_BASE_URL}
+      INKJOY_EMAIL: ${INKJOY_EMAIL}
+      INKJOY_PASSWORD: ${INKJOY_PASSWORD}
+      INKJOY_DEVICE_ID: ${INKJOY_DEVICE_ID}
+      INKJOY_AUTO_PUBLISH: ${INKJOY_AUTO_PUBLISH}
+    volumes:
+      - ../../backend/uploads:/app/uploads
+      - ../../backend/data:/app/data
+    ports:
+      - "127.0.0.1:3001:3001"
+
+  web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: myframe-web
+    restart: unless-stopped
+    environment:
+      MYFRAME_API_URL: http://127.0.0.1:3001
+      NEXT_PUBLIC_DEVICE_ID: ${NEXT_PUBLIC_DEVICE_ID}
+      NODE_ENV: production
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"

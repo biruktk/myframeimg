@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  myframe-api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - ../backend/.env
+    volumes:
+      - ../backend/uploads:/app/uploads
+      - ../backend/data:/app/data
