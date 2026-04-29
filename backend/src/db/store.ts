@@ -39,6 +39,9 @@ export type MyframeDb = {
     deviceId: string;
     atMs: number;
     checksumSha256: string;
+    deliveredToFrame?: boolean;
+    deliveryMode?: string;
+    deliveryCheckedAtMs?: number;
   }>;
   faqs: Array<{
     id: string;

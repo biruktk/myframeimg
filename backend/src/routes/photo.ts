@@ -47,6 +47,8 @@ export function photoRouter(uploadDir: string) {
       const inkjoyDeviceId = resolveInkjoyDeviceId(deviceId);
       let inkjoyResult: unknown = null;
       let inkjoyError: string | null = null;
+      let deliveredToFrame = false;
+      let deliveryMode = "stored_only";
 
       if (inkjoyEnabled() && inkjoyAutoPublish && inkjoyDeviceId) {
         try {
@@ -55,8 +57,11 @@ export function photoRouter(uploadDir: string) {
             filename: file.originalname || "upload.jpg",
             bytes: buf,
           });
+          deliveredToFrame = true;
+          deliveryMode = "inkjoy_cloud";
         } catch (e) {
           inkjoyError = e instanceof Error ? e.message : "inkjoy_publish_failed";
+          deliveryMode = "inkjoy_cloud_failed";
         }
       }
       const now = Date.now();
@@ -78,6 +83,9 @@ export function photoRouter(uploadDir: string) {
           deviceId: deviceId || draft.device.id,
           atMs: now,
           checksumSha256: sha256,
+          deliveredToFrame,
+          deliveryMode,
+          deliveryCheckedAtMs: now,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
@@ -95,6 +103,8 @@ export function photoRouter(uploadDir: string) {
         matches_declared_size: declaredSize === buf.length,
         slideshow_style: slideshowStyle || null,
         transport: transport || null,
+        delivered_to_frame: deliveredToFrame,
+        delivery_mode: deliveryMode,
         inkjoy: inkjoyEnabled()
           ? {
               auto_publish: inkjoyAutoPublish,
@@ -111,6 +121,33 @@ export function photoRouter(uploadDir: string) {
         error: e instanceof Error ? e.message : "upload_failed",
       });
     }
+  });
+
+  router.get("/photo/delivery-status", requirePairingToken, (req, res) => {
+    const checksum = String(req.query.checksum ?? "").trim().toLowerCase();
+    const deviceId = String(req.query.device_id ?? "").trim();
+    if (!checksum) {
+      res.status(400).json({ ok: false, error: "missing_checksum" });
+      return;
+    }
+    const data = db.read();
+    const match = data.uploads.find(
+      (u) => u.checksumSha256.toLowerCase() === checksum && (!deviceId || u.deviceId === deviceId),
+    );
+    if (!match) {
+      res.json({ ok: true, found: false, delivered_to_frame: false, delivery_mode: "unknown" });
+      return;
+    }
+    res.json({
+      ok: true,
+      found: true,
+      upload_id: match.id,
+      device_id: match.deviceId,
+      delivered_to_frame: match.deliveredToFrame === true,
+      delivery_mode: match.deliveryMode ?? "stored_only",
+      checked_at_ms: match.deliveryCheckedAtMs ?? match.atMs,
+      uploaded_at_ms: match.atMs,
+    });
   });
 
   return router;
