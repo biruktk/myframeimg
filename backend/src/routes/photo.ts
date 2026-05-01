@@ -54,13 +54,17 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         if (!isMqttConnected()) {
           deliveryMode = "mqtt_disconnected";
         } else {
+          let publicHost = "";
           try {
-            await publishPlayImage(deviceId, imageUrl, new URL(base).hostname);
-            deliveredToFrame = true;
-            deliveryMode = "vps_mqtt";
+            publicHost = new URL(base).hostname;
           } catch {
-            deliveryMode = "mqtt_publish_failed";
+            /* ignore */
           }
+          void publishPlayImage(deviceId, imageUrl, publicHost || undefined).catch((err) => {
+            console.error("[photo] MQTT publish (async):", err);
+          });
+          deliveredToFrame = true;
+          deliveryMode = "vps_mqtt";
         }
       }
 
