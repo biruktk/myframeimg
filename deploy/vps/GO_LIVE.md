@@ -64,16 +64,16 @@ curl https://api.mygram.com/health
 
 Expected API health payload includes `{ "ok": true }`.
 
-## 4.1) InkJoy bridge verify (if enabled)
+## 4.1) Frame cloud + MQTT (your VPS)
 
-Use your `ADMIN_TOKEN`:
+Ensure `MQTT_URL` is set on the API and Mosquitto accepts the same credentials as the frame’s `mqtt_config`.
 
 ```bash
-curl -H "Authorization: Bearer <ADMIN_TOKEN>" https://api.mygram.com/api/inkjoy/status
-curl -H "Authorization: Bearer <ADMIN_TOKEN>" https://api.mygram.com/api/inkjoy/devices
+curl https://api.mygram.com/api/frame-cloud/health
+curl -X POST https://api.mygram.com/api/frame-cloud/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"secret":"<FRAME_API_SECRET>"}'
 ```
-
-If `INKJOY_AUTO_PUBLISH=true`, each `POST /api/photo/upload` response includes an `inkjoy` object with forward status.
 
 ## 4.2) One-command smoke test
 

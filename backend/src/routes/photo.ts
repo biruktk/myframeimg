@@ -5,15 +5,16 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
-import { inkjoyEnabled, inkjoyPublishImage, resolveInkjoyDeviceId } from "../services/inkjoy_client";
+import { isMqttConnected, normalizeMac, publishPlayImage } from "../services/frame_mqtt";
 
 /**
  * POST /api/photo/upload
  * Multipart: field `file` (binary), body fields: filename, device_id, checksum, size
  * As described in `ra/api/Image_Processing_API_Integration.md` step 6.
  */
-export function photoRouter(uploadDir: string) {
+export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   const router = express.Router();
+  const base = publicBaseUrl.replace(/\/$/, "");
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
@@ -43,27 +44,26 @@ export function photoRouter(uploadDir: string) {
 
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
-      const inkjoyAutoPublish = String(process.env.INKJOY_AUTO_PUBLISH ?? "").toLowerCase() === "true";
-      const inkjoyDeviceId = resolveInkjoyDeviceId(deviceId);
-      let inkjoyResult: unknown = null;
-      let inkjoyError: string | null = null;
+      const basename = path.basename(file.path);
+      const imageUrl = `${base}/frame-media/${encodeURIComponent(basename)}`;
+
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
-
-      if (inkjoyEnabled() && inkjoyAutoPublish && inkjoyDeviceId) {
-        try {
-          inkjoyResult = await inkjoyPublishImage({
-            deviceId: inkjoyDeviceId,
-            filename: file.originalname || "upload.jpg",
-            bytes: buf,
-          });
-          deliveredToFrame = true;
-          deliveryMode = "inkjoy_cloud";
-        } catch (e) {
-          inkjoyError = e instanceof Error ? e.message : "inkjoy_publish_failed";
-          deliveryMode = "inkjoy_cloud_failed";
+      const mac = normalizeMac(deviceId);
+      if (mac) {
+        if (!isMqttConnected()) {
+          deliveryMode = "mqtt_disconnected";
+        } else {
+          try {
+            await publishPlayImage(deviceId, imageUrl, new URL(base).hostname);
+            deliveredToFrame = true;
+            deliveryMode = "vps_mqtt";
+          } catch {
+            deliveryMode = "mqtt_publish_failed";
+          }
         }
       }
+
       const now = Date.now();
       db.mutate((draft) => {
         draft.device.connected = true;
@@ -78,7 +78,7 @@ export function photoRouter(uploadDir: string) {
         }
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
-          filename: path.basename(file.path),
+          filename: basename,
           bytes: buf.length,
           deviceId: deviceId || draft.device.id,
           atMs: now,
@@ -96,7 +96,7 @@ export function photoRouter(uploadDir: string) {
         ok: true,
         received_bytes: buf.length,
         declared_size: declaredSize,
-        stored_path: path.basename(file.path),
+        stored_path: basename,
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,
@@ -105,15 +105,7 @@ export function photoRouter(uploadDir: string) {
         transport: transport || null,
         delivered_to_frame: deliveredToFrame,
         delivery_mode: deliveryMode,
-        inkjoy: inkjoyEnabled()
-          ? {
-              auto_publish: inkjoyAutoPublish,
-              device_id: inkjoyDeviceId || null,
-              ok: inkjoyError == null,
-              error: inkjoyError,
-              result: inkjoyResult,
-            }
-          : null,
+        image_url: imageUrl,
       });
     } catch (e) {
       res.status(500).json({

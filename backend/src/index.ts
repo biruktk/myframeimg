@@ -9,13 +9,15 @@ import { photoRouter } from "./routes/photo";
 import { settingsRouter } from "./routes/settings";
 import { adminRouter } from "./routes/admin";
 import { faqRouter } from "./routes/faq";
-import { inkjoyRouter } from "./routes/inkjoy";
+import { frameCloudRouter } from "./routes/frame_cloud";
+import { startFrameMqtt } from "./services/frame_mqtt";
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+const publicBaseUrl = (process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${port}`).replace(/\/$/, "");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -49,6 +51,17 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "2mb" }));
+
+/** Public URLs for MQTT play payloads (`https://your.host/frame-media/<file>`). */
+app.use(
+  "/frame-media",
+  express.static(uploadDir, {
+    etag: true,
+    maxAge: "1h",
+    fallthrough: false,
+    index: false,
+  }),
+);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "myframe-server" });
@@ -89,13 +102,15 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api", deviceRouter);
-app.use("/api", photoRouter(uploadDir));
+app.use("/api", photoRouter(uploadDir, publicBaseUrl));
 app.use("/api", settingsRouter);
 app.use("/api", adminRouter);
 app.use("/api", faqRouter);
-app.use("/api", inkjoyRouter);
+app.use("/api", frameCloudRouter(publicBaseUrl));
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
   console.log(`Upload dir: ${uploadDir}`);
+  console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
+  startFrameMqtt();
 });

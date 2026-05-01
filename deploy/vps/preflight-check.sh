@@ -78,14 +78,10 @@ else
   ok "CORS_ORIGINS includes APP_DOMAIN"
 fi
 
-if [[ "${INKJOY_ENABLE:-false}" == "true" ]]; then
-  required_non_empty INKJOY_EMAIL
-  required_non_empty INKJOY_PASSWORD
-  required_non_empty INKJOY_SERVER
-  if [[ "${INKJOY_SERVER}" != "global" && "${INKJOY_SERVER}" != "china" ]]; then
-    fail "INKJOY_SERVER must be global or china"
-  fi
-  ok "InkJoy config present"
+if [[ -n "${MQTT_URL:-}" ]]; then
+  required_non_empty PUBLIC_BASE_URL
+  required_non_empty FRAME_API_SECRET
+  ok "MQTT_URL set (broker bridge enabled)"
 fi
 
 if [[ "${UPLOADS_PER_MINUTE:-}" =~ ^[0-9]+$ ]]; then

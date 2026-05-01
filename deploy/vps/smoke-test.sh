@@ -11,29 +11,17 @@ APP_DOMAIN="$1"
 API_DOMAIN="$2"
 ADMIN_TOKEN="$3"
 
-echo "[1/5] Website HEAD check..."
+echo "[1/4] Website HEAD check..."
 curl -fsSI "https://${APP_DOMAIN}" >/dev/null
 echo "  OK https://${APP_DOMAIN}"
 
-echo "[2/5] API health check..."
+echo "[2/4] API health check..."
 curl -fsS "https://${API_DOMAIN}/health" | sed -n '1,3p'
 
-echo "[3/5] InkJoy status check..."
-curl -fsS \
-  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-  "https://${API_DOMAIN}/api/inkjoy/status" | sed -n '1,5p'
+echo "[3/4] Frame-cloud health (MQTT bridge status)..."
+curl -fsS "https://${API_DOMAIN}/api/frame-cloud/health" | sed -n '1,5p'
 
-echo "[4/5] InkJoy devices check (may fail if not configured)..."
-set +e
-DEVICES_JSON="$(curl -sS -H "Authorization: Bearer ${ADMIN_TOKEN}" "https://${API_DOMAIN}/api/inkjoy/devices")"
-RC=$?
-set -e
-echo "${DEVICES_JSON}" | sed -n '1,8p'
-if [[ ${RC} -ne 0 ]]; then
-  echo "  WARN: /api/inkjoy/devices request failed"
-fi
-
-echo "[5/5] Upload endpoint reachability (no file payload test)..."
+echo "[4/4] Upload endpoint reachability (no file payload test)..."
 set +e
 UPLOAD_JSON="$(curl -sS -X POST "https://${API_DOMAIN}/api/photo/upload")"
 RC=$?

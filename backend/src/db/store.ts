@@ -2,6 +2,36 @@ import fs from "fs";
 import path from "path";
 
 export type MyframeDb = {
+  users: Array<{
+    id: string;
+    email: string;
+    name: string;
+    subscriptionTier: "free" | "pro";
+    familyGroupId: string | null;
+    status: "active" | "suspended" | "banned";
+    createdAtMs: number;
+    lastSeenAtMs: number | null;
+  }>;
+  familyGroups: Array<{
+    id: string;
+    name: string;
+    inviteCode: string;
+    members: Array<{ userId: string; role: "owner" | "member" }>;
+    frameIds: string[];
+  }>;
+  frames: Array<{
+    id: string;
+    bleMac: string;
+    ownerUserId: string;
+    wifiSsid: string | null;
+    wifiStatus: "online" | "offline" | "never_provisioned";
+    firmwareVersion: string;
+    lastSeenAtMs: number | null;
+    uptimeMs: number;
+    photoQueueDepth: number;
+    location?: { lat: number; lng: number };
+    ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
+  }>;
   device: {
     id: string;
     name: string;
@@ -43,6 +73,42 @@ export type MyframeDb = {
     deliveryMode?: string;
     deliveryCheckedAtMs?: number;
   }>;
+  playlists: Array<{
+    id: string;
+    title: string;
+    photoIds: string[];
+    scheduleRule: string | null;
+    assignedFrameIds: string[];
+    system: boolean;
+  }>;
+  notifications: Array<{
+    id: string;
+    userId: string;
+    type: "photo_sent" | "frame_offline" | "admin_broadcast";
+    token: string | null;
+    delivered: boolean;
+    atMs: number;
+  }>;
+  bleProvisionLogs: Array<{
+    id: string;
+    frameId: string;
+    atMs: number;
+    transport: "ffff" | "vendor_2760";
+    writeChar: string;
+    notifyChar: string;
+    payloadPreview: string;
+    ack: boolean;
+    notes?: string;
+  }>;
+  featureFlags: Record<string, { enabled: boolean; tier: "all" | "free" | "pro" }>;
+  auditLog: Array<{
+    id: string;
+    actor: string;
+    action: string;
+    target: string;
+    atMs: number;
+    meta?: Record<string, unknown>;
+  }>;
   faqs: Array<{
     id: string;
     question: string;
@@ -57,6 +123,41 @@ const dbPath = path.join(dbDir, "myframe-db.json");
 function createInitialDb(): MyframeDb {
   const now = Date.now();
   return {
+    users: [
+      {
+        id: "usr_1",
+        email: "owner@example.com",
+        name: "Owner",
+        subscriptionTier: "pro",
+        familyGroupId: "fam_1",
+        status: "active",
+        createdAtMs: now,
+        lastSeenAtMs: now,
+      },
+    ],
+    familyGroups: [
+      {
+        id: "fam_1",
+        name: "Family Group",
+        inviteCode: "INVITE-ABCD",
+        members: [{ userId: "usr_1", role: "owner" }],
+        frameIds: ["YX-133P-001"],
+      },
+    ],
+    frames: [
+      {
+        id: "YX-133P-001",
+        bleMac: "D0:CF:13:F0:16:1E",
+        ownerUserId: "usr_1",
+        wifiSsid: null,
+        wifiStatus: "never_provisioned",
+        firmwareVersion: "1.2.0",
+        lastSeenAtMs: null,
+        uptimeMs: 0,
+        photoQueueDepth: 0,
+        ota: { targetVersion: null, status: "idle" },
+      },
+    ],
     device: {
       id: "YX-133P-001",
       name: "MyFrame (Primary)",
@@ -88,6 +189,23 @@ function createInitialDb(): MyframeDb {
       },
     },
     uploads: [],
+    playlists: [
+      {
+        id: "pl_family_moments",
+        title: "Family Moments",
+        photoIds: [],
+        scheduleRule: null,
+        assignedFrameIds: ["YX-133P-001"],
+        system: true,
+      },
+    ],
+    notifications: [],
+    bleProvisionLogs: [],
+    featureFlags: {
+      quick_send_home: { enabled: true, tier: "all" },
+      ai_generate: { enabled: true, tier: "pro" },
+    },
+    auditLog: [],
     faqs: [
       {
         id: "faq_pair",
