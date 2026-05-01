@@ -22,12 +22,11 @@ if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/^v//' | cut -d. -
 fi
 
 install -d -m 755 /etc/mosquitto/conf.d
+# Do not duplicate persistence_location / persistence — stock mosquitto.conf sets them.
 cat >/etc/mosquitto/conf.d/myframe.conf <<EOF
 listener 1883 0.0.0.0
 allow_anonymous false
 password_file /etc/mosquitto/passwd
-persistence true
-persistence_location /var/lib/mosquitto/
 EOF
 
 if [[ ! -f /etc/mosquitto/passwd ]] || [[ ! -s /etc/mosquitto/passwd ]]; then
