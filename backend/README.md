@@ -27,7 +27,7 @@ Set in `.env`:
 - `FRAME_ALLOW_JPEG_MQTT` (omit by default): if MYFM encode fails, allow falling back to JPEG in MQTT. **Otherwise** uploads return **`503 myfm_encode_failed`** so you never silently push JPEG to firmware that expects `.bin`.
 - `FRAME_API_SECRET` / `FRAME_JWT_SECRET`: `POST /api/frame-cloud/auth/token` and JWT for frame-cloud routes
 
-**`POST /api/photo/upload` response** includes **`stored_path`** (saved JPEG), **`frame_play_basename`**, and **`image_url`** (full public URL the frame should fetch for MQTT `play` — usually `*.bin`).
+**`POST /api/photo/upload`** keeps **one playback file**: after MYFM encode, the source JPEG/PNG is **removed** from disk; **`stored_path`**, **`frame_play_basename`**, and **`image_url`** all point at the **`*.bin`** (unless `FRAME_ALLOW_JPEG_MQTT` JPEG fallback path).
 
 If `FRAME_PAIRING_TOKEN` is empty, upload auth is bypassed (dev mode).  
 If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_configured`.

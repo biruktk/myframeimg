@@ -76,14 +76,30 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       }
 
       const imageUrl = `${base}/frame-media/${encodeURIComponent(mqttBasename)}`;
-      let extraStoredBytes = 0;
-      if (mqttBasename !== basename) {
+
+      /** Byte size actually kept on disk for this upload (MQTT + `/frame-media` serve this file only when MYFM wins). */
+      let persistedDiskBytes = buf.length;
+      if (
+        mqttBasename !== basename &&
+        mqttBasename.toLowerCase().endsWith(".bin") &&
+        path.extname(basename).toLowerCase() !== ".bin"
+      ) {
+        const binAbs = path.join(uploadDir, mqttBasename);
         try {
-          extraStoredBytes = fs.statSync(path.join(uploadDir, mqttBasename)).size;
+          const binSz = fs.statSync(binAbs).size;
+          try {
+            fs.unlinkSync(file.path);
+            persistedDiskBytes = binSz;
+          } catch (unErr) {
+            console.warn("[photo] could not delete source JPEG after MYFM; both files kept:", unErr);
+            persistedDiskBytes = buf.length + binSz;
+          }
         } catch {
-          /* ignore */
+          persistedDiskBytes = buf.length;
         }
       }
+
+      const playbackMyfmBin = mqttBasename.toLowerCase().endsWith(".bin");
 
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
@@ -113,15 +129,15 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
         draft.device.lastPhotoAtMs = now;
         draft.device.photoCount += 1;
-        draft.device.usedBytes += buf.length + extraStoredBytes;
+        draft.device.usedBytes += persistedDiskBytes;
         if (deviceId) {
           draft.device.id = deviceId;
           draft.device.name = `${deviceId} Connected`;
         }
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
-          filename: basename,
-          bytes: buf.length + extraStoredBytes,
+          filename: mqttBasename,
+          bytes: persistedDiskBytes,
           deviceId: deviceId || draft.device.id,
           atMs: now,
           checksumSha256: sha256,
@@ -138,9 +154,10 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         ok: true,
         received_bytes: buf.length,
         declared_size: declaredSize,
-        stored_path: basename,
+        stored_path: mqttBasename,
         frame_play_basename: mqttBasename,
-        myfm_sidecar: mqttBasename !== basename,
+        /** True when MQTT + disk playback file is MYFM `.bin`. */
+        myfm_sidecar: playbackMyfmBin,
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,

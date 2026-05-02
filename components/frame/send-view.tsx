@@ -100,9 +100,13 @@ export function SendView({ locale }: { locale: Locale }) {
           typeof data.stored_path === "string" && data.stored_path.length > 0
             ? data.stored_path
             : "(unknown)";
+        const playbackBin =
+          typeof data.stored_path === "string" && data.stored_path.toLowerCase().endsWith(".bin");
         const okText =
           frameUrl.length > 0
-            ? `${s.sent}\n${s.uploadOkDetails.replace("{stored}", stored).replace("{frameUrl}", frameUrl)}`
+            ? playbackBin
+              ? `${s.sent}\n${s.uploadPlaybackMyfm.replace("{url}", frameUrl)}`
+              : `${s.sent}\n${s.uploadOkDetails.replace("{stored}", stored).replace("{frameUrl}", frameUrl)}`
             : s.sent;
         setBanner({ kind: "ok", text: okText });
         setOpen(false);
