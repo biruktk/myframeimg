@@ -23,7 +23,8 @@ Set in `.env`:
 - `UPLOADS_PER_MINUTE`: per-IP limit for `/api/photo/upload`
 - `MQTT_URL`: backend connects to your Mosquitto (e.g. `mqtt://device:pass@127.0.0.1:1883`)
 - `PUBLIC_BASE_URL`: public base for `frame-media` URLs in MQTT play commands  
-- `FRAME_MYFM_ENCODE` (default on): JPEG/PNG/WebP uploads get a sibling **MYFM** `.bin` (same layout as `app/lib/services/image_processor_service.dart`); MQTT `play` uses that `.bin`. Set `FRAME_MYFM_ENCODE=0` to revert to JPEG-only (usually not usable on OEM e‑ink firmware).
+- `FRAME_MYFM_ENCODE` (default on): JPEG/PNG/WebP uploads get a sibling **MYFM** `.bin`; MQTT `play` uses that `.bin`. Set `FRAME_MYFM_ENCODE=0` to revert to JPEG-only (usually not usable on OEM e‑ink firmware).
+- `FRAME_ALLOW_JPEG_MQTT` (omit by default): if MYFM encode fails, allow falling back to JPEG in MQTT. **Otherwise** uploads return **`503 myfm_encode_failed`** so you never silently push JPEG to firmware that expects `.bin`.
 - `FRAME_API_SECRET` / `FRAME_JWT_SECRET`: `POST /api/frame-cloud/auth/token` and JWT for frame-cloud routes
 
 **`POST /api/photo/upload` response** includes **`stored_path`** (saved JPEG), **`frame_play_basename`**, and **`image_url`** (full public URL the frame should fetch for MQTT `play` — usually `*.bin`).
@@ -39,11 +40,13 @@ If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_con
 
 ## VPS deploy (PM2)
 
+From the **repository root** (directory that contains `web/`):
+
 ```bash
-bash ../deploy/vps/deploy-prod.sh
+bash web/deploy/vps/deploy-prod.sh
 ```
 
-See `web/deploy/vps/GO_LIVE.md`.
+See `web/deploy/vps/GO_LIVE.md`. Ensure `web/backend/.env` is populated (mirror `web/deploy/vps/.env.prod` as needed).
 
 ## Health checks
 

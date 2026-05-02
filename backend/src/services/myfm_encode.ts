@@ -117,13 +117,16 @@ export function isProbablyMyfmBuffer(buf: Buffer): boolean {
 
 /** JPEG/PNG/etc. → 1200×1600 MYFM `.bin`; written beside upload as `<stem>.bin`. */
 export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string> {
-  const { data, info } = await sharp(uploadedAbsPath)
-    .rotate()
-    .resize(FRAME_W, FRAME_H, { fit: "cover", position: "centre" })
-    .ensureAlpha()
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const meta = await sharp(uploadedAbsPath).metadata();
+  let pipeline = sharp(uploadedAbsPath).rotate().resize(FRAME_W, FRAME_H, {
+    fit: "cover",
+    position: "centre",
+  });
+  // JPEG has no alpha — skip flatten (some sharp/libvips builds error on flatten without alpha).
+  if (meta.hasAlpha) {
+    pipeline = pipeline.ensureAlpha().flatten({ background: { r: 255, g: 255, b: 255 } });
+  }
+  const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
 
   const ch = info.channels ?? 0;
   if (ch < 3) {

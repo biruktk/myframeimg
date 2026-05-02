@@ -48,6 +48,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const basename = path.basename(file.path);
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
+      const allowJpegMqtt = String(process.env.FRAME_ALLOW_JPEG_MQTT ?? "").trim() === "1";
       const looksLikeRaster =
         [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
 
@@ -58,7 +59,19 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         try {
           mqttBasename = await writeMyfmSidecar(file.path);
         } catch (err) {
-          console.warn("[photo] MYFM encode failed, MQTT will use original file:", err);
+          const detail = err instanceof Error ? err.message : String(err);
+          console.error("[photo] MYFM encode failed:", detail);
+          if (!allowJpegMqtt) {
+            res.status(503).json({
+              ok: false,
+              error: "myfm_encode_failed",
+              message: detail,
+              hint:
+                "E-ink frames expect MYFM .bin; JPEG in MQTT will not display. Fix server image libs (sharp) or rebuild the API. Temporary escape: set FRAME_ALLOW_JPEG_MQTT=1 (not recommended).",
+            });
+            return;
+          }
+          console.warn("[photo] FRAME_ALLOW_JPEG_MQTT=1 — publishing MQTT with JPEG (frame may not render).");
         }
       }
 
