@@ -54,6 +54,8 @@ export type AppStrings = {
     selectPhotoFirst: string;
     pickPhoto: string;
     uploadError: string;
+    /** Use `{frameUrl}` and `{stored}` placeholders; omit lines if empty before replace. */
+    uploadOkDetails: string;
   };
   playlist: {
     title: string;
@@ -146,6 +148,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "Choose a photo first.",
       pickPhoto: "Choose photo",
       uploadError: "Upload failed. Is the API running?",
+      uploadOkDetails: "Saved on server as {stored}.\nFrame MQTT pull URL:\n{frameUrl}",
     },
     playlist: {
       title: "Playlist",
@@ -229,6 +232,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "请先选择照片。",
       pickPhoto: "选择照片",
       uploadError: "上传失败，请确认 API 已启动。",
+      uploadOkDetails: "服务器已保存：{stored}\n相框 MQTT 拉取 URL：\n{frameUrl}",
     },
     playlist: {
       title: "播放列表",
@@ -318,6 +322,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "Elige una foto primero.",
       pickPhoto: "Elegir foto",
       uploadError: "Error de subida. ¿Esta la API en marcha?",
+      uploadOkDetails: "Guardado en servidor: {stored}\nURL MQTT del marco:\n{frameUrl}",
     },
     playlist: {
       title: "Lista",
@@ -407,6 +412,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "Choisis dabord une photo.",
       pickPhoto: "Choisir une photo",
       uploadError: "Echec envoi. LAPI est-elle demarree ?",
+      uploadOkDetails: "Enregistre sur le serveur : {stored}\nURL MQTT du cadre :\n{frameUrl}",
     },
     playlist: {
       title: "Liste",
@@ -496,6 +502,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "Bitte zuerst ein Foto wählen.",
       pickPhoto: "Foto wählen",
       uploadError: "Upload fehlgeschlagen. Läuft die API?",
+      uploadOkDetails: "Auf dem Server: {stored}\nMQTT-URL für den Rahmen:\n{frameUrl}",
     },
     playlist: {
       title: "Wiedergabe",
@@ -585,6 +592,7 @@ const table: Record<Locale, AppStrings> = {
       selectPhotoFirst: "先に写真を選んでください。",
       pickPhoto: "写真を選ぶ",
       uploadError: "アップロードに失敗しました。APIは起動していますか？",
+      uploadOkDetails: "サーバー保存: {stored}\nフレーム MQTT URL:\n{frameUrl}",
     },
     playlist: {
       title: "プレイリスト",

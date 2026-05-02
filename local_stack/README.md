@@ -1,29 +1,27 @@
-# local_stack (single-port local stack)
+# Local development (no Docker)
 
-Runs `web` + `backend` together with one exposed port.
+Run the backend and frontend separately:
 
-- Public entrypoint: `http://localhost:3000` (or `WEB_PORT`)
-- Backend (`api`) is internal only; web API routes proxy to it.
+1. **API** — `web/backend`:
 
-## Quick start
+   ```bash
+   cd web/backend
+   cp .env.example .env
+   npm install
+   npm run dev
+   ```
 
-```bash
-cd web/local_stack
-cp .env.example .env
-bash run.sh
-```
+2. **Next app** — `web/`:
 
-## Stop
+   ```bash
+   cd web
+   cp .env.example .env
+   npm install
+   npm run dev
+   ```
 
-```bash
-cd web/local_stack
-docker compose down
-```
+Configure `MYFRAME_API_URL` in `web/.env` (or rely on defaults in `web/lib/backend-url.ts`) so `web/app/api/*` routes proxy to Express.
 
-## App API base for this mode
+You can mirror production variables from `web/local_stack/.env.example` into `web/backend/.env`.
 
-When testing the Flutter app against this single-port stack, point:
-
-- `API_BASE=http://<host>:3000`
-
-because the web layer exposes `/api/*` routes and forwards to backend.
+`bash web/local_stack/run.sh` prints the same instructions.

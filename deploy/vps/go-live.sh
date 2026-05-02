@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ $# -lt 3 ]]; then
   echo "Usage: bash web/deploy/vps/go-live.sh <app_domain> <api_domain> <admin_token>"
-  echo "Example: bash web/deploy/vps/go-live.sh mygram.com api.mygram.com 'YOUR_ADMIN_TOKEN'"
+  echo "Example: bash web/deploy/vps/go-live.sh mygram.com api.example.com 'YOUR_ADMIN_TOKEN'"
   exit 1
 fi
 

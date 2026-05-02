@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# -lt 2 ]]; then
   echo "Usage: sudo bash web/deploy/vps/setup-nginx-myframe.sh <app_domain> <api_domain>"
-  echo "Example: sudo bash web/deploy/vps/setup-nginx-myframe.sh myframe.ink api.myframe.ink"
+  echo "Example: sudo bash web/deploy/vps/setup-nginx-myframe.sh myframe.ink api.example.com"
   exit 1
 fi
 
@@ -62,5 +62,4 @@ echo "[myframe] Requesting Let's Encrypt certificates..."
 certbot --nginx -d "${APP_DOMAIN}" -d "www.${APP_DOMAIN}" -d "${API_DOMAIN}" --non-interactive --agree-tos -m "admin@${APP_DOMAIN}" --redirect
 
 echo "[myframe] Nginx setup complete."
-echo "Now deploy containers with:"
-echo "  docker compose --env-file web/deploy/vps/.env.prod -f web/deploy/vps/docker-compose.nginx.yml up -d --build"
+echo "Run PM2 backend on localhost:3001 (see web/deploy/vps/deploy-prod.sh) and proxy that upstream from your API hostname."

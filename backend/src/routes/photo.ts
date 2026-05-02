@@ -6,6 +6,7 @@ import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode";
 
 /**
  * POST /api/photo/upload
@@ -45,7 +46,31 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
       const basename = path.basename(file.path);
-      const imageUrl = `${base}/frame-media/${encodeURIComponent(basename)}`;
+      const ext = path.extname(basename).toLowerCase();
+      const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
+      const looksLikeRaster =
+        [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
+
+      let mqttBasename = basename;
+      if (isProbablyMyfmBuffer(buf)) {
+        mqttBasename = basename;
+      } else if (encodeMyfm && looksLikeRaster) {
+        try {
+          mqttBasename = await writeMyfmSidecar(file.path);
+        } catch (err) {
+          console.warn("[photo] MYFM encode failed, MQTT will use original file:", err);
+        }
+      }
+
+      const imageUrl = `${base}/frame-media/${encodeURIComponent(mqttBasename)}`;
+      let extraStoredBytes = 0;
+      if (mqttBasename !== basename) {
+        try {
+          extraStoredBytes = fs.statSync(path.join(uploadDir, mqttBasename)).size;
+        } catch {
+          /* ignore */
+        }
+      }
 
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
@@ -75,7 +100,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
         draft.device.lastPhotoAtMs = now;
         draft.device.photoCount += 1;
-        draft.device.usedBytes += buf.length;
+        draft.device.usedBytes += buf.length + extraStoredBytes;
         if (deviceId) {
           draft.device.id = deviceId;
           draft.device.name = `${deviceId} Connected`;
@@ -83,7 +108,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
           filename: basename,
-          bytes: buf.length,
+          bytes: buf.length + extraStoredBytes,
           deviceId: deviceId || draft.device.id,
           atMs: now,
           checksumSha256: sha256,
@@ -101,6 +126,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         received_bytes: buf.length,
         declared_size: declaredSize,
         stored_path: basename,
+        frame_play_basename: mqttBasename,
+        myfm_sidecar: mqttBasename !== basename,
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,

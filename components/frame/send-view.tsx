@@ -75,7 +75,14 @@ export function SendView({ locale }: { locale: Locale }) {
           method: "POST",
           body: fd,
         });
-        const data = (await res.json()) as { ok?: boolean; error?: string; received_bytes?: number };
+        const data = (await res.json()) as {
+          ok?: boolean;
+          error?: string;
+          received_bytes?: number;
+          image_url?: string;
+          stored_path?: string;
+          frame_play_basename?: string;
+        };
         if (!res.ok || data.ok === false) {
           setBanner({
             kind: "err",
@@ -83,7 +90,21 @@ export function SendView({ locale }: { locale: Locale }) {
           });
           return;
         }
-        setBanner({ kind: "ok", text: s.sent });
+        const frameUrl =
+          typeof data.image_url === "string" && data.image_url.length > 0
+            ? data.image_url
+            : typeof data.frame_play_basename === "string"
+              ? `/frame-media/${encodeURIComponent(data.frame_play_basename)}`
+              : "";
+        const stored =
+          typeof data.stored_path === "string" && data.stored_path.length > 0
+            ? data.stored_path
+            : "(unknown)";
+        const okText =
+          frameUrl.length > 0
+            ? `${s.sent}\n${s.uploadOkDetails.replace("{stored}", stored).replace("{frameUrl}", frameUrl)}`
+            : s.sent;
+        setBanner({ kind: "ok", text: okText });
         setOpen(false);
         setPending(null);
         setPickedName(null);

@@ -6,6 +6,9 @@
  * Usage:
  *   node scripts/cast-to-frame.cjs <IJ_… or MAC> [upload-basename-or-full-http(s)-url]
  *
+ * Full-URL argument sets play host/port from that URL — use the host where /frame-media is served
+ * (usually http(s)://VPS_IP:3001). A marketing-domain https URL without proxying /frame-media will fail on-device.
+ *
  * Omit the file to use newest image file in UPLOAD_DIR (default uploads/).
  */
 "use strict";
@@ -43,8 +46,30 @@ function mediaOrigin() {
   return b;
 }
 
+const MYFM_EXPECTED_SIZE = 32 + ((1200 * 1600 + 1) >> 1);
+
 function pickLatestUpload(dir) {
-  const names = fs.readdirSync(dir).filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
+  const all = fs.readdirSync(dir);
+  const myfmBins = all
+    .filter((f) => f.endsWith(".bin"))
+    .map((f) => {
+      const p = path.join(dir, f);
+      let st;
+      try {
+        st = fs.statSync(p);
+      } catch {
+        return null;
+      }
+      if (st.size !== MYFM_EXPECTED_SIZE) return null;
+      return { f, m: st.mtimeMs };
+    })
+    .filter(Boolean);
+  if (myfmBins.length) {
+    myfmBins.sort((a, b) => b.m - a.m);
+    return myfmBins[0].f;
+  }
+
+  const names = all.filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
   if (!names.length) return null;
   return names
     .map((f) => ({ f, m: fs.statSync(path.join(dir, f)).mtimeMs }))

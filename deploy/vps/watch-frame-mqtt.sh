@@ -27,8 +27,12 @@ echo "--- MyFrame MQTT watch (Ctrl+C stops) ---"
 echo "broker: mqtt://${HOST}:${PORT} user=${USER}"
 echo ""
 echo "Most useful topics for this codebase:"
-echo "  • Frame → broker (telemetry the API cares about):  /device/report/#"
-echo "  • VPS → frame (push image commands after upload):   /inkjoyap/#"
+echo "  • Frame → broker (login, heart, play_ack):            /device/report/#"
+echo "  • VPS → frame (upload/cast emits play HERE):           /inkjoyap/#"
+echo ""
+echo 'If you only watched /inkjoyap/<MAC>, note: messages with action "play" are usually published'
+echo 'BY your API (commands to the frame), not proof the frame acknowledged.'
+echo 'Frame login / play_ack / heart appear under /device/report/# (see files/9_API_DOCUMENTATION.md).'
 echo ""
 echo "--- Subscribing to both patterns (verbose topic + payload) ---"
 exec mosquitto_sub -h "${HOST}" -p "${PORT}" -u "${USER}" -P "${PASS}" \

@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
+# Build Express API on the host and run with PM2 (no Docker).
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-VPS_DIR="${ROOT_DIR}/deploy/vps"
-ENV_FILE="${VPS_DIR}/.env.prod"
-COMPOSE_FILE="${VPS_DIR}/docker-compose.prod.yml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WEB_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+BACKEND_DIR="${WEB_ROOT}/backend"
 
-if [[ ! -f "${ENV_FILE}" ]]; then
-  echo "Missing ${ENV_FILE}"
-  echo "Create it from web/deploy/vps/.env.prod.example"
+bash "${SCRIPT_DIR}/preflight-check.sh"
+
+if ! command -v pm2 >/dev/null 2>&1; then
+  echo "ERROR: pm2 not found. Install: sudo npm i -g pm2"
   exit 1
 fi
 
-bash "${VPS_DIR}/preflight-check.sh"
+echo "[myframe] Building API in ${BACKEND_DIR} ..."
+cd "${BACKEND_DIR}"
+npm ci
+npm run build
 
-echo "[myframe] Building and deploying production containers..."
-docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" up -d --build
+echo "[myframe] PM2 deploy (app name: myframe-api) ..."
+if pm2 describe myframe-api >/dev/null 2>&1; then
+  pm2 reload ecosystem.config.cjs --update-env
+else
+  pm2 start ecosystem.config.cjs
+fi
 
-echo "[myframe] Deployment complete."
-echo "Check status:"
-echo "  docker compose --env-file ${ENV_FILE} -f ${COMPOSE_FILE} ps"
-echo "  docker compose --env-file ${ENV_FILE} -f ${COMPOSE_FILE} logs -f --tail=100"
+echo "[myframe] API deploy finished."
+echo "Ensure ${BACKEND_DIR}/.env matches your production tokens and PUBLIC_BASE_URL."
+echo "Optional: NODE_ENV=production pm2 logs myframe-api --lines 80"
+echo "Next.js site (${WEB_ROOT}): npm ci && npm run build && npm start (port 3000), or pm2/ecosystem of your choice."

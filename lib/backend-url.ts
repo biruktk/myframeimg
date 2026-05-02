@@ -3,7 +3,7 @@
  * Override with env: `MYFRAME_API_URL=http://127.0.0.1:3001`
  */
 export function getMyframeApiBase(): string {
-  const raw = process.env.MYFRAME_API_URL?.trim() || "https://api.myframe.ink";
+  const raw = process.env.MYFRAME_API_URL?.trim() || "http://127.0.0.1:3001";
   return raw.replace(/\/$/, "");
 }
 

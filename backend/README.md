@@ -22,8 +22,11 @@ Set in `.env`:
 - `CORS_ORIGINS`: comma-separated allowlist
 - `UPLOADS_PER_MINUTE`: per-IP limit for `/api/photo/upload`
 - `MQTT_URL`: backend connects to your Mosquitto (e.g. `mqtt://device:pass@127.0.0.1:1883`)
-- `PUBLIC_BASE_URL`: public base for `frame-media` URLs in MQTT play commands
+- `PUBLIC_BASE_URL`: public base for `frame-media` URLs in MQTT play commands  
+- `FRAME_MYFM_ENCODE` (default on): JPEG/PNG/WebP uploads get a sibling **MYFM** `.bin` (same layout as `app/lib/services/image_processor_service.dart`); MQTT `play` uses that `.bin`. Set `FRAME_MYFM_ENCODE=0` to revert to JPEG-only (usually not usable on OEM e‑ink firmware).
 - `FRAME_API_SECRET` / `FRAME_JWT_SECRET`: `POST /api/frame-cloud/auth/token` and JWT for frame-cloud routes
+
+**`POST /api/photo/upload` response** includes **`stored_path`** (saved JPEG), **`frame_play_basename`**, and **`image_url`** (full public URL the frame should fetch for MQTT `play` — usually `*.bin`).
 
 If `FRAME_PAIRING_TOKEN` is empty, upload auth is bypassed (dev mode).  
 If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_configured`.
@@ -32,13 +35,15 @@ If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_con
 
 - `POST /api/frame-cloud/auth/token` with `{"secret":"<FRAME_API_SECRET>"}` → Bearer JWT
 - `GET /api/frame-cloud/frames` — list devices seen on MQTT
-- `POST /api/frame-cloud/frames/:mac/play` with `{"imageUrl":"https://.../frame-media/..."}`
+- `POST /api/frame-cloud/frames/:mac/play` with `{"imageUrl":"https://.../frame-media/..."}` (prefer `*.bin`)
 
-## VPS deploy (Docker)
+## VPS deploy (PM2)
 
 ```bash
-docker compose -f ../deploy/docker-compose.server.yml up -d --build
+bash ../deploy/vps/deploy-prod.sh
 ```
+
+See `web/deploy/vps/GO_LIVE.md`.
 
 ## Health checks
 
@@ -48,4 +53,4 @@ docker compose -f ../deploy/docker-compose.server.yml up -d --build
 ## Reverse proxy
 
 - Serve API behind HTTPS (Nginx/Caddy/Traefik).
-- Back up `backend/data` and `backend/uploads` volumes.
+- Back up `backend/data` and `backend/uploads` on the host.

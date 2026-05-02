@@ -1,9 +1,9 @@
 # MyFrame VPS Go-Live (mygram.com)
 
-This deploys:
+This describes a **host-native** deploy: Node + PM2 for the API (**no Docker** in this repo).
 
-- Website on `https://mygram.com`
-- API on `https://api.mygram.com`
+- Website: `https://mygram.com` (Next.js — run `npm run build && npm start` in `web/` or your process manager)
+- API: `https://api.mygram.com` (proxied to Express on `127.0.0.1:3001`)
 
 ## DNS first
 
@@ -17,47 +17,51 @@ Wait until DNS resolves before deploy.
 
 ## 1) VPS bootstrap
 
+From the repo root (`…/myframe`):
+
 ```bash
-cd /path/to/myframe
-sudo bash deploy/vps/setup-vps.sh
+sudo bash web/deploy/vps/setup-vps.sh
 ```
 
 ## 2) Configure production env
 
 ```bash
-cp deploy/vps/.env.prod.example deploy/vps/.env.prod
+cp web/deploy/vps/.env.prod.example web/deploy/vps/.env.prod
 ```
 
-Edit `deploy/vps/.env.prod`:
+Edit `web/deploy/vps/.env.prod`:
 
 - set `APP_DOMAIN=mygram.com`
 - set `API_DOMAIN=api.mygram.com`
 - set strong `FRAME_PAIRING_TOKEN`
 - set strong `ADMIN_TOKEN`
 - set `CORS_ORIGINS=https://mygram.com,https://www.mygram.com`
+- set `MQTT_URL` to your Mosquitto (e.g. `mqtt://device:pass@127.0.0.1:1883`)
+- set `PUBLIC_BASE_URL` to whatever the **frame** can reach for `/frame-media/` (often `http://VPS_IP:3001` behind nginx later)
 
-## 3) Deploy
+Copy the same secrets and `MQTT_URL` / `PUBLIC_BASE_URL` into **`web/backend/.env`** (PM2 reads the API from that directory).
 
-```bash
-bash deploy/vps/preflight-check.sh
-bash deploy/vps/deploy-prod.sh
-```
-
-### Alternative: Nginx on host (if VPS has multiple apps)
-
-Use this mode when you want domain-based routing without Caddy:
+## 3) Deploy API (PM2)
 
 ```bash
-sudo bash deploy/vps/setup-nginx-myframe.sh myframe.ink api.myframe.ink
-docker compose --env-file deploy/vps/.env.prod -f deploy/vps/docker-compose.nginx.yml up -d --build
+bash web/deploy/vps/preflight-check.sh
+bash web/deploy/vps/deploy-prod.sh
 ```
 
-This keeps the landing page/app on `https://myframe.ink` and backend on `https://api.myframe.ink`.
+### Nginx on host (optional)
+
+When the site and API need separate hostnames:
+
+```bash
+sudo bash web/deploy/vps/setup-nginx-myframe.sh mygram.com api.example.com
+```
+
+Then terminate TLS with certbot (script runs certbot) and reverse-proxy `api` vhost to `http://127.0.0.1:3001`.
 
 ## 4) Verify
 
 ```bash
-docker compose --env-file deploy/vps/.env.prod -f deploy/vps/docker-compose.prod.yml ps
+pm2 status
 curl -I https://mygram.com
 curl https://api.mygram.com/health
 ```
@@ -78,39 +82,37 @@ curl -X POST https://api.mygram.com/api/frame-cloud/auth/token \
 ## 4.2) One-command smoke test
 
 ```bash
-bash deploy/vps/smoke-test.sh mygram.com api.mygram.com "<ADMIN_TOKEN>"
+bash web/deploy/vps/smoke-test.sh mygram.com api.mygram.com "<ADMIN_TOKEN>"
 ```
 
-## 4.3) One-command go-live wrapper
-
-Runs preflight -> deploy -> smoke test:
+## 4.3) Go-live wrapper
 
 ```bash
-bash deploy/vps/go-live.sh mygram.com api.mygram.com "<ADMIN_TOKEN>"
+bash web/deploy/vps/go-live.sh mygram.com api.mygram.com "<ADMIN_TOKEN>"
 ```
 
 ## 5) Optional: scheduled backups
 
 ```bash
-chmod +x deploy/vps/backup-server-data.sh
+chmod +x web/deploy/vps/backup-server-data.sh
 crontab -e
 ```
 
 Example nightly backup at 2:30am:
 
 ```cron
-30 2 * * * /bin/bash /path/to/myframe/deploy/vps/backup-server-data.sh >> /path/to/myframe/deploy/vps/backup.log 2>&1
+30 2 * * * /bin/bash /path/to/myframe/web/deploy/vps/backup-server-data.sh >> /path/to/myframe/web/deploy/vps/backup.log 2>&1
 ```
 
 ## 6) Rolling updates
 
 ```bash
 git pull
-bash deploy/vps/deploy-prod.sh
+bash web/deploy/vps/deploy-prod.sh
 ```
 
 ## Notes
 
-- TLS certs are auto-managed by Caddy.
-- Keep ports 80/443 open and do not expose 3000/3001 directly.
-- For app release, point `API_BASE`/pairing URLs to `https://api.mygram.com`.
+- Keep ports 80/443 open; expose `3001` only on localhost unless you test with the frame over raw IP.
+- For app release, point `API_BASE` / pairing URLs to your public API base.
+- **`POST /api/photo/upload`** returns `image_url` (MQTT **play** target, usually MYFM `.bin`) and `stored_path` (saved JPEG on disk).
