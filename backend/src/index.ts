@@ -12,7 +12,9 @@ import { faqRouter } from "./routes/faq";
 import { frameCloudRouter } from "./routes/frame_cloud";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
-dotenv.config();
+/** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
+const packageRoot = path.resolve(__dirname, "..");
+dotenv.config({ path: path.join(packageRoot, ".env") });
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
