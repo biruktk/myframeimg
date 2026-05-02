@@ -34,7 +34,23 @@ export function resolveMqttHardwareMac(raw: string): string | null {
   return h.toUpperCase();
 }
 
+function mqttDebugRx(topic: string, raw: Buffer) {
+  if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1") return;
+  const txt = raw.toString("utf8");
+  console.log("[frame-mqtt] <-- rx", topic, txt.length > 1500 ? `${txt.slice(0, 1500)}…` : txt);
+}
+
+function mqttDebugTx(topic: string, payloadJson: string) {
+  if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1") return;
+  console.log(
+    "[frame-mqtt] --> tx",
+    topic,
+    payloadJson.length > 1500 ? `${payloadJson.slice(0, 1500)}…` : payloadJson,
+  );
+}
+
 function handleMessage(topic: string, raw: Buffer) {
+  mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(raw.toString()) as Record<string, unknown>;
@@ -146,10 +162,16 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     const msgid = Date.now().toString();
     let host = "";
     let port = 443;
+    let imgurlForPlay = imageUrl;
     try {
       const u = new URL(imageUrl);
       host = u.hostname;
       port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
+      // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
+      // (see files/9_API_DOCUMENTATION.md). Full absolute URLs in `imgurl` can break download.
+      if (String(process.env.MQTT_PLAY_FULL_IMGURL ?? "").trim() !== "1") {
+        imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
+      }
     } catch {
       host = publicHost ?? "";
     }
@@ -161,12 +183,14 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       data: {
         host: host || publicHost || "localhost",
         port,
-        imgs: [{ imgid: msgid, imgurl: imageUrl }],
+        imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
       },
     };
 
     const topic = `/inkjoyap/${mac}`;
-    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+    const body = JSON.stringify(payload);
+    mqttDebugTx(topic, body);
+    mqttClient.publish(topic, body, { qos: 1 }, (err) => {
       if (err) reject(err);
       else resolve();
     });
