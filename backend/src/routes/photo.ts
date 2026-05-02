@@ -156,7 +156,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         preview_stored_path: jpegBackupStoredPath,
         /** True when playback is MYFM `.bin`. */
         myfm_sidecar: playbackMyfmBin,
-        /** Expect 960032 when 1200×1600 MYFM. */
+        /** Expect 960004 for official 1200×1600 XT 13.3E6 `.bin`. */
         myfm_file_bytes:
           playbackMyfmBin && fs.existsSync(path.join(uploadDir, mqttBasename))
             ? fs.statSync(path.join(uploadDir, mqttBasename)).size

@@ -1,8 +1,11 @@
 /**
- * MYFM `.bin` for XT ePaper / ESP32 firmware:
- * 32-byte header (MYFM magic, 1200×1600, CRC32) + 960_000 bytes packed 4bpp row-major.
- * Nibble order per vendor: **high 4 bits = left pixel**, **low 4 bits = right pixel** in each byte.
- * Kept in lockstep with `app/lib/services/image_processor_service.dart`.
+ * XT ePaper 13.3″ E6 (spec 13.3E6 § bin): 4-byte BE header only + packed 4bpp payload.
+ * — No MYFM magic, no CRC.
+ * — Pixel order: left half (cols 0–599 × all rows) then right half (600–1199 × all rows), not full-width row-major.
+ * — Two pixels per byte: high nibble first, low nibble second along each packed stream.
+ * — Palette indices: 0 black, 1 white, 2 yellow, 3 red, 5 blue, 6 green (index 4 unused).
+ *
+ * Locked with `app/lib/services/image_processor_service.dart`.
  */
 
 import fs from "fs/promises";
@@ -12,44 +15,57 @@ import sharp from "sharp";
 export const FRAME_W = 1200;
 export const FRAME_H = 1600;
 
-const EINK_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
-  [0, 0, 0],
-  [255, 255, 255],
-  [255, 0, 0],
-  [255, 255, 0],
-  [0, 255, 0],
-  [0, 0, 255],
+const HALF_W = FRAME_W >>> 1; // 600
+const NIBBLES_PER_HALF = HALF_W * FRAME_H;
+const PACKED_HALF_LEN = NIBBLES_PER_HALF >>> 1;
+
+export const XT_BIN_PAYLOAD_BYTES = PACKED_HALF_LEN * 2;
+/** Official device file size: 4-byte header + 960_000-byte payload */
+export const XT_BIN_TOTAL_BYTES = 4 + XT_BIN_PAYLOAD_BYTES;
+
+/** [hardware index, R, G, B] — index 4 deliberately omitted (invalid). */
+const XT_PALETTE: ReadonlyArray<readonly [number, number, number, number]> = [
+  [0, 0, 0, 0],
+  [1, 255, 255, 255],
+  [2, 255, 255, 0],
+  [3, 255, 0, 0],
+  [5, 0, 0, 255],
+  [6, 0, 255, 0],
 ];
 
-function nearestEinkIndex(r: number, g: number, b: number): number {
-  let bestI = 0;
+function nearestXtPaletteIndex(r: number, g: number, b: number): number {
+  let bestIdx = 0;
   let bestD = 1 << 30;
-  for (let i = 0; i < EINK_PALETTE.length; i++) {
-    const [pr, pg, pb] = EINK_PALETTE[i];
+  for (let j = 0; j < XT_PALETTE.length; j++) {
+    const [hw, pr, pg, pb] = XT_PALETTE[j];
     const dr = r - pr;
     const dg = g - pg;
     const db = b - pb;
     const d = dr * dr + dg * dg + db * db;
     if (d < bestD) {
       bestD = d;
-      bestI = i;
+      bestIdx = hw;
     }
   }
-  return bestI;
+  return bestIdx;
 }
 
-function crc32Myfm(bytes: Uint8Array): number {
-  const poly = 0xedb88320;
-  let crc = 0xffffffff;
-  for (let j = 0; j < bytes.length; j++) {
-    crc ^= bytes[j];
-    for (let i = 0; i < 8; i++) {
-      crc = (crc & 1) !== 0 ? (crc >>> 1) ^ poly : crc >>> 1;
-    }
+function packNibblePairs(indices: Uint8Array): Uint8Array {
+  if (indices.length !== NIBBLES_PER_HALF) {
+    throw new Error(`expected ${NIBBLES_PER_HALF} nibbles, got ${indices.length}`);
   }
-  return (crc ^ 0xffffffff) >>> 0;
+  const out = new Uint8Array(PACKED_HALF_LEN);
+  for (let i = 0, o = 0; i < indices.length; i += 2, o++) {
+    const hi = indices[i]! & 0xf;
+    const lo = indices[i + 1]! & 0xf;
+    out[o] = (hi << 4) | lo;
+  }
+  return out;
 }
 
+/**
+ * RGB raster (row-major RGB triples) → official `.bin` body (starts with 4 BE uint16 header when concatenated externally).
+ */
 export function encodeMyfmFromRgb(raw: Uint8Array, stride: number, width: number, height: number): Buffer {
   if (width !== FRAME_W || height !== FRAME_H) {
     throw new Error(`MYFM raster must be ${FRAME_W}×${FRAME_H}, got ${width}×${height}`);
@@ -63,70 +79,52 @@ export function encodeMyfmFromRgb(raw: Uint8Array, stride: number, width: number
     rgb[i * 3 + 2] = raw[o + 2];
   }
 
-  const byteLen = (px + 1) >> 1;
-  const indexed = new Uint8Array(byteLen);
+  const left = new Uint8Array(NIBBLES_PER_HALF);
+  const right = new Uint8Array(NIBBLES_PER_HALF);
 
+  let li = 0;
+  let ri = 0;
   for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+    for (let x = 0; x < HALF_W; x++) {
       const i = y * width + x;
-      const idx = nearestEinkIndex(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
-      const bi = i >> 1;
-      // XT / ESP32: left pixel (even x) = high nibble, right pixel = low nibble
-      if ((i & 1) === 0) {
-        indexed[bi] = (indexed[bi] & 0x0f) | (idx << 4);
-      } else {
-        indexed[bi] = (indexed[bi] & 0xf0) | idx;
-      }
+      left[li++] = nearestXtPaletteIndex(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
+    }
+    for (let x = HALF_W; x < width; x++) {
+      const i = y * width + x;
+      right[ri++] = nearestXtPaletteIndex(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
     }
   }
 
-  const head = Buffer.alloc(32);
-  head[0] = 0x4d;
-  head[1] = 0x59;
-  head[2] = 0x46;
-  head[3] = 0x4d;
-  head[4] = 0x01;
-  head[5] = (FRAME_W >> 8) & 0xff;
-  head[6] = FRAME_W & 0xff;
-  head[7] = (FRAME_H >> 8) & 0xff;
-  head[8] = FRAME_H & 0xff;
-  head[9] = 0x06;
-  head[10] = 0x00;
+  const header = Buffer.alloc(4);
+  header.writeUInt16BE(FRAME_W, 0);
+  header.writeUInt16BE(FRAME_H, 2);
 
-  const forCrc = Buffer.allocUnsafe(28 + indexed.length);
-  head.copy(forCrc, 0, 0, 28);
-  Buffer.from(indexed).copy(forCrc, 28);
-  const crc = crc32Myfm(forCrc);
+  const leftPacked = packNibblePairs(left);
+  const rightPacked = packNibblePairs(right);
 
-  head[28] = (crc >>> 24) & 0xff;
-  head[29] = (crc >>> 16) & 0xff;
-  head[30] = (crc >>> 8) & 0xff;
-  head[31] = crc & 0xff;
+  const out = Buffer.allocUnsafe(XT_BIN_TOTAL_BYTES);
+  header.copy(out, 0, 0, 4);
+  Buffer.from(leftPacked).copy(out, 4, 0, PACKED_HALF_LEN);
+  Buffer.from(rightPacked).copy(out, 4 + PACKED_HALF_LEN, 0, PACKED_HALF_LEN);
 
-  return Buffer.concat([head, Buffer.from(indexed)]);
+  if (out.length !== XT_BIN_TOTAL_BYTES) {
+    throw new Error(`XT .bin length mismatch: got ${out.length}, expected ${XT_BIN_TOTAL_BYTES}`);
+  }
+  return out;
 }
 
-const INDEXED_LEN = ((FRAME_W * FRAME_H + 1) >> 1); // packed 4bpp, same as Dart
-
-/** True if buffer looks like Flutter MYFM (.bin from app encode or VPS sidecar). */
+/** True if buffer matches 13.3E6 official layout (4-byte dims + payload size). */
 export function isProbablyMyfmBuffer(buf: Buffer): boolean {
-  return (
-    buf.length === 32 + INDEXED_LEN &&
-    buf[0] === 0x4d &&
-    buf[1] === 0x59 &&
-    buf[2] === 0x46 &&
-    buf[3] === 0x4d
-  );
+  return buf.length === XT_BIN_TOTAL_BYTES && buf.readUInt16BE(0) === FRAME_W && buf.readUInt16BE(2) === FRAME_H;
 }
 
-/** JPEG/PNG/etc. → 1200×1600 MYFM `.bin`; written beside upload as `<stem>.bin`. */
+/** Raster → XT `.bin` sidecar next to uploaded JPEG/PNG (`<stem>.bin`). */
 export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string> {
   const meta = await sharp(uploadedAbsPath).metadata();
   let pipeline = sharp(uploadedAbsPath).rotate().resize(FRAME_W, FRAME_H, {
     fit: "cover",
     position: "centre",
   });
-  // JPEG has no alpha — skip flatten (some sharp/libvips builds error on flatten without alpha).
   if (meta.hasAlpha) {
     pipeline = pipeline.ensureAlpha().flatten({ background: { r: 255, g: 255, b: 255 } });
   }
@@ -139,14 +137,13 @@ export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string>
   const stride = ch;
   const out = encodeMyfmFromRgb(new Uint8Array(data), stride, info.width, info.height);
 
+  if (out.length !== XT_BIN_TOTAL_BYTES) {
+    throw new Error(`MYFM payload size mismatch: got ${out.length}, expected ${XT_BIN_TOTAL_BYTES}`);
+  }
+
   const stem = path.parse(uploadedAbsPath).name;
   const binPath = path.join(path.dirname(uploadedAbsPath), `${stem}.bin`);
   await fs.writeFile(binPath, out);
-
-  const expected = 32 + INDEXED_LEN; // 960032
-  if (out.length !== expected) {
-    throw new Error(`MYFM payload size mismatch: got ${out.length}, expected ${expected}`);
-  }
 
   return `${stem}.bin`;
 }

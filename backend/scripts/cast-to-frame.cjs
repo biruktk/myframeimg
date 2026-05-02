@@ -46,7 +46,8 @@ function mediaOrigin() {
   return b;
 }
 
-const MYFM_EXPECTED_SIZE = 32 + ((1200 * 1600 + 1) >> 1);
+/** XT 13.3E6: 4-byte BE WxH header + 960000B payload (4bpp packed halves). */
+const MYFM_EXPECTED_SIZE = 4 + ((1200 * 1600) >> 1);
 
 function pickLatestUpload(dir) {
   const all = fs.readdirSync(dir);
