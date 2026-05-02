@@ -104,9 +104,11 @@ app.get("/", (_req, res) => {
 app.use("/api", deviceRouter);
 app.use("/api", photoRouter(uploadDir, publicBaseUrl));
 app.use("/api", settingsRouter);
-app.use("/api", adminRouter);
+// Public / token-scoped routes must be registered before [adminRouter], which applies
+// [requireAdminToken] to every request that reaches it.
 app.use("/api", faqRouter);
 app.use("/api", frameCloudRouter(publicBaseUrl));
+app.use("/api", adminRouter);
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
