@@ -19,6 +19,21 @@ export function normalizeMac(mac: string): string {
   return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
 }
 
+/** 12‑hex Wi‑Fi MAC for `/inkjoyap/{MAC}` and `play` payloads; strips BLE names like `IJ_D0CF13F0161C`. */
+export function resolveMqttHardwareMac(raw: string): string | null {
+  let s = raw.trim();
+  if (!s) return null;
+  const low = s.toLowerCase();
+  if (low.startsWith("ij_") || low.startsWith("ij-")) s = s.slice(3).trim();
+
+  let h = normalizeMac(s);
+  if (!h) return null;
+  // If app sent `IJ_` as prefix merged into hex, keep only the trailing EUI‑48 (12 hex).
+  if (h.length > 12) h = h.slice(-12);
+  if (h.length !== 12 || !/^[0-9A-F]{12}$/i.test(h)) return null;
+  return h.toUpperCase();
+}
+
 function handleMessage(topic: string, raw: Buffer) {
   let data: Record<string, unknown>;
   try {
@@ -123,7 +138,11 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       reject(new Error("MQTT not connected"));
       return;
     }
-    const mac = normalizeMac(macRaw);
+    const mac = resolveMqttHardwareMac(macRaw);
+    if (!mac) {
+      reject(new Error("invalid_device_id_for_mqtt_play"));
+      return;
+    }
     const msgid = Date.now().toString();
     let host = "";
     let port = 443;

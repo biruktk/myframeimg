@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
-import { isMqttConnected, normalizeMac, publishPlayImage } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 
 /**
  * POST /api/photo/upload
@@ -49,8 +49,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
 
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
-      const mac = normalizeMac(deviceId);
-      if (mac) {
+      const mqttMac = resolveMqttHardwareMac(deviceId);
+      if (mqttMac) {
         if (!isMqttConnected()) {
           deliveryMode = "mqtt_disconnected";
         } else {
