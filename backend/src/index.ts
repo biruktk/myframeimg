@@ -16,10 +16,16 @@ import { startFrameMqtt } from "./services/frame_mqtt";
 const packageRoot = path.resolve(__dirname, "..");
 dotenv.config({ path: path.join(packageRoot, ".env") });
 
+function envBaseUrl(primary: string | undefined, fallback: string): string {
+  return (primary?.trim() || fallback).replace(/\/$/, "");
+}
+
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
-const publicBaseUrl = (process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${port}`).replace(/\/$/, "");
+const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
+/** MQTT `play` + `/frame-media/` links; use when `PUBLIC_BASE_URL` is the marketing site (Next) not Express. */
+const mediaPublicBaseUrl = envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -104,17 +110,20 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api", deviceRouter);
-app.use("/api", photoRouter(uploadDir, publicBaseUrl));
+app.use("/api", photoRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", settingsRouter);
 // Public / token-scoped routes must be registered before [adminRouter], which applies
 // [requireAdminToken] to every request that reaches it.
 app.use("/api", faqRouter);
-app.use("/api", frameCloudRouter(publicBaseUrl));
+app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
   console.log(`Upload dir: ${uploadDir}`);
   console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
+  if (mediaPublicBaseUrl !== publicBaseUrl) {
+    console.log(`PUBLIC_MEDIA_BASE_URL (frame fetch / MQTT): ${mediaPublicBaseUrl}`);
+  }
   startFrameMqtt();
 });
