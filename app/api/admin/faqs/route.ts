@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMyframeApiBase } from "@/lib/backend-url";
+import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
 
 export async function GET() {
   try {
-    const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs`, { cache: "no-store" });
+    const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs`, {
+      cache: "no-store",
+      headers: { ...myframeBackendAdminHeaders() },
+    });
     const text = await res.text();
     return new NextResponse(text, {
       status: res.status,
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
     const body = await req.text();
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders() },
       body,
     });
     const text = await res.text();

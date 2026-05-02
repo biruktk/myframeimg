@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMyframeApiBase } from "@/lib/backend-url";
+import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -9,7 +9,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     const body = await req.text();
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs/${id}`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders() },
       body,
     });
     const text = await res.text();
@@ -30,6 +30,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   try {
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs/${id}`, {
       method: "DELETE",
+      headers: { ...myframeBackendAdminHeaders() },
     });
     const text = await res.text();
     return new NextResponse(text, {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMyframeApiBase } from "@/lib/backend-url";
+import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
 
 export async function GET() {
   const base = getMyframeApiBase();
@@ -32,7 +32,10 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const res = await fetch(`${base}/api/settings/${section}`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...myframeBackendAdminHeaders(),
+      },
       body: JSON.stringify(body),
       cache: "no-store",
     });
