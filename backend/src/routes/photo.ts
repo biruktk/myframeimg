@@ -48,7 +48,6 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const basename = path.basename(file.path);
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
-      const allowJpegMqtt = String(process.env.FRAME_ALLOW_JPEG_MQTT ?? "").trim() === "1";
       const looksLikeRaster =
         [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
 
@@ -61,39 +60,32 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
-          if (!allowJpegMqtt) {
-            res.status(503).json({
-              ok: false,
-              error: "myfm_encode_failed",
-              message: detail,
-              hint:
-                "E-ink frames expect MYFM .bin; JPEG in MQTT will not display. Fix server image libs (sharp) or rebuild the API. Temporary escape: set FRAME_ALLOW_JPEG_MQTT=1 (not recommended).",
-            });
-            return;
-          }
-          console.warn("[photo] FRAME_ALLOW_JPEG_MQTT=1 — publishing MQTT with JPEG (frame may not render).");
+          res.status(503).json({
+            ok: false,
+            error: "myfm_encode_failed",
+            message: detail,
+            hint:
+              "XT ePaper / ESP32 only renders MYFM .bin. Fix sharp/libvips on the server, ensure FRAME_MYFM_ENCODE=1, and rebuild. JPEG/PNG is never sent to MQTT.",
+          });
+          return;
         }
       }
 
       const imageUrl = `${base}/frame-media/${encodeURIComponent(mqttBasename)}`;
 
-      /** Byte size actually kept on disk for this upload (MQTT + `/frame-media` serve this file only when MYFM wins). */
+      /** JPEG/PNG raster kept beside `.bin`; MYFM `.bin` is MQTT target; both counted for quota when present. */
       let persistedDiskBytes = buf.length;
+      let jpegBackupStoredPath: string | null = null;
       if (
         mqttBasename !== basename &&
         mqttBasename.toLowerCase().endsWith(".bin") &&
-        path.extname(basename).toLowerCase() !== ".bin"
+        path.extname(basename).toLowerCase() !== ".bin" &&
+        fs.existsSync(file.path)
       ) {
-        const binAbs = path.join(uploadDir, mqttBasename);
+        jpegBackupStoredPath = basename;
         try {
-          const binSz = fs.statSync(binAbs).size;
-          try {
-            fs.unlinkSync(file.path);
-            persistedDiskBytes = binSz;
-          } catch (unErr) {
-            console.warn("[photo] could not delete source JPEG after MYFM; both files kept:", unErr);
-            persistedDiskBytes = buf.length + binSz;
-          }
+          const binSz = fs.statSync(path.join(uploadDir, mqttBasename)).size;
+          persistedDiskBytes = buf.length + binSz;
         } catch {
           persistedDiskBytes = buf.length;
         }
@@ -114,11 +106,14 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           } catch {
             /* ignore */
           }
-          void publishPlayImage(deviceId, imageUrl, publicHost || undefined).catch((err) => {
-            console.error("[photo] MQTT publish (async):", err);
-          });
-          deliveredToFrame = true;
-          deliveryMode = "vps_mqtt";
+          try {
+            await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+            deliveredToFrame = true;
+            deliveryMode = "vps_mqtt";
+          } catch (err) {
+            console.error("[photo] MQTT play publish failed:", err);
+            deliveryMode = "mqtt_publish_failed";
+          }
         }
       }
 
@@ -154,10 +149,18 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         ok: true,
         received_bytes: buf.length,
         declared_size: declaredSize,
+        /** MYFM basename used in MQTT (`image_url`). */
         stored_path: mqttBasename,
         frame_play_basename: mqttBasename,
-        /** True when MQTT + disk playback file is MYFM `.bin`. */
+        /** Original JPEG/PNG kept next to `.bin` for preview/debug (not in MQTT). */
+        preview_stored_path: jpegBackupStoredPath,
+        /** True when playback is MYFM `.bin`. */
         myfm_sidecar: playbackMyfmBin,
+        /** Expect 960032 when 1200×1600 MYFM. */
+        myfm_file_bytes:
+          playbackMyfmBin && fs.existsSync(path.join(uploadDir, mqttBasename))
+            ? fs.statSync(path.join(uploadDir, mqttBasename)).size
+            : null,
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,

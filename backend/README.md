@@ -22,12 +22,12 @@ Set in `.env`:
 - `CORS_ORIGINS`: comma-separated allowlist
 - `UPLOADS_PER_MINUTE`: per-IP limit for `/api/photo/upload`
 - `MQTT_URL`: backend connects to your Mosquitto (e.g. `mqtt://device:pass@127.0.0.1:1883`)
-- `PUBLIC_BASE_URL`: public base for `frame-media` URLs in MQTT play commands  
-- `FRAME_MYFM_ENCODE` (default on): JPEG/PNG/WebP uploads get a sibling **MYFM** `.bin`; MQTT `play` uses that `.bin`. Set `FRAME_MYFM_ENCODE=0` to revert to JPEG-only (usually not usable on OEM e‑ink firmware).
-- `FRAME_ALLOW_JPEG_MQTT` (omit by default): if MYFM encode fails, allow falling back to JPEG in MQTT. **Otherwise** uploads return **`503 myfm_encode_failed`** so you never silently push JPEG to firmware that expects `.bin`.
+- `PUBLIC_BASE_URL` / `PUBLIC_MEDIA_BASE_URL`: **HTTP** base for frame `GET` (e.g. `http://VPS_IP:3001`). XT/ESP32 typically does not use TLS in `play`; avoid `https`/`443` unless you know your firmware does.
+- `FRAME_MYFM_ENCODE` (default on): raster uploads become **MYFM `.bin`** (960032 B) + **keep** the original JPEG/PNG beside it; **`image_url` / MQTT `play` always use `.bin`**. Encode failure → **`503`** (no JPEG MQTT).
+- `FRAME_PLAY_ALLOW_HTTPS`: set `1` only if `publishPlayImage` must allow `https://` in `PUBLIC_*` URLs (default blocks HTTPS for ESP32 safety).
 - `FRAME_API_SECRET` / `FRAME_JWT_SECRET`: `POST /api/frame-cloud/auth/token` and JWT for frame-cloud routes
 
-**`POST /api/photo/upload`** keeps **one playback file**: after MYFM encode, the source JPEG/PNG is **removed** from disk; **`stored_path`**, **`frame_play_basename`**, and **`image_url`** all point at the **`*.bin`** (unless `FRAME_ALLOW_JPEG_MQTT` JPEG fallback path).
+**`POST /api/photo/upload`**: **`image_url`** ends in **`.bin`**; **`preview_stored_path`** is the JPEG/PNG backup filename when present.
 
 If `FRAME_PAIRING_TOKEN` is empty, upload auth is bypassed (dev mode).  
 If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_configured`.

@@ -125,5 +125,15 @@ app.listen(port, () => {
   if (mediaPublicBaseUrl !== publicBaseUrl) {
     console.log(`PUBLIC_MEDIA_BASE_URL (frame fetch / MQTT): ${mediaPublicBaseUrl}`);
   }
+  try {
+    const u = new URL(mediaPublicBaseUrl);
+    if (u.protocol === "https:" && String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1") {
+      console.warn(
+        "[myframe] MQTT play uses HTTPS in URLs — XT/ESP32 often needs plain HTTP (e.g. http://YOUR_VPS_IP:3001). Set PUBLIC_MEDIA_BASE_URL accordingly or FRAME_PLAY_ALLOW_HTTPS=1.",
+      );
+    }
+  } catch {
+    /* ignore */
+  }
   startFrameMqtt();
 });

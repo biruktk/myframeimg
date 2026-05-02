@@ -165,6 +165,13 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     let imgurlForPlay = imageUrl;
     try {
       const u = new URL(imageUrl);
+      if (
+        u.protocol === "https:" &&
+        String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
+      ) {
+        reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
+        return;
+      }
       host = u.hostname;
       port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
       // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
@@ -174,6 +181,16 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       }
     } catch {
       host = publicHost ?? "";
+    }
+
+    const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());
+    if (!pathProbe.endsWith(".bin")) {
+      reject(
+        new Error(
+          "mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg",
+        ),
+      );
+      return;
     }
 
     const payload = {

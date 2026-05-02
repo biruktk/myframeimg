@@ -1,5 +1,8 @@
 /**
- * MYFM `.bin` payload — must match `app/lib/services/image_processor_service.dart` (_buildMyfmBin / packing).
+ * MYFM `.bin` for XT ePaper / ESP32 firmware:
+ * 32-byte header (MYFM magic, 1200×1600, CRC32) + 960_000 bytes packed 4bpp row-major.
+ * Nibble order per vendor: **high 4 bits = left pixel**, **low 4 bits = right pixel** in each byte.
+ * Kept in lockstep with `app/lib/services/image_processor_service.dart`.
  */
 
 import fs from "fs/promises";
@@ -68,10 +71,11 @@ export function encodeMyfmFromRgb(raw: Uint8Array, stride: number, width: number
       const i = y * width + x;
       const idx = nearestEinkIndex(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
       const bi = i >> 1;
+      // XT / ESP32: left pixel (even x) = high nibble, right pixel = low nibble
       if ((i & 1) === 0) {
-        indexed[bi] = (indexed[bi] & 0xf0) | idx;
-      } else {
         indexed[bi] = (indexed[bi] & 0x0f) | (idx << 4);
+      } else {
+        indexed[bi] = (indexed[bi] & 0xf0) | idx;
       }
     }
   }
@@ -138,6 +142,11 @@ export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string>
   const stem = path.parse(uploadedAbsPath).name;
   const binPath = path.join(path.dirname(uploadedAbsPath), `${stem}.bin`);
   await fs.writeFile(binPath, out);
+
+  const expected = 32 + INDEXED_LEN; // 960032
+  if (out.length !== expected) {
+    throw new Error(`MYFM payload size mismatch: got ${out.length}, expected ${expected}`);
+  }
 
   return `${stem}.bin`;
 }

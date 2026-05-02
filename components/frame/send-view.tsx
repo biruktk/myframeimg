@@ -82,6 +82,8 @@ export function SendView({ locale }: { locale: Locale }) {
           image_url?: string;
           stored_path?: string;
           frame_play_basename?: string;
+          preview_stored_path?: string | null;
+          myfm_file_bytes?: number | null;
         };
         if (!res.ok || data.ok === false) {
           setBanner({
@@ -102,10 +104,14 @@ export function SendView({ locale }: { locale: Locale }) {
             : "(unknown)";
         const playbackBin =
           typeof data.stored_path === "string" && data.stored_path.toLowerCase().endsWith(".bin");
+        const preview =
+          typeof data.preview_stored_path === "string" && data.preview_stored_path.length > 0
+            ? `\n(${data.preview_stored_path})`
+            : "";
         const okText =
           frameUrl.length > 0
             ? playbackBin
-              ? `${s.sent}\n${s.uploadPlaybackMyfm.replace("{url}", frameUrl)}`
+              ? `${s.sent}\n${s.uploadPlaybackMyfm.replace("{url}", frameUrl)}${preview}`
               : `${s.sent}\n${s.uploadOkDetails.replace("{stored}", stored).replace("{frameUrl}", frameUrl)}`
             : s.sent;
         setBanner({ kind: "ok", text: okText });
