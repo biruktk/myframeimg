@@ -118,7 +118,15 @@ export type MyframeDb = {
     answer: string;
     updatedAtMs: number;
   }>;
-  /** WeChat Mini Program / storefront: appended sales reports (migrate adds [] if missing). */
+  /** Slideshow playlists keyed by BLE MAC stripped of separators (uppercase hex), e.g. D0CF13F0161E */
+  slideshowsByBleMac?: Record<
+    string,
+    {
+      imageIds: string[];
+      intervalMinutes: number;
+      updatedAtMs: number;
+    }
+  >;
   commerceEvents: Array<{
     id: string;
     type: "items_sold";
@@ -219,6 +227,7 @@ function createInitialDb(): MyframeDb {
       ai_generate: { enabled: true, tier: "pro" },
     },
     auditLog: [],
+    slideshowsByBleMac: {},
     commerceEvents: [],
     faqs: [
       {
@@ -250,6 +259,9 @@ function readDbRaw(): MyframeDb {
   const parsed = JSON.parse(raw) as MyframeDb;
   if (!Array.isArray(parsed.commerceEvents)) {
     parsed.commerceEvents = [];
+  }
+  if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
+    parsed.slideshowsByBleMac = {};
   }
   return parsed;
 }

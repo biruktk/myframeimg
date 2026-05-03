@@ -12,6 +12,8 @@ import { miniProgramRouter } from "./routes/mini_program";
 import { adminRouter } from "./routes/admin";
 import { faqRouter } from "./routes/faq";
 import { frameCloudRouter } from "./routes/frame_cloud";
+import { familyRouter } from "./routes/family";
+import { frameSlideshowRouter } from "./routes/frame_slideshow";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -113,6 +115,8 @@ app.get("/", (_req, res) => {
 
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
+app.use("/api", familyRouter);
+app.use("/api", frameSlideshowRouter());
 app.use("/api", miniProgramRouter);
 app.use("/api", photoRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", settingsRouter);

@@ -1,15 +1,9 @@
 import crypto from "crypto";
 import express, { Router } from "express";
-import jwt from "jsonwebtoken";
 import { db } from "../db/store";
+import { signUserJwt } from "../services/app_user_jwt";
 
 export const authRouter = Router();
-
-function jwtSecret(): string {
-  const s = String(process.env.APP_JWT_SECRET ?? process.env.ADMIN_TOKEN ?? "").trim();
-  if (s.length >= 16) return s;
-  return "myframe-dev-change-JWT_SECRET";
-}
 
 function hashPassword(password: string, saltHex: string): string {
   const salt = Buffer.from(saltHex, "hex");
@@ -24,7 +18,7 @@ function hashNewPassword(password: string): { saltHex: string; hashHex: string }
 }
 
 function issueToken(userId: string, email: string): string {
-  return jwt.sign({ sub: userId, email }, jwtSecret(), { expiresIn: "30d" });
+  return signUserJwt(userId, email);
 }
 
 function normalizeEmail(email: unknown): string {
