@@ -7,6 +7,8 @@ import path from "path";
 import { deviceRouter } from "./routes/device";
 import { photoRouter } from "./routes/photo";
 import { settingsRouter } from "./routes/settings";
+import { authRouter } from "./routes/auth";
+import { miniProgramRouter } from "./routes/mini_program";
 import { adminRouter } from "./routes/admin";
 import { faqRouter } from "./routes/faq";
 import { frameCloudRouter } from "./routes/frame_cloud";
@@ -110,6 +112,8 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api", deviceRouter);
+app.use("/api", authRouter);
+app.use("/api", miniProgramRouter);
 app.use("/api", photoRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", settingsRouter);
 // Public / token-scoped routes must be registered before [adminRouter], which applies

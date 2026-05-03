@@ -38,6 +38,21 @@ export function requirePairingToken(req: Request, res: Response, next: NextFunct
   next();
 }
 
+/** Separate secret for WeChat Mini Program server → MyFrame API (`x-wechat-mini-secret` or Bearer). */
+export function requireWechatMiniSecret(req: Request, res: Response, next: NextFunction) {
+  const expected = String(process.env.WECHAT_MINI_API_SECRET ?? "").trim();
+  if (!expected) {
+    res.status(503).json({ ok: false, error: "wechat_mini_secret_not_configured" });
+    return;
+  }
+  const got = (readBearerToken(req) ?? String(req.header("x-wechat-mini-secret") ?? "")).trim();
+  if (!got || !secureEqual(got, expected)) {
+    res.status(401).json({ ok: false, error: "unauthorized_wechat_mini_secret" });
+    return;
+  }
+  next();
+}
+
 export function requireAdminToken(req: Request, res: Response, next: NextFunction) {
   const expected = String(process.env.ADMIN_TOKEN ?? "").trim();
   if (!expected) {

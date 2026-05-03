@@ -11,6 +11,9 @@ export type MyframeDb = {
     status: "active" | "suspended" | "banned";
     createdAtMs: number;
     lastSeenAtMs: number | null;
+    /** scrypt-derived password (optional until user registers via app). */
+    passwordSalt?: string;
+    passwordHash?: string;
   }>;
   familyGroups: Array<{
     id: string;
@@ -115,6 +118,16 @@ export type MyframeDb = {
     answer: string;
     updatedAtMs: number;
   }>;
+  /** WeChat Mini Program / storefront: appended sales reports (migrate adds [] if missing). */
+  commerceEvents: Array<{
+    id: string;
+    type: "items_sold";
+    quantity: number;
+    sku: string | null;
+    orderId: string | null;
+    atMs: number;
+    meta: Record<string, unknown> | null;
+  }>;
 };
 
 const dbDir = path.join(process.cwd(), "data");
@@ -206,6 +219,7 @@ function createInitialDb(): MyframeDb {
       ai_generate: { enabled: true, tier: "pro" },
     },
     auditLog: [],
+    commerceEvents: [],
     faqs: [
       {
         id: "faq_pair",
@@ -233,7 +247,11 @@ function ensureDbFile() {
 function readDbRaw(): MyframeDb {
   ensureDbFile();
   const raw = fs.readFileSync(dbPath, "utf8");
-  return JSON.parse(raw) as MyframeDb;
+  const parsed = JSON.parse(raw) as MyframeDb;
+  if (!Array.isArray(parsed.commerceEvents)) {
+    parsed.commerceEvents = [];
+  }
+  return parsed;
 }
 
 function writeDbRaw(db: MyframeDb) {

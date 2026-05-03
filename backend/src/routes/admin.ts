@@ -10,6 +10,21 @@ function serialFromDeviceId(id: string): string {
   return m ? m[1] : "--";
 }
 
+adminRouter.get("/admin/commerce/summary", (_req, res) => {
+  const data = db.read();
+  const sold = data.commerceEvents.filter((e) => e.type === "items_sold");
+  const totalQuantity = sold.reduce((a, e) => a + e.quantity, 0);
+  const last = sold.length ? sold[0] : null;
+  res.json({
+    ok: true,
+    total_quantity: totalQuantity,
+    events_count: sold.length,
+    last_event: last
+      ? { id: last.id, quantity: last.quantity, sku: last.sku, orderId: last.orderId, atMs: last.atMs }
+      : null,
+  });
+});
+
 adminRouter.get("/admin/overview", (_req, res) => {
   const data = db.read();
   res.json({
