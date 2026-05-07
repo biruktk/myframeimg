@@ -4,6 +4,9 @@ import { db } from "../db/store";
 import { signUserJwt } from "../services/app_user_jwt";
 
 export const authRouter = Router();
+const TEST_USER_EMAIL = "test@myframe.local";
+const TEST_USER_NAME = "Test User";
+const TEST_USER_PASSWORD = "test-login-no-credentials";
 
 function hashPassword(password: string, saltHex: string): string {
   const salt = Buffer.from(saltHex, "hex");
@@ -56,10 +59,12 @@ authRouter.post("/auth/register", (req, res) => {
   const id = `usr_${now}_${crypto.randomBytes(4).toString("hex")}`;
 
   db.mutate((draft) => {
+    const fallbackOrgId = draft.organizations[0]?.id ?? "org_default";
     draft.users.push({
       id,
       email,
       name,
+      orgId: fallbackOrgId,
       subscriptionTier: "free",
       familyGroupId: null,
       status: "active",
@@ -118,5 +123,50 @@ authRouter.post("/auth/login", (req, res) => {
     ok: true,
     token,
     user: { id: user.id, email: user.email, name: user.name },
+  });
+});
+
+authRouter.post("/auth/test-login", (_req, res) => {
+  const now = Date.now();
+  const data = db.read();
+  let user = data.users.find((u) => u.email.toLowerCase() === TEST_USER_EMAIL);
+
+  if (!user) {
+    const { saltHex, hashHex } = hashNewPassword(TEST_USER_PASSWORD);
+    const id = `usr_test_${crypto.randomBytes(4).toString("hex")}`;
+    db.mutate((draft) => {
+      const fallbackOrgId = draft.organizations[0]?.id ?? "org_default";
+      draft.users.push({
+        id,
+        email: TEST_USER_EMAIL,
+        name: TEST_USER_NAME,
+        orgId: fallbackOrgId,
+        subscriptionTier: "pro",
+        familyGroupId: null,
+        status: "active",
+        createdAtMs: now,
+        lastSeenAtMs: now,
+        passwordSalt: saltHex,
+        passwordHash: hashHex,
+      });
+    });
+    user = db.read().users.find((u) => u.id === id) ?? null;
+  } else {
+    db.mutate((draft) => {
+      draft.users = draft.users.map((u) => (u.id === user!.id ? { ...u, lastSeenAtMs: now } : u));
+    });
+  }
+
+  if (!user) {
+    res.status(500).json({ ok: false, error: "test_user_create_failed" });
+    return;
+  }
+
+  const token = issueToken(user.id, user.email);
+  res.json({
+    ok: true,
+    token,
+    user: { id: user.id, email: user.email, name: user.name },
+    mode: "test",
   });
 });

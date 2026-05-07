@@ -74,9 +74,45 @@ export function AppShell({
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-myframe-soft text-gray-900">
-      <div className="flex-1 pb-20">{children}</div>
-      <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-gray-200 bg-white">
+    <div className="min-h-screen w-full bg-myframe-soft text-gray-900 md:flex">
+      <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-white md:block">
+        <div className="sticky top-0 h-screen p-4">
+          <div className="mb-6 flex items-center gap-2 px-2 py-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-myframe-primary text-sm font-bold text-white">
+              M
+            </div>
+            <div>
+              <p className="text-sm font-bold">MyFrame</p>
+              <p className="text-xs text-gray-500">Web App</p>
+            </div>
+          </div>
+          <nav className="space-y-1">
+            {tabs.map((tab) => {
+              const on = active === tab;
+              return (
+                <Link
+                  key={tab}
+                  href={href(tab)}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                    on ? "bg-red-50 text-myframe-primary" : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className={`rounded-lg p-1 ${on ? "bg-myframe-primary text-white" : "bg-gray-100"}`}>
+                    {renderIcon(tab, on)}
+                  </span>
+                  {label[tab]}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
+
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
+        <div className="flex-1 pb-20 md:px-6 md:pb-6">{children}</div>
+      </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-gray-200 bg-white md:hidden">
         <div className="mx-auto flex max-w-md justify-between px-2 py-2">
           {tabs.map((tab) => {
             const on = active === tab;

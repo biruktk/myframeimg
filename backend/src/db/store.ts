@@ -2,10 +2,29 @@ import fs from "fs";
 import path from "path";
 
 export type MyframeDb = {
+  organizations: Array<{
+    id: string;
+    name: string;
+    status: "active" | "suspended";
+    createdAtMs: number;
+  }>;
+  enterpriseApiKeys: Array<{
+    id: string;
+    orgId: string;
+    name: string;
+    keyPrefix: string;
+    secretHash: string;
+    createdAtMs: number;
+    lastUsedAtMs: number | null;
+    expiresAtMs: number | null;
+    revokedAtMs: number | null;
+    scopes: Array<"devices:read" | "images:write" | "images:read" | "commands:write">;
+  }>;
   users: Array<{
     id: string;
     email: string;
     name: string;
+    orgId?: string;
     subscriptionTier: "free" | "pro";
     familyGroupId: string | null;
     status: "active" | "suspended" | "banned";
@@ -26,6 +45,7 @@ export type MyframeDb = {
     id: string;
     bleMac: string;
     ownerUserId: string;
+    orgId?: string;
     wifiSsid: string | null;
     wifiStatus: "online" | "offline" | "never_provisioned";
     firmwareVersion: string;
@@ -143,12 +163,23 @@ const dbPath = path.join(dbDir, "myframe-db.json");
 
 function createInitialDb(): MyframeDb {
   const now = Date.now();
+  const defaultOrgId = "org_default";
   return {
+    organizations: [
+      {
+        id: defaultOrgId,
+        name: "Default Organization",
+        status: "active",
+        createdAtMs: now,
+      },
+    ],
+    enterpriseApiKeys: [],
     users: [
       {
         id: "usr_1",
         email: "owner@example.com",
         name: "Owner",
+        orgId: defaultOrgId,
         subscriptionTier: "pro",
         familyGroupId: "fam_1",
         status: "active",
@@ -170,6 +201,7 @@ function createInitialDb(): MyframeDb {
         id: "YX-133P-001",
         bleMac: "D0:CF:13:F0:16:1E",
         ownerUserId: "usr_1",
+        orgId: defaultOrgId,
         wifiSsid: null,
         wifiStatus: "never_provisioned",
         firmwareVersion: "1.2.0",
@@ -257,6 +289,20 @@ function readDbRaw(): MyframeDb {
   ensureDbFile();
   const raw = fs.readFileSync(dbPath, "utf8");
   const parsed = JSON.parse(raw) as MyframeDb;
+  if (!Array.isArray(parsed.organizations)) {
+    parsed.organizations = [{ id: "org_default", name: "Default Organization", status: "active", createdAtMs: Date.now() }];
+  }
+  if (!Array.isArray(parsed.enterpriseApiKeys)) {
+    parsed.enterpriseApiKeys = [];
+  }
+  if (Array.isArray(parsed.frames)) {
+    const fallbackOrgId = parsed.organizations[0]?.id ?? "org_default";
+    parsed.frames = parsed.frames.map((f) => (f.orgId ? f : { ...f, orgId: fallbackOrgId }));
+  }
+  if (Array.isArray(parsed.users)) {
+    const fallbackOrgId = parsed.organizations[0]?.id ?? "org_default";
+    parsed.users = parsed.users.map((u) => (u.orgId ? u : { ...u, orgId: fallbackOrgId }));
+  }
   if (!Array.isArray(parsed.commerceEvents)) {
     parsed.commerceEvents = [];
   }

@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
+import { adminTokenOrUnauthorized } from "@/lib/admin-route-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   try {
     const res = await fetch(`${getMyframeApiBase()}/api/admin/fleet/overview`, {
       cache: "no-store",
-      headers: { ...myframeBackendAdminHeaders() },
+      headers: { ...myframeBackendAdminHeaders(auth.token ?? undefined) },
     });
     const text = await res.text();
     return new NextResponse(text, {

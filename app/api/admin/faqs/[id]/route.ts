@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
+import { adminTokenOrUnauthorized } from "@/lib/admin-route-auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PUT(req: NextRequest, ctx: Ctx) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   const { id } = await ctx.params;
   try {
     const body = await req.text();
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs/${id}`, {
       method: "PUT",
-      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders() },
+      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders(auth.token ?? undefined) },
       body,
     });
     const text = await res.text();
@@ -25,12 +28,14 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   const { id } = await ctx.params;
   try {
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs/${id}`, {
       method: "DELETE",
-      headers: { ...myframeBackendAdminHeaders() },
+      headers: { ...myframeBackendAdminHeaders(auth.token ?? undefined) },
     });
     const text = await res.text();
     return new NextResponse(text, {

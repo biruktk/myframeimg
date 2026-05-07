@@ -14,6 +14,7 @@ import { faqRouter } from "./routes/faq";
 import { frameCloudRouter } from "./routes/frame_cloud";
 import { familyRouter } from "./routes/family";
 import { frameSlideshowRouter } from "./routes/frame_slideshow";
+import { enterpriseRouter } from "./routes/enterprise";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -124,6 +125,7 @@ app.use("/api", settingsRouter);
 // [requireAdminToken] to every request that reaches it.
 app.use("/api", faqRouter);
 app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
+app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
 app.listen(port, () => {

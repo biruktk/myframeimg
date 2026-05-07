@@ -79,6 +79,10 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<{ ok: boo
 }
 
 export function SuperAdminView() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  const [user, setUser] = useState("admin");
+  const [pass, setPass] = useState("admin");
+  const [authError, setAuthError] = useState("");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [fleet, setFleet] = useState<FleetOverview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -94,6 +98,7 @@ export function SuperAdminView() {
   const [saving, setSaving] = useState(false);
 
   const loadCore = useCallback(async () => {
+    if (!authed) return;
     setLoading(true);
     const failed: string[] = [];
     const qParam = encodeURIComponent(userSearchApplied.trim());
@@ -123,11 +128,18 @@ export function SuperAdminView() {
 
     setLoadFailed(failed);
     setLoading(false);
-  }, [userSearchApplied]);
+  }, [authed, userSearchApplied]);
 
   useEffect(() => {
-    void loadCore();
-  }, [loadCore]);
+    void (async () => {
+      const r = await fetchJson<{ ok: boolean }>("/api/admin/session");
+      setAuthed(r.ok && r.data?.ok === true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (authed) void loadCore();
+  }, [authed, loadCore]);
 
   async function createFaq() {
     if (!q.trim() || !a.trim()) return;
@@ -171,6 +183,66 @@ export function SuperAdminView() {
     await loadCore();
   }
 
+  async function loginAdmin() {
+    setAuthError("");
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    if (!res.ok) {
+      setAuthError("Invalid admin credentials");
+      return;
+    }
+    setAuthed(true);
+  }
+
+  async function logoutAdmin() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    setAuthed(false);
+  }
+
+  if (authed === null) {
+    return (
+      <main className="mx-auto max-w-md p-6">
+        <p className="text-gray-600">Checking admin session…</p>
+      </main>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 p-6">
+        <h1 className="text-2xl font-bold">Admin Login</h1>
+        <p className="text-sm text-gray-600">Use <code className="rounded bg-gray-100 px-1">admin/admin</code>.</p>
+        <input
+          value={user}
+          onChange={(e) => setUser(e.target.value)}
+          placeholder="Username"
+          className="w-full rounded border px-3 py-2 text-sm"
+        />
+        <input
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          type="password"
+          placeholder="Password"
+          className="w-full rounded border px-3 py-2 text-sm"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void loginAdmin();
+          }}
+        />
+        {authError ? <p className="text-sm text-red-700">{authError}</p> : null}
+        <button
+          type="button"
+          className="rounded bg-gray-900 px-4 py-2 text-sm text-white"
+          onClick={() => void loginAdmin()}
+        >
+          Login
+        </button>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -184,6 +256,13 @@ export function SuperAdminView() {
           onClick={() => loadCore()}
         >
           Refresh
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50"
+          onClick={() => void logoutAdmin()}
+        >
+          Logout
         </button>
       </header>
 
@@ -279,8 +358,12 @@ export function SuperAdminView() {
             <thead>
               <tr className="border-b text-xs text-gray-500">
                 <th className="py-2 pr-2">Email</th>
+                <th className="py-2 pr-2">User ID</th>
                 <th className="py-2 pr-2">Name</th>
+                <th className="py-2 pr-2">Tier</th>
                 <th className="py-2 pr-2">Status</th>
+                <th className="py-2 pr-2">Created</th>
+                <th className="py-2 pr-2">Last seen</th>
                 <th className="py-2 pr-2">Frames</th>
                 <th className="py-2">Actions</th>
               </tr>
@@ -289,8 +372,12 @@ export function SuperAdminView() {
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-gray-100">
                   <td className="max-w-[200px] truncate py-2 pr-2">{u.email}</td>
+                  <td className="font-mono text-xs py-2 pr-2">{u.id}</td>
                   <td className="py-2 pr-2">{u.name}</td>
+                  <td className="py-2 pr-2">{u.subscriptionTier}</td>
                   <td className="py-2 pr-2">{u.status}</td>
+                  <td className="py-2 pr-2 text-xs">{new Date(u.createdAtMs).toLocaleString()}</td>
+                  <td className="py-2 pr-2 text-xs">{u.lastSeenAtMs ? new Date(u.lastSeenAtMs).toLocaleString() : "—"}</td>
                   <td className="py-2 pr-2 text-xs text-gray-600">{u.frames.map((f) => f.id).join(", ") || "—"}</td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-1">

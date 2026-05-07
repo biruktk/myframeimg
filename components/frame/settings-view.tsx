@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { locales, type Locale } from "@/lib/i18n";
 import { getAppStrings } from "@/lib/i18n-app";
 import { localeNativeNames } from "@/lib/locale-labels";
@@ -18,11 +19,19 @@ type SettingsPayload = {
 };
 
 export function SettingsView({ locale }: { locale: Locale }) {
+  const router = useRouter();
   const s = getAppStrings(locale).settings;
   const [health, setHealth] = useState<HealthState>({ loading: true });
   const [data, setData] = useState<SettingsPayload | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [enterpriseProfile, setEnterpriseProfile] = useState<{
+    orgId: string;
+    apiBase: string;
+    docs: { upload: string; devices: string; uploads: string };
+  } | null>(null);
+  const [enterpriseToken, setEnterpriseToken] = useState<string>("");
+  const [copied, setCopied] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +53,33 @@ export function SettingsView({ locale }: { locale: Locale }) {
         if (!cancelled) {
           setHealth({ loading: false, upstream: false, base: "" });
         }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/enterprise/self/profile", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          orgId: string;
+          apiBase: string;
+          docs: { upload: string; devices: string; uploads: string };
+        };
+        if (!cancelled) {
+          setEnterpriseProfile({
+            orgId: json.orgId,
+            apiBase: json.apiBase,
+            docs: json.docs,
+          });
+        }
+      } catch {
+        /* ignore */
       }
     })();
     return () => {
@@ -90,6 +126,40 @@ export function SettingsView({ locale }: { locale: Locale }) {
     }
   }
 
+  async function createEnterpriseApiKey() {
+    setError(null);
+    try {
+      const res = await fetch("/api/enterprise/self/api-key", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Web generated key", scopes: ["devices:read", "images:write", "images:read"] }),
+      });
+      const json = (await res.json()) as { ok?: boolean; token?: string; error?: string };
+      if (!res.ok || !json?.token) {
+        setError(json?.error ?? `enterprise_key_${res.status}`);
+        return;
+      }
+      setEnterpriseToken(json.token);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "enterprise_key_failed");
+    }
+  }
+
+  async function logoutUser() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace(`/${locale}/auth`);
+  }
+
+  async function copyText(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      setTimeout(() => setCopied(""), 1200);
+    } catch {
+      setError("copy_failed");
+    }
+  }
+
   const apiSub = health.loading
     ? "…"
     : health.upstream
@@ -99,7 +169,12 @@ export function SettingsView({ locale }: { locale: Locale }) {
   return (
     <div>
       <header className="bg-white px-4 py-3 shadow-sm">
-        <h1 className="text-lg font-bold">{s.title}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold">{s.title}</h1>
+          <button type="button" onClick={() => void logoutUser()} className="rounded border px-3 py-1 text-xs font-semibold">
+            Logout
+          </button>
+        </div>
       </header>
       <div className="space-y-2 p-4">
         <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -330,6 +405,67 @@ export function SettingsView({ locale }: { locale: Locale }) {
             <p className="mt-2 break-all font-mono text-[11px] text-gray-500">{health.base}</p>
           )}
         </div>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-bold text-gray-900">Enterprise API</p>
+            <button
+              type="button"
+              onClick={() => void createEnterpriseApiKey()}
+              className="rounded bg-myframe-brand px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              Generate API Key
+            </button>
+          </div>
+          <p className="text-sm text-gray-600">Use these endpoints to mass-manage devices and send images from enterprise systems.</p>
+          {enterpriseProfile ? (
+            <div className="mt-3 space-y-2 text-xs">
+              <p><span className="font-semibold">Org:</span> <code>{enterpriseProfile.orgId}</code></p>
+              <p><span className="font-semibold">Base:</span> <code>{enterpriseProfile.apiBase}</code></p>
+              <p><span className="font-semibold">Devices:</span> <code className="break-all">{enterpriseProfile.docs.devices}</code></p>
+              <p><span className="font-semibold">Uploads list:</span> <code className="break-all">{enterpriseProfile.docs.uploads}</code></p>
+              <p><span className="font-semibold">Upload image:</span> <code className="break-all">{enterpriseProfile.docs.upload}</code></p>
+              <p className="text-gray-500">Auth header: <code>x-api-key: &lt;token&gt;</code> or <code>Authorization: Bearer &lt;token&gt;</code></p>
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-gray-500">Enterprise profile loading…</p>
+          )}
+          {enterpriseToken ? (
+            <div className="mt-3 rounded border border-amber-300 bg-amber-50 p-2">
+              <p className="text-xs font-semibold text-amber-900">Copy your API key now (shown once)</p>
+              <code className="mt-1 block break-all text-[11px] text-amber-900">{enterpriseToken}</code>
+              <button
+                type="button"
+                onClick={() => void copyText("key", enterpriseToken)}
+                className="mt-2 rounded border border-amber-500 px-2 py-1 text-[11px] font-semibold text-amber-900"
+              >
+                {copied === "key" ? "Copied" : "Copy key"}
+              </button>
+            </div>
+          ) : null}
+          {enterpriseProfile ? (
+            <div className="mt-3 space-y-3 rounded border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs font-semibold text-gray-800">Quick API docs</p>
+              <div>
+                <p className="mb-1 text-[11px] text-gray-600">List devices</p>
+                <pre className="overflow-x-auto rounded border bg-white p-2 text-[11px]">{`curl -X GET "${enterpriseProfile.docs.devices}" \\
+  -H "x-api-key: YOUR_API_KEY"`}</pre>
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] text-gray-600">Upload image to multiple devices</p>
+                <pre className="overflow-x-auto rounded border bg-white p-2 text-[11px]">{`curl -X POST "${enterpriseProfile.docs.upload}" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -F "device_ids=YX-133P-001,YX-133P-002" \\
+  -F "file=@photo.jpg"`}</pre>
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] text-gray-600">List org uploads</p>
+                <pre className="overflow-x-auto rounded border bg-white p-2 text-[11px]">{`curl -X GET "${enterpriseProfile.docs.uploads}" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}</pre>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   );

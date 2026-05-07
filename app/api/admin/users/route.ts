@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
+import { adminTokenOrUnauthorized } from "@/lib/admin-route-auth";
 
 export async function GET(req: NextRequest) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   try {
     const q = req.nextUrl.searchParams.toString();
     const path = q ? `/api/admin/users?${q}` : "/api/admin/users";
     const res = await fetch(`${getMyframeApiBase()}${path}`, {
       cache: "no-store",
-      headers: { ...myframeBackendAdminHeaders() },
+      headers: { ...myframeBackendAdminHeaders(auth.token ?? undefined) },
     });
     const text = await res.text();
     return new NextResponse(text, {

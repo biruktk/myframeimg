@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase, myframeBackendAdminHeaders } from "@/lib/backend-url";
+import { adminTokenOrUnauthorized } from "@/lib/admin-route-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   try {
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs`, {
       cache: "no-store",
-      headers: { ...myframeBackendAdminHeaders() },
+      headers: { ...myframeBackendAdminHeaders(auth.token ?? undefined) },
     });
     const text = await res.text();
     return new NextResponse(text, {
@@ -21,11 +24,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = adminTokenOrUnauthorized(req);
+  if (auth.response) return auth.response;
   try {
     const body = await req.text();
     const res = await fetch(`${getMyframeApiBase()}/api/admin/faqs`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders() },
+      headers: { "content-type": "application/json", ...myframeBackendAdminHeaders(auth.token ?? undefined) },
       body,
     });
     const text = await res.text();

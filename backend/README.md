@@ -38,6 +38,25 @@ If `ADMIN_TOKEN` is empty, admin/settings writes return `503 admin_token_not_con
 - `GET /api/frame-cloud/frames` — list devices seen on MQTT
 - `POST /api/frame-cloud/frames/:mac/play` with `{"imageUrl":"https://.../frame-media/..."}` (prefer `*.bin`)
 
+## Enterprise API (MVP)
+
+Tenant/fleet APIs for company integrations (all under `/api/enterprise`).
+
+- Admin-managed bootstrap (requires `ADMIN_TOKEN`):
+  - `GET /api/enterprise/orgs`
+  - `POST /api/enterprise/orgs` body: `{ "name": "Acme Inc" }`
+  - `POST /api/enterprise/orgs/:orgId/api-keys` body: `{ "name":"Primary", "scopes":["devices:read","images:write","images:read"] }`
+  - `GET /api/enterprise/orgs/:orgId/api-keys`
+  - `POST /api/enterprise/orgs/:orgId/api-keys/:keyId/revoke`
+  - `POST /api/enterprise/orgs/:orgId/devices/:deviceId/assign`
+
+- Enterprise key authenticated (`x-api-key: <token>` or `Authorization: Bearer <token>`):
+  - `GET /api/enterprise/orgs/:orgId/devices` (`devices:read`)
+  - `GET /api/enterprise/orgs/:orgId/uploads` (`images:read`)
+  - `POST /api/enterprise/orgs/:orgId/images/upload` (`images:write`, multipart `file` + `device_ids`)
+
+New API key tokens are returned **only once** at creation. Store securely.
+
 ## VPS deploy (PM2)
 
 From the **repository root** (directory that contains `web/`):
