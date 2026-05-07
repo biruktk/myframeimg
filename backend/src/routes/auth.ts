@@ -150,7 +150,7 @@ authRouter.post("/auth/test-login", (_req, res) => {
         passwordHash: hashHex,
       });
     });
-    user = db.read().users.find((u) => u.id === id) ?? null;
+    user = db.read().users.find((u) => u.id === id);
   } else {
     db.mutate((draft) => {
       draft.users = draft.users.map((u) => (u.id === user!.id ? { ...u, lastSeenAtMs: now } : u));

@@ -103,8 +103,9 @@ export function enterpriseRouter(uploadDir: string, publicBaseUrl: string): Rout
     const name = String(req.body?.name ?? "Default Key").trim();
     const requestedScopes = Array.isArray(req.body?.scopes) ? req.body.scopes.map((s: unknown) => String(s)) : [];
     const allowedScopes = ["devices:read", "images:write", "images:read", "commands:write"] as const;
-    const scopes = (requestedScopes.length ? requestedScopes : ["devices:read", "images:write"])
-      .filter((s): s is (typeof allowedScopes)[number] => (allowedScopes as readonly string[]).includes(s));
+    const scopes = (requestedScopes.length ? requestedScopes : ["devices:read", "images:write"]).filter(
+      (s: string): s is (typeof allowedScopes)[number] => (allowedScopes as readonly string[]).includes(s),
+    );
     if (scopes.length === 0) {
       res.status(400).json({ ok: false, error: "invalid_scopes" });
       return;
@@ -342,8 +343,9 @@ export function enterpriseRouter(uploadDir: string, publicBaseUrl: string): Rout
     const name = String(req.body?.name ?? "Web Key").trim();
     const requestedScopes = Array.isArray(req.body?.scopes) ? req.body.scopes.map((s: unknown) => String(s)) : [];
     const allowedScopes = ["devices:read", "images:write", "images:read", "commands:write"] as const;
-    const scopes = (requestedScopes.length ? requestedScopes : ["devices:read", "images:write"])
-      .filter((s): s is (typeof allowedScopes)[number] => (allowedScopes as readonly string[]).includes(s));
+    const scopes = (requestedScopes.length ? requestedScopes : ["devices:read", "images:write"]).filter(
+      (s: string): s is (typeof allowedScopes)[number] => (allowedScopes as readonly string[]).includes(s),
+    );
     if (scopes.length === 0) {
       res.status(400).json({ ok: false, error: "invalid_scopes" });
       return;
