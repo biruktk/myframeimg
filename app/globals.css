@@ -39,15 +39,8 @@
   --color-myframe-soft: var(--myframe-soft);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: linear-gradient(180deg, var(--myframe-soft) 0%, var(--background) 32%);
-  color: var(--foreground);
+  color: var(--myframe-ink);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
