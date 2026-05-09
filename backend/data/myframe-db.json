@@ -131,8 +131,8 @@
       "gradientColor3": "#FECACA",
       "darkMode": false,
       "currencyDirection": "ltr",
-      "favicon": "/assets/myframe-logo.svg",
-      "headerLogo": "/assets/myframe-logo-final.svg",
+      "favicon": "/ra/logo.svg",
+      "headerLogo": "/ra/logo.svg",
       "breadcrumbImage": "",
       "heroBadge": "Where Family Appears",
       "heroTitle": "Stay Close,",
@@ -197,7 +197,7 @@
       "productLabel": "Aura Portrait"
     },
     "footer": {
-      "footerLogo": "/assets/myframe-logo-final.svg",
+      "footerLogo": "/ra/logo.svg",
       "footerBgImage": "",
       "footerText": "A device where family can \"appear\" anytime. Built with love for the ones who matter most.",
       "copyrightText": "Copyright by @MyFrame - 2026"

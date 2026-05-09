@@ -39,6 +39,7 @@ const footerLinks = [
   { group_name: "Company", name: "Blog", url: "blog", link_order: 2 },
   { group_name: "Company", name: "Press Kit", url: "press-kit", link_order: 3 },
   { group_name: "Company", name: "Documentation", url: "documentation", link_order: 4 },
+  { group_name: "Account", name: "Customer login", url: "customer-login", link_order: 1 },
 ];
 
 const socials = [
@@ -160,8 +161,8 @@ const basic = {
   gradientColor3: "#FECACA",
   darkMode: false,
   currencyDirection: "ltr",
-  favicon: "/assets/myframe-logo.svg",
-  headerLogo: "/assets/myframe-logo-final.svg",
+  favicon: "/ra/logo.svg",
+  headerLogo: "/ra/logo.svg",
   breadcrumbImage: "",
   heroBadge: "Where Family Appears",
   heroTitle: "Stay Close,",
@@ -234,7 +235,7 @@ const basic = {
 };
 
 const footer = {
-  footerLogo: "/assets/myframe-logo-final.svg",
+  footerLogo: "/ra/logo.svg",
   footerBgImage: "",
   footerText: 'A device where family can "appear" anytime. Built with love for the ones who matter most.',
   copyrightText: "Copyright by @MyFrame - 2026",
@@ -286,6 +287,9 @@ const translationsZh: Record<string, string> = {
   footerGroupProduct: "产品",
   footerGroupSupport: "支持",
   footerGroupCompany: "公司",
+  footerGroupAccount: "账号",
+  footerCustomerLogin: "客户登录",
+  footerLoginBar: "客户登录 · 门户控制台",
   badgeAvailableNow: "现已发售",
   badgeComingSoon: "即将推出",
   badgeUnderDevelopment: "开发中",

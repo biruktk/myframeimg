@@ -1500,7 +1500,7 @@
 
         .footer-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr));
             gap: 36px;
             padding: 34px 0 50px;
         }
@@ -1553,6 +1553,20 @@
             gap: 18px;
             padding-top: 28px;
             border-top: 1px solid rgba(28, 24, 20, 0.08);
+            flex-wrap: wrap;
+        }
+
+        .footer-login-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink-soft);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .footer-login-link:hover,
+        .footer-login-link:focus-visible {
+            color: var(--primary);
         }
 
         .footer-copyright {

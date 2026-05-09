@@ -79,7 +79,7 @@
   const localizedPages = json.contentPages?.[currentLang] || json.contentPages?.en || {};
 
   if (maintenance.enabled) {
-    document.body.innerHTML = `<main style="min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#FEF2F2;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div><img src="${esc(maintenance.image || basic.headerLogo || '/assets/myframe-logo-final.svg')}" alt="" style="max-width:180px;max-height:100px;margin-bottom:22px;"><h1 style="font-size:42px;margin-bottom:12px;">Maintenance Mode</h1><p style="font-size:18px;color:#666;max-width:560px;">${esc(maintenance.text)}</p></div></main>`;
+    document.body.innerHTML = `<main style="min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#FEF2F2;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div><img src="${esc(maintenance.image || basic.headerLogo || '/ra/logo.svg')}" alt="" style="max-width:180px;max-height:100px;margin-bottom:22px;"><h1 style="font-size:42px;margin-bottom:12px;">Maintenance Mode</h1><p style="font-size:18px;color:#666;max-width:560px;">${esc(maintenance.text)}</p></div></main>`;
     return;
   }
 
@@ -98,7 +98,7 @@
   setPropertyMeta('og:url', currentLang === 'en' ? `${location.origin}/` : `${location.origin}/${currentLang}`);
   setPropertyMeta('og:type', 'website');
   setPropertyMeta('og:site_name', 'MyFrame');
-  const ogImg = basic.headerLogo ? `${location.origin}${basic.headerLogo}` : `${location.origin}/assets/myframe-logo-final.svg`;
+  const ogImg = basic.headerLogo ? `${location.origin}${basic.headerLogo}` : `${location.origin}/ra/logo.svg`;
   setPropertyMeta('og:image', ogImg);
   setPropertyMeta('twitter:title', document.title);
   setPropertyMeta('twitter:description', homeSeo.meta_description);
@@ -157,6 +157,7 @@
   renderProducts(json.products || [], translated, currentCurrency, json.currencies || []);
   renderSpecs(translated);
   renderFooter({ ...footer, footerText: translated.footerText || footer.footerText }, json.footerLinks || [], json.socials || [], currentLang, localizedPages, translated);
+  applyFooterLoginAnchors(currentLang, translated);
   window.myframeCatalog = Object.fromEntries((json.products || []).map((p) => [p.sku, { id: p.id, price: Number(p.price), desc: p.description, name: p.name, currency: p.currency }]));
   localStorage.setItem('myframeCurrency', currentCurrency);
   updateCartBadge();
@@ -372,6 +373,17 @@
     }
   }
 
+  function applyFooterLoginAnchors(lang, translatedView) {
+    const href = lang === 'en' ? '/en/auth' : `/${lang}/auth`;
+    const columnLabel = translatedView.footerCustomerLogin || 'Customer login';
+    const barLabel = translatedView.footerLoginBar || 'Customer login · Portal dashboard';
+    document.querySelectorAll('a[data-footer-login]').forEach((a) => {
+      a.setAttribute('href', href);
+      if (a.classList.contains('footer-login-link')) a.textContent = barLabel;
+      else a.textContent = columnLabel;
+    });
+  }
+
   function renderFooter(data, links, socials, lang, pageMap, translatedView) {
     const footerText = document.querySelector('.footer-brand p');
     if (footerText && data.footerText) footerText.textContent = data.footerText;
@@ -382,9 +394,10 @@
     const groupNames = [
       translatedView.footerGroupProduct || 'Product',
       translatedView.footerGroupSupport || 'Support',
-      translatedView.footerGroupCompany || 'Company'
+      translatedView.footerGroupCompany || 'Company',
+      translatedView.footerGroupAccount || 'Account'
     ];
-    const sourceGroups = ['Product', 'Support', 'Company'];
+    const sourceGroups = ['Product', 'Support', 'Company', 'Account'];
     columns.forEach((col, index) => {
       const name = groupNames[index];
       const sourceName = sourceGroups[index];
@@ -422,6 +435,7 @@
   function localizedPageUrl(url, lang) {
     if (url.startsWith('#')) return url;
     if (url.startsWith('http')) return url;
+    if (url === 'customer-login') return lang === 'en' ? '/en/auth' : `/${lang}/auth`;
     if (url === 'blog') return lang === 'en' ? '/blog' : `/${lang}/blog`;
     if (url.endsWith('.html')) return localizeMenuUrl(url, lang);
     const clean = url.replace(/^\/+/, '');
@@ -447,6 +461,7 @@
 
   function localizedLinkLabel(link, pageMap, translatedView) {
     const key = String(link.url || '');
+    if (key === 'customer-login') return translatedView.footerCustomerLogin || link.name;
     if (key === '#features') return translatedView.menuFeatures || link.name;
     if (key === '#pricing') return translatedView.menuPricing || link.name;
     if (key === '#family') return translatedView.menuFamilies || link.name;

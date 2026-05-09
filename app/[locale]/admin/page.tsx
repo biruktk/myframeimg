@@ -1,5 +1,5 @@
-import { SuperAdminView } from "@/components/admin/super-admin-view";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <SuperAdminView />;
+export default function LocaleAdminRedirect() {
+  redirect("/admin");
 }

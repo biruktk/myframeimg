@@ -9,6 +9,7 @@ export function marketingHomeWithHash(locale: Locale, hashPart: string): string 
 export function localizeMarketingMenuHref(url: string, locale: Locale): string {
   const u = String(url ?? "").trim();
   if (!u || u.startsWith("http")) return u;
+  if (u === "customer-login") return locale === defaultLocale ? "/en/auth" : `/${locale}/auth`;
   if (/\/cart-checkout\.html/i.test(u) || u === "cart-checkout.html") {
     const add = u.includes("?") ? u.slice(u.indexOf("?")) : "";
     return locale === defaultLocale ? `/cart-checkout.html${add}` : `/${locale}/cart${add}`;

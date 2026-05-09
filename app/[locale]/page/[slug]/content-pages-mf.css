@@ -1,0 +1,246 @@
+/* From myframe_official_web/public/site-shell.css — prose + FAQ + contact pages */
+.mf-prose {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: #2a2a2a;
+}
+
+.mf-prose h2 {
+    font-size: 1.25rem;
+    margin: 1.4em 0 0.6em;
+    color: var(--ink);
+}
+
+.mf-prose h3 {
+    font-size: 1.1rem;
+    margin: 1em 0 0.5em;
+}
+
+.mf-prose p {
+    margin-bottom: 0.85em;
+}
+
+.mf-prose ul,
+.mf-prose ol {
+    margin: 0.5em 0 1em 1.25em;
+}
+
+.mf-prose li {
+    margin-bottom: 0.35em;
+}
+
+.mf-prose a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.mf-prose a:hover {
+    text-decoration: underline;
+}
+
+.mf-two-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin: 1.5em 0;
+}
+
+.mf-mini-card {
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 16px;
+    padding: 18px;
+    background: #fffafb;
+}
+
+.mf-mini-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.mf-faq-group {
+    margin-bottom: 28px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.mf-faq-group h2 {
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+    color: var(--ink);
+}
+
+.mf-faq details {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 0 14px;
+    background: #fff;
+}
+
+.mf-faq summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 14px 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mf-faq summary::-webkit-details-marker {
+    display: none;
+}
+
+.mf-faq details[open] summary {
+    color: var(--primary);
+}
+
+.mf-faq details p {
+    padding: 0 0 14px;
+    color: var(--ink-soft);
+    font-weight: 500;
+}
+
+.mf-help-top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.mf-video-block {
+    margin-top: 8px;
+}
+
+.mf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 14px 22px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff !important;
+    font-weight: 700;
+    text-decoration: none !important;
+    border: 0;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.mf-btn:hover {
+    filter: brightness(1.05);
+}
+
+.mf-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    align-items: start;
+}
+
+.mf-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: rgba(254, 226, 226, 0.9);
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+}
+
+.mf-contact-head {
+    font-size: clamp(1.75rem, 3vw, 2.35rem);
+    margin-bottom: 12px;
+}
+
+.mf-card {
+    background: #fff;
+    border: 1px solid rgba(254, 202, 202, 0.75);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 12px 32px rgba(17, 24, 39, 0.05);
+}
+
+.mf-hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+}
+
+.mf-link {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.mf-link:hover {
+    text-decoration: underline;
+}
+
+.mf-form {
+    display: grid;
+    gap: 14px;
+}
+
+.mf-form label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    color: #333;
+}
+
+.mf-form input,
+.mf-form textarea {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font: inherit;
+    background: #fff;
+}
+
+.mf-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.mf-form-status {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mf-form-status.ok {
+    color: #059669;
+}
+
+.mf-form-status.err {
+    color: #b91c1c;
+}
+
+.mf-map-wrap {
+    padding: 0;
+    overflow: hidden;
+    min-height: 280px;
+}
+
+.mf-map-wrap iframe {
+    width: 100%;
+    height: 320px;
+    border: 0;
+}
+
+@media (max-width: 820px) {
+
+    .mf-two-cards,
+    .mf-help-top,
+    .mf-contact-grid {
+        grid-template-columns: 1fr;
+    }
+}

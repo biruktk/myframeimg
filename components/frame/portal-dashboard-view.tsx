@@ -69,6 +69,11 @@ const copy = {
     connectServices: "Connected services",
     deviceSettingsPlaceholder: "Open device settings from the Classic Send tab for pairing workflows.",
     loadError: "Could not load your dashboard.",
+    settingsSection: "Settings",
+    shareAction: "Share",
+    addDevice: "Add device",
+    dashboardPortal: "Portal",
+    viewAll: "View all",
   },
   zh: {
     overview: "概览",
@@ -98,6 +103,11 @@ const copy = {
     connectServices: "已连接的服务",
     deviceSettingsPlaceholder: "配对与设备设置请使用经典「发送」页中的流程。",
     loadError: "无法加载仪表盘。",
+    settingsSection: "设置",
+    shareAction: "分享",
+    addDevice: "添加设备",
+    dashboardPortal: "门户",
+    viewAll: "查看全部",
   },
 };
 
@@ -158,7 +168,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
     void load();
   };
 
-  const nav = useMemo(
+  const navPrimary = useMemo(
     () =>
       [
         { id: "overview" as const, icon: "fa-house", label: t.overview },
@@ -166,7 +176,6 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
         { id: "photos" as const, icon: "fa-image", label: t.photos },
         { id: "playlist" as const, icon: "fa-list", label: t.playlist },
         { id: "integrations" as const, icon: "fa-plug", label: t.integrations },
-        { id: "settings" as const, icon: "fa-gear", label: t.settings },
       ] as const,
     [t],
   );
@@ -178,12 +187,19 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full bg-[#FAFAFA] text-[#1A1A1A]">
       <aside className="fixed left-0 top-0 z-30 flex h-screen w-[260px] flex-col bg-[#DC2626] text-white shadow-lg">
-        <div className="border-b border-white/20 p-6">
-          <div className="text-xl font-bold tracking-tight">MyFrame</div>
-          <p className="mt-1 text-xs text-white/70">Portal</p>
+        <div className="border-b border-white/20 px-6 py-6">
+          <Link href={locale === "en" ? "/en" : `/${locale}`} className="inline-block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ra/logo.svg"
+              alt="MyFrame"
+              className="h-8 w-auto max-w-[180px] brightness-0 invert"
+            />
+          </Link>
+          <p className="mt-3 text-xs text-white/70">{t.dashboardPortal}</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {nav.map((item) => (
+          {navPrimary.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -196,6 +212,17 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
               {item.label}
             </button>
           ))}
+          <p className="px-4 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-white/40">{t.settingsSection}</p>
+          <button
+            type="button"
+            onClick={() => setScreen("settings")}
+            className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-[15px] font-medium transition ${
+              screen === "settings" ? "bg-white/20 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <i className="fa-solid fa-gear w-5 text-center" aria-hidden />
+            {t.settings}
+          </button>
         </nav>
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
@@ -245,14 +272,32 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
         {screen === "overview" && (
           <div className="space-y-8">
             <header className="flex flex-wrap items-center justify-between gap-4">
-              <h1 className="text-3xl font-bold">{t.overview}</h1>
-              <button
-                type="button"
-                className="rounded-xl bg-[#DC2626] px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#B91C1C]"
-                onClick={() => void load()}
-              >
-                Refresh
-              </button>
+              <h1 className="text-[30px] font-bold tracking-tight">{t.overview}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-400 opacity-70"
+                  title="Coming soon"
+                >
+                  <i className="fa-solid fa-share-nodes" aria-hidden />
+                  {t.shareAction}
+                </button>
+                <Link
+                  href={`${base}/send`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#DC2626] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(220,38,38,0.22)] hover:bg-[#B91C1C]"
+                >
+                  <i className="fa-solid fa-plus" aria-hidden />
+                  {t.addDevice}
+                </Link>
+                <button
+                  type="button"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  onClick={() => void load()}
+                >
+                  Refresh
+                </button>
+              </div>
             </header>
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard icon="fa-mobile-screen" label={t.activeDevices} value={String(stats?.activeDevices ?? 0)} />
@@ -261,20 +306,36 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
               <StatCard icon="fa-wand-magic-sparkles" label={t.aiGen} value={String(stats?.aiGenerated ?? 0)} />
             </div>
             <div className="grid gap-6 lg:grid-cols-3">
-              <section className="rounded-2xl bg-white p-6 shadow-md lg:col-span-2">
-                <h2 className="mb-4 text-lg font-semibold">{t.myDevices}</h2>
-                <ul className="space-y-3">
+              <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)] lg:col-span-2">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold">{t.myDevices}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setScreen("devices")}
+                    className="text-sm font-semibold text-[#DC2626] hover:underline"
+                  >
+                    {t.viewAll}
+                  </button>
+                </div>
+                <ul className="space-y-4">
                   {(data?.devices ?? []).map((d) => (
-                    <li key={d.id} className="flex items-center justify-between rounded-xl bg-[#FAFAFA] px-4 py-3">
-                      <div>
+                    <li
+                      key={d.id}
+                      className="flex items-center gap-4 rounded-xl border border-transparent bg-[#fafafa] p-4 transition hover:border-[#fecaca]"
+                    >
+                      <div className="flex h-14 w-[4.6rem] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-50 to-[#fecaca] text-[#DC2626]">
+                        <i className="fa-solid fa-tablet-screen-button text-xl" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
                         <p className="font-semibold">{d.id}</p>
                         <p className="text-xs text-gray-500">{d.bleMac}</p>
                       </div>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          d.online ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
+                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                          d.online ? "bg-[#e8ffe8] text-emerald-700" : "bg-gray-100 text-gray-600"
                         }`}
                       >
+                        <span className={`h-2 w-2 rounded-full ${d.online ? "bg-emerald-500" : "bg-gray-400"}`} />
                         {d.online ? t.online : t.offline}
                       </span>
                     </li>

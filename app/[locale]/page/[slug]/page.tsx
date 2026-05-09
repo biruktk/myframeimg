@@ -8,6 +8,7 @@ import { fetchMarketingPublicSite } from "@/lib/marketing-public-site-server";
 
 import "../../../marketing-globals.css";
 import "./content-page.css";
+import "./content-pages-mf.css";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -39,7 +40,7 @@ export default async function MarketingContentPage({ params }: Props) {
   const translated = locale === defaultLocale ? {} : site.translations?.[locale] ?? {};
   const menus = site.menus ?? [];
   const languages = site.languages ?? [];
-  const logo = site.basic?.headerLogo?.trim() || "/assets/myframe-logo-final.svg";
+  const logo = site.basic?.headerLogo?.trim() || "/ra/logo.svg";
   const home = locale === defaultLocale ? `/${defaultLocale}` : `/${locale}`;
 
   return (
@@ -57,11 +58,13 @@ export default async function MarketingContentPage({ params }: Props) {
         </Link>
         <h1 className="content-page-title">{doc.title || slug}</h1>
         {doc.excerpt ? <p className="content-page-excerpt">{doc.excerpt}</p> : null}
-        <article
-          className="content-prose"
-          dangerouslySetInnerHTML={{ __html: doc.body }}
-          suppressHydrationWarning
-        />
+        <div className="content-page-card">
+          <article
+            className="content-prose mf-prose"
+            dangerouslySetInnerHTML={{ __html: doc.body }}
+            suppressHydrationWarning
+          />
+        </div>
       </main>
     </div>
   );

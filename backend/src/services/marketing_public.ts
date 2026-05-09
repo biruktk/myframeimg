@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 import type { MarketingSiteStored } from "../data/marketing_defaults";
 import { marketingSiteSeed, staticCurrencies, staticLanguages } from "../data/marketing_defaults";
 import { marketingContentPagesDefault } from "../data/marketing_content_pages_default";
@@ -9,35 +12,65 @@ type ContentSlugDoc = {
   body: string;
 };
 
+/** Mirrors myframe_official_web/src/pageContentDefaults.js (npm run sync-official-pages). */
+function readOfficialPagesSnapshot(): Record<string, Record<string, ContentSlugDoc>> {
+  const candidates = [
+    path.join(process.cwd(), "dist/data/marketing_official_pages_snapshot.json"),
+    path.join(process.cwd(), "src/data/marketing_official_pages_snapshot.json"),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, "utf8");
+        const parsed = JSON.parse(raw) as Record<string, Record<string, Partial<ContentSlugDoc> | undefined>>;
+        return parsed as Record<string, Record<string, ContentSlugDoc>>;
+      }
+    } catch {
+      /* continue */
+    }
+  }
+  return {};
+}
+
 function mergeContentPagesWithDefaults(
   stored: MarketingSiteStored["contentPages"],
 ): MarketingSiteStored["contentPages"] {
+  const official = readOfficialPagesSnapshot();
+  const officialEn = official["en"] ?? {};
   const langKeys = new Set<string>([
+    ...Object.keys(official),
     ...Object.keys(marketingContentPagesDefault),
-    ...Object.keys(stored ?? {}),
+    ...(stored ? Object.keys(stored) : []),
   ]);
   const out: Record<string, Record<string, ContentSlugDoc>> = {};
   for (const lang of langKeys) {
     const defLang = marketingContentPagesDefault[lang] ?? {};
+    const offLang = official[lang] ?? {};
     const mergedLangRaw = stored?.[lang as keyof MarketingSiteStored["contentPages"]];
     const storedLang =
       mergedLangRaw && typeof mergedLangRaw === "object"
         ? (mergedLangRaw as Record<string, Partial<ContentSlugDoc> | undefined>)
         : {};
-    const slugs = new Set<string>([...Object.keys(defLang), ...Object.keys(storedLang)]);
+    const slugs = new Set<string>([
+      ...Object.keys(offLang),
+      ...Object.keys(officialEn),
+      ...Object.keys(defLang),
+      ...Object.keys(storedLang),
+    ]);
     out[lang] = {};
     for (const slug of slugs) {
+      const o = offLang[slug] ?? officialEn[slug];
       const d = defLang[slug];
       const s = storedLang[slug];
       const titleFallback = slug.replace(/-/g, " ");
-      const title = String((s?.title ?? d?.title ?? titleFallback) || titleFallback).trim();
-      const bodyRaw = String(s?.body ?? d?.body ?? "").trim();
+      const title = String((s?.title ?? o?.title ?? d?.title ?? titleFallback) || titleFallback).trim();
+      const bodyRaw = String(s?.body ?? o?.body ?? d?.body ?? "").trim();
       const body =
         bodyRaw ||
         `<p>This page (${slug.replace(/[<>&]/g, "")}) is not published yet.</p>`;
-      const excerpt = String(s?.excerpt ?? d?.excerpt ?? "").trim();
+      const excerptRaw = String(s?.excerpt ?? o?.excerpt ?? d?.excerpt ?? "").trim();
       const row: Record<string, string> = { title, body };
-      if (excerpt) row.excerpt = excerpt;
+      if (excerptRaw) row.excerpt = excerptRaw;
       out[lang][slug] = row as ContentSlugDoc;
     }
   }

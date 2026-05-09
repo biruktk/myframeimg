@@ -58,13 +58,41 @@
     .list-item i { color: var(--primary); margin-top: 4px; }
     .small { color: var(--muted); font-size: 12px; }
     .search { max-width: 260px; }
+    .ops-five { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+    .ops-three { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .ops-four { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    @media (max-width: 900px) { .ops-five, .ops-four { grid-template-columns: repeat(2, minmax(0,1fr)); } .ops-three { grid-template-columns: 1fr; } }
+    .ops-stat { background: #fff; border: 1px solid rgba(254,202,202,.75); border-radius: 12px; padding: 12px 14px; }
+    .ops-stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .ops-stat .val { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .ops-section { border: 1px solid rgba(254,202,202,.75); border-radius: 14px; background: #fff; padding: 18px; margin-bottom: 16px; box-shadow: 0 10px 26px rgba(17,24,39,.06); }
+    .ops-section h2 { font-size: 17px; margin-bottom: 12px; }
+    .ops-section h3 { font-size: 13px; color: #374151; margin: 14px 0 8px; }
+    .ops-warn { border: 1px solid #FDE68A; background: #FFFBEB; color: #92400E; padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+    .ops-warn ul { margin: 8px 0 0 18px; }
+    .ops-head { margin-bottom: 12px; }
+    .ops-head p { font-size: 13px; color: var(--muted); margin-top: 4px; max-width: 640px; }
+    .mini-table-wrap { overflow-x: auto; margin-top: 8px; }
+    .mini-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px; }
+    .mini-table th { text-transform: none; letter-spacing: 0; background: #FFF7F7; }
+    .ops-btn { border: 1px solid #E5E7EB; border-radius: 7px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer; background: #fff; }
+    .ops-btn.amber { border-color: #D97706; color: #92400E; }
+    .ops-btn.green { border-color: #059669; color: #166534; }
+    .ops-btn.red { border-color: #991B1B; color: #7F1D1D; }
+    .ops-btn.blue { border-color: #2563EB; color: #1D4ED8; }
+    .ops-btn.indigo { border-color: #4F46E5; color: #4338CA; }
+    .ops-list { font-size: 12px; max-height: 10rem; overflow: auto; list-style: none; border: 1px solid #F3F4F6; border-radius: 8px; padding: 8px; }
+    .ops-list li { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #F3F4F6; padding: 6px 0; align-items: center; }
+    .ops-list.audit { font-family: ui-monospace, monospace; font-size: 11px; max-height: 12rem; }
+    .ops-faq-row { border: 1px solid rgba(254,202,202,.75); border-radius: 10px; padding: 12px; margin-top: 10px; }
+    .ops-actions-tight .actions { gap: 4px; }
     @media (max-width: 1000px) { .sidebar { position: static; width: 100%; height: auto; } .main { margin: 0; } .app { display: none; } .grid, .two, .three { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div id="login" class="login">
     <form class="login-card" id="loginForm">
-      <img src="/assets/myframe-logo-final.svg" alt="MyFrame">
+      <img src="/ra/logo.svg" alt="MyFrame">
       <h1>Admin Login</h1>
       <p class="crumb" style="margin-bottom:18px;">Secure access to website content, SEO, products, orders and payments.</p>
       <div class="field"><label>Email or username</label><input id="email" type="text" autocomplete="username" required placeholder="you@company.com"></div>
@@ -76,7 +104,7 @@
 
   <div id="app" class="app">
     <aside class="sidebar">
-      <div class="brand"><img src="/assets/myframe-logo-final.svg" alt="MyFrame"><button class="btn light" onclick="logout()"><i class="fas fa-right-from-bracket"></i></button></div>
+      <div class="brand"><img src="/ra/logo.svg" alt="MyFrame"><button class="btn light" onclick="logout()"><i class="fas fa-right-from-bracket"></i></button></div>
       <nav class="nav" id="nav"></nav>
     </aside>
     <main class="main">
@@ -123,8 +151,230 @@
       ['Payment Settings','group'],
       ['Currencies','currencies','fa-coins'],
       ['Payment Gateway','gateways','fa-credit-card'],
-      ['Shipping Method','shipping','fa-truck']
+      ['Shipping Method','shipping','fa-truck'],
+      ['Operations','group'],
+      ['Superadmin Dashboard','super_console','fa-shield-halved']
     ];
+
+    let superState = {
+      loadFailed: [],
+      overview: null,
+      fleet: null,
+      users: [],
+      userTotal: 0,
+      userPage: 1,
+      userPageSize: 25,
+      userSearchApplied: '',
+      frames: [],
+      ops: null,
+      faqs: [],
+      commerceSummary: null,
+      commerceOrders: [],
+      selectedUserId: null,
+      selectedUserUploads: [],
+    };
+
+    function formatBytes(n) {
+      const x = Number(n) || 0;
+      if (x < 1024) return x + ' B';
+      const kb = x / 1024;
+      if (kb < 1024) return kb.toFixed(1) + ' KB';
+      const mb = kb / 1024;
+      if (mb < 1024) return mb.toFixed(2) + ' MB';
+      return (mb / 1024).toFixed(2) + ' GB';
+    }
+
+    function opsStatCell(lbl, val) {
+      return `<div class="ops-stat"><div class="lbl">${esc(lbl)}</div><div class="val">${esc(val)}</div></div>`;
+    }
+
+    async function fetchJsonSuper(path, init) {
+      try {
+        const res = await fetch(path, Object.assign({ cache: 'no-store', credentials: 'same-origin' }, init || {}));
+        const status = res.status;
+        let data = null;
+        const raw = await res.text();
+        try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = raw; }
+        if (!res.ok) return { ok: false, status, data };
+        return { ok: true, status, data };
+      } catch (_) {
+        return { ok: false, status: 0, data: null };
+      }
+    }
+
+    async function loadSuperConsole() {
+      const failed = [];
+      const qp = encodeURIComponent(String(superState.userSearchApplied || '').trim());
+      const qUsers = qp ? '&q=' + qp : '';
+      const page = superState.userPage || 1;
+      const pageSize = superState.userPageSize || 25;
+      const [oRes, fRes] = await Promise.all([
+        fetchJsonSuper('/api/admin/overview'),
+        fetchJsonSuper('/api/admin/faqs'),
+      ]);
+      if (oRes.ok && oRes.data != null && !Array.isArray(oRes.data)) superState.overview = oRes.data;
+      else failed.push('overview (' + oRes.status + ')');
+      if (fRes.ok && Array.isArray(fRes.data)) superState.faqs = fRes.data;
+      else failed.push('faqs (' + fRes.status + ')');
+      const [fleetRes, userRes, frameRes, opsRes, coSumRes, ordRes] = await Promise.all([
+        fetchJsonSuper('/api/admin/fleet/overview'),
+        fetchJsonSuper('/api/admin/users?page=' + page + '&pageSize=' + pageSize + qUsers),
+        fetchJsonSuper('/api/admin/frames'),
+        fetchJsonSuper('/api/admin/content/ops'),
+        fetchJsonSuper('/api/admin/commerce/orders/summary'),
+        fetchJsonSuper('/api/admin/commerce/orders'),
+      ]);
+      if (fleetRes.ok && fleetRes.data) superState.fleet = fleetRes.data;
+      else { superState.fleet = null; failed.push('fleet (' + fleetRes.status + ')'); }
+      if (userRes.ok && userRes.data != null) {
+        const ud = userRes.data;
+        if (Array.isArray(ud)) {
+          superState.users = ud;
+          superState.userTotal = ud.length;
+        } else {
+          superState.users = Array.isArray(ud.items) ? ud.items : [];
+          superState.userTotal = Number(ud.total ?? 0);
+        }
+      } else { superState.users = []; failed.push('users (' + userRes.status + ')'); }
+      if (frameRes.ok && Array.isArray(frameRes.data)) superState.frames = frameRes.data;
+      else { superState.frames = []; failed.push('frames (' + frameRes.status + ')'); }
+      if (opsRes.ok && opsRes.data) superState.ops = opsRes.data;
+      else { superState.ops = null; failed.push('ops (' + opsRes.status + ')'); }
+      if (coSumRes.ok && coSumRes.data) superState.commerceSummary = coSumRes.data;
+      else { superState.commerceSummary = null; failed.push('commerce summary (' + coSumRes.status + ')'); }
+      if (ordRes.ok && ordRes.data && ordRes.data.orders != null && Array.isArray(ordRes.data.orders)) superState.commerceOrders = ordRes.data.orders;
+      else {
+        superState.commerceOrders = [];
+        if (!ordRes.ok) failed.push('commerce orders (' + ordRes.status + ')');
+      }
+      superState.loadFailed = failed;
+    }
+
+    async function superRefresh() {
+      await loadSuperConsole();
+      if (current === 'super_console') render();
+    }
+
+    async function superPatchOrder(orderId, status) {
+      await fetch('/api/admin/commerce/orders/' + encodeURIComponent(orderId) + '/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status }),
+      });
+      await superRefresh();
+    }
+
+    async function superSetUserStatus(userId, status) {
+      await fetch('/api/admin/users/' + encodeURIComponent(userId) + '/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status }),
+      });
+      await superRefresh();
+    }
+
+    async function superSetUserTier(userId, tier) {
+      await fetch('/api/admin/users/' + encodeURIComponent(userId) + '/tier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ tier }),
+      });
+      await superRefresh();
+    }
+
+    async function superDeleteUser(userId) {
+      if (!confirm('Delete user ' + userId + '?')) return;
+      await fetch('/api/admin/users/' + encodeURIComponent(userId), { method: 'DELETE', credentials: 'same-origin' });
+      superState.selectedUserId = null;
+      superState.selectedUserUploads = [];
+      await superRefresh();
+    }
+
+    async function superOpenUploads(userId) {
+      const r = await fetchJsonSuper('/api/admin/users/' + encodeURIComponent(userId) + '/uploads');
+      if (r.ok && r.data && Array.isArray(r.data.items)) {
+        superState.selectedUserId = userId;
+        superState.selectedUserUploads = r.data.items;
+      }
+      if (current === 'super_console') render();
+    }
+
+    async function superDeleteUpload(uploadId) {
+      await fetch('/api/admin/uploads/' + encodeURIComponent(uploadId), { method: 'DELETE', credentials: 'same-origin' });
+      if (superState.selectedUserId) await superOpenUploads(superState.selectedUserId);
+      else await superRefresh();
+    }
+
+    async function superDeleteFrame(frameId) {
+      if (!confirm('Delete frame ' + frameId + '?')) return;
+      await fetch('/api/admin/frames/' + encodeURIComponent(frameId), { method: 'DELETE', credentials: 'same-origin' });
+      await superRefresh();
+    }
+
+    function superExportUsersCsv() {
+      var q = String(superState.userSearchApplied || '').trim();
+      window.open('/api/admin/users?format=csv' + (q ? '&q=' + encodeURIComponent(q) : ''), '_blank');
+    }
+
+    async function superUserSearchApply() {
+      var el = $('super_user_q');
+      superState.userSearchApplied = el ? String(el.value || '').trim() : '';
+      superState.userPage = 1;
+      await superRefresh();
+    }
+
+    async function superUserPagePrev() {
+      superState.userPage = Math.max(1, (superState.userPage || 1) - 1);
+      await superRefresh();
+    }
+
+    async function superUserPageNext() {
+      var ups = superState.userPageSize || 25;
+      var ut = superState.userTotal || 0;
+      var maxP = Math.max(1, Math.ceil(ut / ups));
+      superState.userPage = Math.min(maxP, (superState.userPage || 1) + 1);
+      await superRefresh();
+    }
+
+    async function superCreateFaq(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      var iq = $('super_faq_new_q');
+      var ia = $('super_faq_new_a');
+      if (!iq || !ia) return;
+      var q = String(iq.value || '').trim();
+      var a = String(ia.value || '').trim();
+      if (!q || !a) return;
+      await fetch('/api/admin/faqs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ question: q, answer: a }),
+      });
+      iq.value = '';
+      ia.value = '';
+      await superRefresh();
+    }
+
+    async function superSaveFaq(id, idx) {
+      var iq = $('super_faq_q_' + idx);
+      var ia = $('super_faq_a_' + idx);
+      if (!iq || !ia) return;
+      await fetch('/api/admin/faqs/' + encodeURIComponent(id), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ question: String(iq.value || '').trim(), answer: String(ia.value || '').trim() }),
+      });
+      await superRefresh();
+    }
+
+    async function superDeleteFaq(id) {
+      await fetch('/api/admin/faqs/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'same-origin' });
+      await superRefresh();
+    }
 
     const $ = (id) => document.getElementById(id);
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -212,9 +462,12 @@
     }
 
     async function route(key) {
-      current = key; renderNav();
+      current = key;
+      renderNav();
       const label = sections.find(s => s[1] === key)?.[0] || 'Dashboard';
-      $('pageTitle').textContent = label; $('pageCrumb').textContent = label;
+      $('pageTitle').textContent = label;
+      $('pageCrumb').textContent = label;
+      if (key === 'super_console') await loadSuperConsole();
       render();
     }
 
@@ -280,14 +533,151 @@
         if (me.admin) state.me = me.admin;
       } catch (_) {}
       renderNav();
+      if (current === 'super_console') await loadSuperConsole();
       render();
+    }
+
+    function super_console() {
+      const o = superState.overview || {};
+      const failed = superState.loadFailed || [];
+      var warn = failed.length ? '<div class="ops-warn"><p><strong>Some sections failed to load</strong></p><ul>' + failed.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul><p class="small" style="margin-top:8px;">If data stays empty, check ADMIN_TOKEN and the Next → API proxy.</p></div>' : '';
+      var topStats = '<div class="ops-five">' +
+        opsStatCell('Uploads', String(o.totalUploads ?? 0)) +
+        opsStatCell('FAQs', String(o.totalFaqs ?? 0)) +
+        opsStatCell('Photos sent', String(o.photoCount ?? 0)) +
+        opsStatCell('Device online', o.connected ? 'Yes' : 'No') +
+        opsStatCell('Device SN', o.deviceSn != null && o.deviceSn !== '' ? String(o.deviceSn) : '—') +
+        '</div>';
+      var cs = superState.commerceSummary || {};
+      var co = (superState.commerceOrders || []).slice(0, 50);
+      var orderRows = co.map(function (ord) {
+        var items = (ord.items || []).map(function (i) { return esc(i.sku) + '×' + esc(String(i.quantity)); }).join(', ') || '—';
+        var actions = [];
+        if (ord.status !== 'pending') actions.push('<button type="button" class="ops-btn" onclick="superPatchOrder(' + JSON.stringify(ord.id) + ', \'pending\')">Pending</button>');
+        if (ord.status !== 'shipped') actions.push('<button type="button" class="ops-btn amber" onclick="superPatchOrder(' + JSON.stringify(ord.id) + ', \'shipped\')">Shipped</button>');
+        if (ord.status !== 'delivered') actions.push('<button type="button" class="ops-btn green" onclick="superPatchOrder(' + JSON.stringify(ord.id) + ', \'delivered\')">Delivered</button>');
+        return '<tr>' +
+          '<td class="small" style="font-family:monospace">' + esc(ord.orderNumber) + '</td>' +
+          '<td>' + esc(ord.customerName) + '</td>' +
+          '<td class="small" style="max-width:180px">' + esc(ord.email) + '</td>' +
+          '<td class="small">' + items + '</td>' +
+          '<td>' + esc(String(ord.total)) + ' ' + esc(ord.currency || 'USD') + '</td>' +
+          '<td>' + esc(ord.status || '') + '</td>' +
+          '<td class="small">' + esc(new Date(ord.createdAtMs).toLocaleString()) + '</td>' +
+          '<td class="ops-actions-tight"><div class="actions">' + actions.join(' ') + '</div></td></tr>';
+      }).join('');
+      if (!orderRows) orderRows = '<tr><td colspan="8" class="small">No commerce orders yet.</td></tr>';
+      var salesBlock = '<div class="ops-section"><h2>Sales &amp; orders</h2><div class="ops-three">' +
+        opsStatCell('Orders', String(cs.orderCount ?? 0)) +
+        opsStatCell('Frames sold (qty)', String(cs.framesSoldApprox ?? 0)) +
+        opsStatCell('Revenue (sum totals)', String(cs.revenueUsdApprox ?? 0)) +
+        '</div><h3>Recent orders</h3><div class="mini-table-wrap"><table class="mini-table"><thead><tr><th>Order</th><th>Customer</th><th>Email</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>' + orderRows + '</tbody></table></div></div>';
+      var fleet = superState.fleet;
+      var fleetBlock = '';
+      if (fleet) {
+        var fw = Object.keys(fleet.firmwareDistribution || {}).length
+          ? Object.entries(fleet.firmwareDistribution).map(function (e) { return esc(e[0]) + '×' + esc(String(e[1])); }).join(' · ')
+          : '—';
+        fleetBlock = '<div class="ops-section"><h2>Fleet</h2><div class="ops-four">' +
+          opsStatCell('Total frames', String(fleet.totalFrames)) +
+          opsStatCell('Online', String(fleet.onlineNow)) +
+          opsStatCell('Offline', String(fleet.offline)) +
+          opsStatCell('Never provisioned', String(fleet.neverProvisioned)) +
+          '</div><p class="small" style="margin-top:12px;">Active last 24h: ' + esc(String(fleet.dailyActiveFrames)) + '</p><p class="small">Firmware: ' + fw + '</p></div>';
+      }
+      var ops = superState.ops;
+      var opsBlock = '';
+      if (ops) {
+        opsBlock = '<div class="ops-section"><h2>Content &amp; queue</h2><p>Upload queue: ' + esc(String(ops.queue && ops.queue.total != null ? ops.queue.total : 0)) + ' total, ' + esc(String(ops.queue && ops.queue.stuck != null ? ops.queue.stuck : 0)) + ' not delivered to frame.</p>' +
+          '<h3>Storage by user</h3><ul class="ops-list">' + (ops.storageByUser || []).map(function (r) {
+            return '<li><span class="small" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">' + esc(r.email) + '</span><span>' + esc(formatBytes(r.bytes || 0)) + '</span></li>';
+          }).join('') + '</ul>' +
+          '<h3>Recent audit</h3><ul class="ops-list audit">' + (ops.auditLog || []).slice(0, 25).map(function (e) {
+            return '<li>' + esc(new Date(e.atMs).toISOString()) + ' — ' + esc(e.actor) + ' ' + esc(e.action) + ' ' + esc(e.target) + '</li>';
+          }).join('') + '</ul></div>';
+      }
+      var users = superState.users || [];
+      var usersRows = users.map(function (u) {
+        var btns = [];
+        if (u.status !== 'active') btns.push('<button type="button" class="ops-btn green" onclick="superSetUserStatus(' + JSON.stringify(u.id) + ', \'active\')">Activate</button>');
+        if (u.status !== 'suspended') btns.push('<button type="button" class="ops-btn amber" onclick="superSetUserStatus(' + JSON.stringify(u.id) + ', \'suspended\')">Suspend</button>');
+        if (u.status !== 'banned') btns.push('<button type="button" class="ops-btn red" onclick="superSetUserStatus(' + JSON.stringify(u.id) + ', \'banned\')">Ban</button>');
+        var nextTier = u.subscriptionTier === 'pro' ? 'free' : 'pro';
+        btns.push('<button type="button" class="ops-btn blue" onclick="superSetUserTier(' + JSON.stringify(u.id) + ', ' + JSON.stringify(nextTier) + ')">' + (u.subscriptionTier === 'pro' ? 'Set Free' : 'Set Pro') + '</button>');
+        btns.push('<button type="button" class="ops-btn indigo" onclick="superOpenUploads(' + JSON.stringify(u.id) + ')">Uploads</button>');
+        btns.push('<button type="button" class="ops-btn red" onclick="superDeleteUser(' + JSON.stringify(u.id) + ')">Delete</button>');
+        var framesStr = (u.frames || []).map(function (f) { return f.id; }).join(', ') || '—';
+        return '<tr><td class="small" style="max-width:140px">' + esc(u.email) + '</td>' +
+          '<td class="small" style="font-family:monospace">' + esc(u.id) + '</td>' +
+          '<td>' + esc(u.name) + '</td><td>' + esc(u.subscriptionTier) + '</td><td>' + esc(u.status) + '</td>' +
+          '<td class="small">' + esc(new Date(u.createdAtMs).toLocaleString()) + '</td>' +
+          '<td class="small">' + (u.lastSeenAtMs ? esc(new Date(u.lastSeenAtMs).toLocaleString()) : '—') + '</td>' +
+          '<td class="small">' + esc(framesStr) + '</td>' +
+          '<td class="ops-actions-tight"><div class="actions">' + btns.join(' ') + '</div></td></tr>';
+      }).join('');
+      var up = superState.userPage || 1;
+      var ups = superState.userPageSize || 25;
+      var ut = superState.userTotal || 0;
+      var prevDis = up <= 1 ? ' disabled' : '';
+      var nextDis = up * ups >= ut ? ' disabled' : '';
+      var uploadsPanel = '';
+      if (superState.selectedUserId) {
+        var upsList = (superState.selectedUserUploads || []).map(function (upi) {
+          return '<li><span class="small" style="flex:1;min-width:0">' + esc(new Date(upi.atMs).toLocaleString()) + ' · ' + esc(upi.filename) + ' · ' + esc(formatBytes(upi.bytes || 0)) + '</span>' +
+            '<button type="button" class="ops-btn red" onclick="superDeleteUpload(' + JSON.stringify(upi.id) + ')">Delete</button></li>';
+        }).join('');
+        uploadsPanel = '<div class="ops-section" style="margin-top:12px;"><p class="small" style="font-weight:800;margin-bottom:8px;">Uploads for ' + esc(superState.selectedUserId) + '</p><ul class="ops-list" style="max-height:180px">' + upsList + '</ul></div>';
+      }
+      var usersBlock = '<div class="ops-section"><h2>Users</h2><div class="actions" style="margin-bottom:12px;flex-wrap:wrap">' +
+        '<input id="super_user_q" style="flex:1;min-width:200px;max-width:420px;padding:10px 12px;border:1px solid #E5E7EB;border-radius:9px" placeholder="Search email / user id / frame id / MAC" value="' + esc(superState.userSearchApplied) + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();superUserSearchApply();}">' +
+        '<button type="button" class="btn primary" onclick="superUserSearchApply()">Search</button>' +
+        '<button type="button" class="btn light" onclick="superExportUsersCsv()">Export CSV</button></div>' +
+        '<div class="mini-table-wrap"><table class="mini-table"><thead><tr><th>Email</th><th>User ID</th><th>Name</th><th>Tier</th><th>Status</th><th>Created</th><th>Last seen</th><th>Frames</th><th>Actions</th></tr></thead><tbody>' +
+        (usersRows || '<tr><td colspan="9" class="small">No users.</td></tr>') +
+        '</tbody></table></div>' +
+        '<div class="actions" style="margin-top:12px;justify-content:space-between;width:100%">' +
+        '<span class="small">Page ' + esc(String(up)) + ' · Showing ' + esc(String(users.length)) + ' / ' + esc(String(ut)) + '</span>' +
+        '<div><button type="button" class="btn light"' + prevDis + ' onclick="superUserPagePrev()">Prev</button> ' +
+        '<button type="button" class="btn light"' + nextDis + ' onclick="superUserPageNext()">Next</button></div></div>' + uploadsPanel + '</div>';
+      var frames = superState.frames || [];
+      var frameRows = frames.map(function (f) {
+        return '<tr><td class="small" style="font-family:monospace">' + esc(f.id) + '</td>' +
+          '<td class="small" style="font-family:monospace">' + esc(f.bleMac) + '</td>' +
+          '<td>' + esc(f.wifiStatus) + '</td><td>' + esc(f.firmwareVersion) + '</td>' +
+          '<td class="small">' + (f.lastSeenAtMs ? esc(new Date(f.lastSeenAtMs).toLocaleString()) : '—') + '</td>' +
+          '<td><button type="button" class="ops-btn red" onclick="superDeleteFrame(' + JSON.stringify(f.id) + ')">Delete</button></td></tr>';
+      }).join('');
+      var framesBlock = '<div class="ops-section"><h2>Frames</h2><div class="mini-table-wrap"><table class="mini-table"><thead><tr><th>ID</th><th>BLE MAC</th><th>Wi‑Fi</th><th>Firmware</th><th>Last seen</th><th>Actions</th></tr></thead><tbody>' +
+        (frameRows || '<tr><td colspan="6" class="small">No frames.</td></tr>') + '</tbody></table></div></div>';
+      var recentUp = '';
+      if (ops && ops.recentUploads && ops.recentUploads.length) {
+        recentUp = '<div class="ops-section"><h2>Recent uploads</h2><ul class="ops-list" style="max-height:13rem">' + ops.recentUploads.map(function (u) {
+          return '<li><span class="small" style="flex:1;min-width:0">' + esc(new Date(u.atMs).toLocaleString()) + ' · ' + esc(u.deviceId) + ' · ' + esc(u.filename) + ' · ' + esc(formatBytes(u.bytes || 0)) + '</span>' +
+            '<button type="button" class="ops-btn red" onclick="superDeleteUpload(' + JSON.stringify(u.id) + ')">Delete</button></li>';
+        }).join('') + '</ul></div>';
+      } else {
+        recentUp = '<div class="ops-section"><h2>Recent uploads</h2><p class="small">No uploads in list.</p></div>';
+      }
+      var faqs = superState.faqs || [];
+      var faqRows = faqs.map(function (f, idx) {
+        return '<div class="ops-faq-row"><input id="super_faq_q_' + idx + '" value="' + esc(f.question) + '" style="width:100%;margin-bottom:8px">' +
+          '<textarea id="super_faq_a_' + idx + '" rows="3" style="width:100%">' + esc(f.answer) + '</textarea>' +
+          '<div class="actions" style="margin-top:8px">' +
+          '<button type="button" class="btn primary" onclick="superSaveFaq(' + JSON.stringify(f.id) + ',' + idx + ')">Save</button>' +
+          '<button type="button" class="btn light" onclick="superDeleteFaq(' + JSON.stringify(f.id) + ')">Delete</button></div></div>';
+      }).join('');
+      var faqBlock = '<div class="ops-section"><h2>FAQ Management</h2><form class="card" style="border:0;padding:0;box-shadow:none" onsubmit="superCreateFaq(event);return false;">' +
+        '<div class="field"><label>Question</label><input id="super_faq_new_q" type="text" placeholder="Question"></div>' +
+        '<div class="field"><label>Answer</label><textarea id="super_faq_new_a" rows="3" placeholder="Answer"></textarea></div>' +
+        '<button type="submit" class="btn primary">Add FAQ</button></form><div style="margin-top:16px">' + faqRows + '</div></div>';
+      return '<div class="ops-head"><p class="small">FAQ, fleet, accounts, frames, uploads & audit. Use Refresh above to reload all sections.</p></div>' + warn + topStats + salesBlock + fleetBlock + opsBlock + usersBlock + framesBlock + recentUp + faqBlock;
     }
 
     function render() {
       const map = {
         dashboard, basic, menus, social, media, languages, pages, seo, contact, sitemap, permalinks, maintenance,
         footer, mail, currencies, gateways, shipping, categories, products, orders, blogs, subscribers,
-        admin_account, admin_users, documentation_pdf
+        admin_account, admin_users, documentation_pdf, super_console
       };
       $('content').innerHTML = (map[current] || dashboard)();
     }
