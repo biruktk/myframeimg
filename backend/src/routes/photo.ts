@@ -129,6 +129,14 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           draft.device.id = deviceId;
           draft.device.name = `${deviceId} Connected`;
         }
+        draft.frames = draft.frames.map((f) => {
+          if (f.id !== (deviceId || draft.device.id)) return f;
+          return {
+            ...f,
+            lastSeenAtMs: now,
+            wifiStatus: transport === "wifi" ? "online" : f.wifiStatus,
+          };
+        });
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
           filename: mqttBasename,
@@ -143,6 +151,19 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
         }
+        draft.auditLog.unshift({
+          id: `audit_${now}_${Math.random().toString(16).slice(2, 8)}`,
+          actor: "api_upload",
+          action: "photo_uploaded",
+          target: deviceId || draft.device.id,
+          atMs: now,
+          meta: {
+            filename: mqttBasename,
+            bytes: persistedDiskBytes,
+            deliveredToFrame,
+            deliveryMode,
+          },
+        });
       });
 
       res.json({

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { Router } from "express";
 import { db } from "../db/store";
 import { requireAdminToken } from "../middleware/security";
@@ -8,6 +10,32 @@ adminRouter.use(requireAdminToken);
 function serialFromDeviceId(id: string): string {
   const m = id.match(/(\d+)(?!.*\d)/);
   return m ? m[1] : "--";
+}
+
+const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+
+function effectiveUploadBytes(filename: string, bytes: number): number {
+  if (Number.isFinite(bytes) && bytes > 0) return bytes;
+  try {
+    const p = path.join(uploadDir, path.basename(filename));
+    if (fs.existsSync(p)) return fs.statSync(p).size;
+  } catch {
+    /* ignore */
+  }
+  return 0;
+}
+
+function appendAudit(actor: string, action: string, target: string, meta?: Record<string, unknown>) {
+  db.mutate((draft) => {
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+      actor,
+      action,
+      target,
+      atMs: Date.now(),
+      meta,
+    });
+  });
 }
 
 adminRouter.get("/admin/commerce/summary", (_req, res) => {
@@ -102,7 +130,12 @@ adminRouter.delete("/admin/faqs/:id", (req, res) => {
 // Superadmin: Fleet overview
 adminRouter.get("/admin/fleet/overview", (_req, res) => {
   const data = db.read();
-  const frames = data.frames;
+  const frames = data.frames.map((f) => {
+    if (f.id === data.device.id && data.device.connected) {
+      return { ...f, wifiStatus: "online" as const, lastSeenAtMs: f.lastSeenAtMs ?? Date.now() };
+    }
+    return f;
+  });
   const now = Date.now();
   const online = frames.filter((f) => f.wifiStatus === "online").length;
   const offline = frames.filter((f) => f.wifiStatus === "offline").length;
@@ -126,8 +159,11 @@ adminRouter.get("/admin/fleet/overview", (_req, res) => {
 // Superadmin: User management
 adminRouter.get("/admin/users", (req, res) => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
+  const page = Math.max(1, Number(req.query.page ?? 1) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? 25) || 25));
+  const asCsv = String(req.query.format ?? "").toLowerCase() === "csv";
   const data = db.read();
-  const out = data.users
+  const all = data.users
     .filter((u) => {
       if (!q) return true;
       const frames = data.frames.filter((f) => f.ownerUserId === u.id);
@@ -142,7 +178,30 @@ adminRouter.get("/admin/users", (req, res) => {
       frames: data.frames.filter((f) => f.ownerUserId === u.id).map((f) => ({ id: f.id, bleMac: f.bleMac, wifiStatus: f.wifiStatus })),
       familyGroup: data.familyGroups.find((g) => g.id === u.familyGroupId) ?? null,
     }));
-  res.json(out);
+  if (asCsv) {
+    const lines = [
+      "id,email,name,subscriptionTier,status,createdAtMs,lastSeenAtMs,frames",
+      ...all.map((u) =>
+        [
+          u.id,
+          JSON.stringify(u.email),
+          JSON.stringify(u.name),
+          u.subscriptionTier,
+          u.status,
+          String(u.createdAtMs),
+          String(u.lastSeenAtMs ?? ""),
+          JSON.stringify(u.frames.map((f) => f.id).join("|")),
+        ].join(","),
+      ),
+    ];
+    res.setHeader("content-type", "text/csv; charset=utf-8");
+    res.send(lines.join("\n"));
+    return;
+  }
+  const total = all.length;
+  const start = (page - 1) * pageSize;
+  const items = all.slice(start, start + pageSize);
+  res.json({ items, total, page, pageSize });
 });
 
 adminRouter.post("/admin/users/:id/status", (req, res) => {
@@ -175,6 +234,76 @@ adminRouter.post("/admin/users/:id/status", (req, res) => {
   res.json({ ok: true });
 });
 
+adminRouter.post("/admin/users/:id/tier", (req, res) => {
+  const id = String(req.params.id);
+  const tier = String(req.body?.tier ?? "");
+  if (!["free", "pro"].includes(tier)) {
+    res.status(400).json({ ok: false, error: "invalid_tier" });
+    return;
+  }
+  let found = false;
+  db.mutate((draft) => {
+    draft.users = draft.users.map((u) => {
+      if (u.id !== id) return u;
+      found = true;
+      return { ...u, subscriptionTier: tier as "free" | "pro" };
+    });
+    if (found) {
+      draft.auditLog.unshift({
+        id: `audit_${Date.now()}`,
+        actor: "superadmin",
+        action: "user_tier_change",
+        target: id,
+        atMs: Date.now(),
+        meta: { tier },
+      });
+    }
+  });
+  if (!found) {
+    res.status(404).json({ ok: false, error: "user_not_found" });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+adminRouter.delete("/admin/users/:id", (req, res) => {
+  const id = String(req.params.id);
+  let deleted = false;
+  db.mutate((draft) => {
+    const before = draft.users.length;
+    draft.users = draft.users.filter((u) => u.id !== id);
+    deleted = draft.users.length < before;
+    if (!deleted) return;
+    draft.familyGroups = draft.familyGroups.map((g) => ({
+      ...g,
+      members: g.members.filter((m) => m.userId !== id),
+    }));
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}`,
+      actor: "superadmin",
+      action: "user_deleted",
+      target: id,
+      atMs: Date.now(),
+    });
+  });
+  if (!deleted) {
+    res.status(404).json({ ok: false, error: "user_not_found" });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+adminRouter.get("/admin/users/:id/uploads", (req, res) => {
+  const id = String(req.params.id);
+  const data = db.read();
+  const frameIds = new Set(data.frames.filter((f) => f.ownerUserId === id).map((f) => f.id));
+  const uploads = data.uploads
+    .filter((u) => frameIds.has(u.deviceId))
+    .map((u) => ({ ...u, bytes: effectiveUploadBytes(u.filename, u.bytes) }))
+    .slice(0, 500);
+  res.json({ items: uploads });
+});
+
 // Superadmin: Device management
 adminRouter.get("/admin/frames", (req, res) => {
   const filter = String(req.query.filter ?? "");
@@ -194,6 +323,33 @@ adminRouter.get("/admin/frames", (req, res) => {
       bleProvisionLogs: data.bleProvisionLogs.filter((l) => l.frameId === f.id).slice(0, 20),
     })),
   );
+});
+
+adminRouter.delete("/admin/frames/:id", (req, res) => {
+  const id = String(req.params.id);
+  let found = false;
+  db.mutate((draft) => {
+    const before = draft.frames.length;
+    draft.frames = draft.frames.filter((f) => f.id !== id);
+    found = draft.frames.length < before;
+    if (!found) return;
+    draft.familyGroups = draft.familyGroups.map((g) => ({
+      ...g,
+      frameIds: g.frameIds.filter((x) => x !== id),
+    }));
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}`,
+      actor: "superadmin",
+      action: "frame_deleted",
+      target: id,
+      atMs: Date.now(),
+    });
+  });
+  if (!found) {
+    res.status(404).json({ ok: false, error: "frame_not_found" });
+    return;
+  }
+  res.json({ ok: true });
 });
 
 adminRouter.post("/admin/frames/:id/ota", (req, res) => {
@@ -238,16 +394,119 @@ adminRouter.get("/admin/content/ops", (_req, res) => {
   const stuckUploads = data.uploads.filter((u) => u.deliveredToFrame === false);
   const storageByUser = data.users.map((u) => {
     const ownedFrames = new Set(data.frames.filter((f) => f.ownerUserId === u.id).map((f) => f.id));
-    const bytes = data.uploads.filter((up) => ownedFrames.has(up.deviceId)).reduce((a, b) => a + b.bytes, 0);
+    const bytes = data.uploads
+      .filter((up) => ownedFrames.has(up.deviceId))
+      .reduce((a, b) => a + effectiveUploadBytes(b.filename, b.bytes), 0);
     return { userId: u.id, email: u.email, bytes };
   });
+  const uploadUserByFrame = new Map<string, string>();
+  for (const f of data.frames) uploadUserByFrame.set(f.id, f.ownerUserId);
+  const recentUploads = data.uploads.slice(0, 200).map((u) => ({
+    ...u,
+    bytes: effectiveUploadBytes(u.filename, u.bytes),
+    ownerUserId: uploadUserByFrame.get(u.deviceId) ?? null,
+    imageUrl: `/frame-media/${encodeURIComponent(u.filename)}`,
+  }));
   res.json({
     queue: { total: data.uploads.length, stuck: stuckUploads.length },
     storageByUser,
     playlists: data.playlists,
     featureFlags: data.featureFlags,
     auditLog: data.auditLog.slice(0, 200),
+    recentUploads,
   });
+});
+
+adminRouter.delete("/admin/uploads/:id", (req, res) => {
+  const id = String(req.params.id);
+  let removed = false;
+  db.mutate((draft) => {
+    const match = draft.uploads.find((u) => u.id === id);
+    if (!match) return;
+    removed = true;
+    draft.uploads = draft.uploads.filter((u) => u.id !== id);
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}`,
+      actor: "superadmin",
+      action: "upload_deleted",
+      target: id,
+      atMs: Date.now(),
+      meta: { filename: match.filename, deviceId: match.deviceId },
+    });
+    try {
+      const p = path.join(uploadDir, path.basename(match.filename));
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    } catch {
+      /* ignore */
+    }
+  });
+  if (!removed) {
+    res.status(404).json({ ok: false, error: "upload_not_found" });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+adminRouter.get("/admin/commerce/orders/summary", (_req, res) => {
+  const data = db.read();
+  const orders = data.orders;
+  let revenue = 0;
+  let units = 0;
+  for (const o of orders) {
+    revenue += Number(o.total) || 0;
+    for (const li of o.items) {
+      units += li.quantity;
+    }
+  }
+  res.json({
+    ok: true,
+    orderCount: orders.length,
+    framesSoldApprox: units,
+    revenueUsdApprox: revenue,
+  });
+});
+
+adminRouter.get("/admin/commerce/orders", (_req, res) => {
+  const data = db.read();
+  res.json({
+    ok: true,
+    orders: data.orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      email: o.email,
+      status: o.status,
+      gateway: o.gateway,
+      currency: o.currency,
+      total: o.total,
+      createdAtMs: o.createdAtMs,
+      updatedAtMs: o.updatedAtMs,
+      items: o.items,
+    })),
+  });
+});
+
+adminRouter.patch("/admin/commerce/orders/:id/status", (req, res) => {
+  const id = String(req.params.id);
+  const status = String(req.body?.status ?? "").trim() as "pending" | "shipped" | "delivered";
+  if (status !== "pending" && status !== "shipped" && status !== "delivered") {
+    res.status(400).json({ ok: false, error: "invalid_status" });
+    return;
+  }
+  let found = false;
+  const next = db.mutate((draft) => {
+    draft.orders = draft.orders.map((o) => {
+      if (o.id !== id) return o;
+      found = true;
+      return { ...o, status, updatedAtMs: Date.now() };
+    });
+  });
+  if (!found) {
+    res.status(404).json({ ok: false, error: "order_not_found" });
+    return;
+  }
+  appendAudit("superadmin", "order_status", id, { status });
+  res.json({ ok: true, order: next.orders.find((o) => o.id === id) });
 });
 
 adminRouter.post("/admin/content/notify", (req, res) => {

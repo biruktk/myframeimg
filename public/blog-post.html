@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFrame Blog</title>
+  <meta name="description" content="">
+  <meta property="og:title" content="">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="article">
+  <meta property="twitter:card" content="summary_large_image">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root { --primary:#DC2626; --border:#FECACA; --text:#1A1A1A; --muted:#666; --ink-soft:#374151; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif; color:var(--text); background:linear-gradient(180deg,#FEF2F2 0%, #FFFFFF 28%); line-height:1.65; }
+    .nav { position:sticky; top:0; z-index:10; background:rgba(255,255,255,.9); backdrop-filter:blur(18px); border-bottom:.5px solid var(--border); }
+    .nav-shell { max-width:900px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .brand-logo { max-height:36px; }
+    .nav-a { color:var(--primary); text-decoration:none; font-weight:700; font-size:14px; }
+    .wrap { max-width:780px; margin:0 auto; padding:48px 24px 96px; }
+    .eyebrow { color:var(--primary); font-weight:800; text-transform:uppercase; letter-spacing:.1em; font-size:11px; margin-bottom:12px; }
+    h1 { font-size:clamp(32px,5vw,48px); letter-spacing:-.03em; line-height:1.12; margin-bottom:14px; }
+    .meta { color:var(--muted); font-size:15px; margin-bottom:26px; }
+    .feat { width:100%; border-radius:20px; border:1px solid rgba(254,202,202,.75); overflow:hidden; margin-bottom:28px; background:#fafafa; }
+    .feat img { width:100%; height:auto; display:block; vertical-align:middle; }
+    .article-prose { font-size:18px; color:var(--ink-soft); }
+    .article-prose p { margin-bottom:18px; }
+    .article-prose h2 { font-size:24px; color:var(--text); margin:28px 0 12px; letter-spacing:-.02em; }
+    .article-prose ul { margin:0 0 18px 1.2rem; }
+    .missing { padding:48px 24px; text-align:center; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-shell">
+      <a id="blogHome" href="/blog"><img class="brand-logo" src="/assets/myframe-logo-final.svg" alt="MyFrame"></a>
+      <a class="nav-a" id="blogListLink" href="/blog"><i class="fas fa-arrow-left"></i> All posts</a>
+    </div>
+  </nav>
+  <main class="wrap" id="main">
+    <div class="missing" id="loading">Loading…</div>
+  </main>
+  <template id="postTpl">
+    <article>
+      <p class="eyebrow">MyFrame journal</p>
+      <h1 id="postTitle"></h1>
+      <p class="meta" id="postMeta"></p>
+      <figure class="feat" id="postFig" hidden><img id="postImg" src="" alt=""></figure>
+      <div class="article-prose" id="postBody"></div>
+    </article>
+  </template>
+  <script>
+    (async function () {
+      const escapeHtml = (value) =>
+        String(value ?? '').replace(/[&<>"']/g, (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      const parts = location.pathname.split('/').filter(Boolean);
+      let lang = 'en';
+      let slugParts = parts;
+      if (['en','zh','es','fr','de','ja'].includes(parts[0])) {
+        lang = parts[0];
+        slugParts = parts.slice(1);
+      }
+      const slugIdx = slugParts.indexOf('blog');
+      const slug = slugIdx >= 0 ? slugParts[slugIdx + 1] : '';
+      const blogBase = lang === 'en' ? '/blog' : '/' + lang + '/blog';
+
+      const main = document.getElementById('main');
+      if (!slug) {
+        main.innerHTML = '<div class="missing">Post not found.</div>';
+        return;
+      }
+
+      const res = await fetch('/api/public/blogs/by-slug/' + encodeURIComponent(slug));
+      if (!res.ok) {
+        main.innerHTML = '<div class="missing">Post not found.</div>';
+        document.title = 'Not found | MyFrame';
+        return;
+      }
+
+      const post = await res.json();
+      document.title = post.meta_title_pub || `${post.title} | MyFrame`;
+      const md = document.querySelector('meta[name="description"]');
+      if (md) md.content = escapeHtml(post.meta_description_pub || post.excerpt || '');
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogTitle) ogTitle.content = escapeHtml(post.meta_title_pub || post.title);
+      if (ogDesc) ogDesc.content = escapeHtml(post.meta_description_pub || post.excerpt || '');
+
+      if (post.featured_image) {
+        let ogImg = document.querySelector('meta[property="og:image"]');
+        if (!ogImg) {
+          ogImg = document.createElement('meta');
+          ogImg.setAttribute('property', 'og:image');
+          document.head.appendChild(ogImg);
+        }
+        const abs = post.featured_image.startsWith('http')
+          ? post.featured_image
+          : `${location.origin}${post.featured_image.startsWith('/') ? '' : '/'}${post.featured_image}`;
+        ogImg.content = abs;
+      }
+
+      const tpl = document.getElementById('postTpl').content.cloneNode(true);
+      main.innerHTML = '';
+      main.appendChild(tpl);
+
+      document.getElementById('blogHome').href = lang === 'en' ? '/' : '/' + lang;
+      document.getElementById('blogListLink').href = blogBase;
+
+      document.getElementById('postTitle').textContent = post.title || '';
+      const d = post.created_at ? new Date(post.created_at) : null;
+      document.getElementById('postMeta').textContent = d ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+
+      const fig = document.getElementById('postFig');
+      const img = document.getElementById('postImg');
+      if (post.featured_image && img && fig) {
+        img.src = post.featured_image.startsWith('/') ? post.featured_image : '/' + post.featured_image;
+        img.alt = post.title || 'Featured image';
+        fig.hidden = false;
+      }
+
+      document.getElementById('postBody').innerHTML = post.body || '';
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Order Received</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root { --primary:#DC2626; --border:#FECACA; --text:#1A1A1A; --muted:#666; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif; min-height:100vh; background:linear-gradient(180deg,#FEF2F2 0%, #FFFFFF 100%); color:var(--text); display:grid; place-items:center; padding:24px; }
+    .card { width:min(760px,100%); background:#fff; border:1px solid rgba(254,202,202,.7); border-radius:24px; padding:40px; box-shadow:0 26px 80px rgba(17,24,39,.08); text-align:center; }
+    .icon { width:78px; height:78px; margin:0 auto 18px; border-radius:999px; background:var(--primary); color:#fff; display:grid; place-items:center; font-size:34px; }
+    .brand-logo { max-height:42px; margin-bottom:18px; }
+    h1 { font-size:48px; letter-spacing:-.03em; margin-bottom:14px; }
+    p { color:var(--muted); font-size:18px; line-height:1.7; }
+    .order { margin:22px auto 26px; display:inline-flex; gap:10px; align-items:center; padding:12px 16px; border-radius:999px; background:#FFF5F5; color:var(--primary); font-weight:800; }
+    .actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:28px; }
+    .btn { text-decoration:none; border-radius:999px; padding:14px 22px; font-weight:700; }
+    .btn.primary { background:var(--primary); color:#fff; }
+    .btn.light { background:#fff; color:var(--text); border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="brand-logo" src="/assets/myframe-logo-final.svg" alt="MyFrame">
+    <div class="icon"><i class="fas fa-check"></i></div>
+    <h1 id="successTitle">Order Received</h1>
+    <p id="successBody">We received your order and it will be prepared for delivery to your location. Thank you for choosing MyFrame.</p>
+    <div class="order"><span id="orderLabel">Order</span><strong id="orderNumber">#-</strong></div>
+    <div class="actions">
+      <a class="btn primary" id="homeBtn" href="/">Back to Home</a>
+      <a class="btn light" id="cartBtn" href="/cart-checkout.html">Open Cart</a>
+    </div>
+  </main>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      document.getElementById('orderNumber').textContent = params.get('order') || '#-';
+      const stripeSessionId = params.get('session_id');
+      const pathLang = location.pathname.split('/').filter(Boolean)[0];
+      const site = await fetch('/api/public/site').then(r => r.json()).catch(() => null);
+      if (!site) return;
+      const lang = (site.languages || []).some(l => l.code === pathLang) ? pathLang : 'en';
+      const tr = lang === 'en' ? {} : ((site.translations || {})[lang] || {});
+      document.documentElement.lang = lang;
+      document.title = tr.successPageTitle || 'Order Received';
+      document.getElementById('successTitle').textContent = tr.successPageTitle || 'Order Received';
+      document.getElementById('successBody').textContent = tr.successPageBody || 'We received your order and it will be prepared for delivery to your location. Thank you for choosing MyFrame.';
+      document.getElementById('orderLabel').textContent = tr.successOrderLabel || 'Order';
+      document.getElementById('homeBtn').textContent = tr.successBackHome || 'Back to Home';
+      document.getElementById('cartBtn').textContent = tr.successOpenCart || 'Open Cart';
+      document.getElementById('homeBtn').href = lang === 'en' ? '/' : `/${lang}`;
+      document.getElementById('cartBtn').href = lang === 'en' ? '/cart-checkout.html' : `/${lang}/cart`;
+      if (stripeSessionId) {
+        await fetch(`/api/public/payments/stripe/confirm-session?session_id=${encodeURIComponent(stripeSessionId)}`, { credentials: 'same-origin' }).catch(() => null);
+      }
+    })();
+  </script>
+</body>
+</html>

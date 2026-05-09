@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Cart & Checkout</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --primary: #DC2626;
+            --primary-dark: #B91C1C;
+            --text: #1D1D1F;
+            --muted: rgba(0,0,0,0.6);
+            --border: #E5E7EB;
+            --bg: #F8F8F8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: linear-gradient(180deg, #FEF2F2 0%, #F8F8F8 20%); color: var(--text); }
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 64px;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid var(--border);
+            padding: 0 24px;
+        }
+        .nav-shell { max-width: 1400px; margin: 0 auto; height:100%; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:24px; }
+        .nav-logo { min-width:0; overflow:hidden; font-size: 24px; font-weight: 700; letter-spacing: 0; color: var(--text); text-decoration: none; }
+        .brand-logo { height: auto; max-height: 40px; width: auto; max-width: 210px; vertical-align: middle; }
+        .nav-links { display: flex; gap: 32px; justify-content:center; align-items:center; }
+        .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; position: relative; }
+        .nav-links a:hover { color: var(--text); }
+        .nav-right { min-width:0; display:flex; align-items:center; justify-content:flex-end; gap:12px; }
+        .nav-lang { min-width:102px; max-width:130px; border:1px solid var(--border); border-radius:999px; padding:8px 12px; background:#fff; font-weight:600; }
+        .nav-cta {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 6px 18px rgba(220,38,38,0.24);
+        }
+        .nav-cart-link { color: var(--text) !important; font-weight: 600 !important; }
+        .cart-badge { position: absolute; top: -6px; right: -10px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; padding: 0 5px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35); }
+        .page { max-width: 1120px; margin: 0 auto; padding: 96px 20px 60px; }
+        .top { margin-bottom: 20px; }
+        .layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+        .card { background: #fff; border: 1px solid var(--border); border-radius: 18px; padding: 20px; box-shadow: 0 14px 34px rgba(17,24,39,0.08); }
+        .title { font-size: 24px; line-height:1.15; font-weight: 700; margin-bottom: 14px; overflow-wrap:anywhere; hyphens:auto; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .qty { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; margin-top: 8px; }
+        .qty button { border: none; background: transparent; cursor: pointer; width: 22px; height: 22px; font-size: 16px; }
+        .field { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .btn { width: 100%; border: none; border-radius: 12px; padding: 13px; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(220,38,38,0.24); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #fff; border: 1px solid var(--border); margin-top: 10px; }
+        .status { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+        .ok { background: #DCFCE7; color: #166534; }
+        .bad { background: #FEE2E2; color: #991B1B; }
+        #paypal-button-container { margin-top: 12px; }
+        @media (max-width: 1024px) { .nav-links { display: none; } .nav-shell { grid-template-columns:1fr auto; gap:14px; } }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 560px) {
+            .nav { padding: 0 16px; }
+            .brand-logo { max-height: 34px; max-width: 156px; }
+            .nav-right { gap: 8px; }
+            .nav-lang { min-width: 84px; max-width: 98px; padding: 8px 10px; font-size: 13px; }
+            .nav-cta { display: none; }
+            .page { padding: 86px 12px 44px; }
+            .card { padding: 18px; border-radius: 16px; }
+            .grid-2 { grid-template-columns: 1fr; gap: 0; }
+            .cart-item { gap: 12px; align-items: flex-start; }
+            .cart-item > strong { flex: 0 0 auto; text-align: right; }
+        }
+        @media (max-width: 380px) {
+            .nav { padding: 0 10px; }
+            .nav-shell { gap: 8px; }
+            .brand-logo { max-width: 136px; }
+            .nav-lang { min-width: 74px; max-width: 84px; padding-inline: 8px; font-size: 12px; }
+            .title { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-shell">
+            <a class="nav-logo" href="/"><img class="brand-logo" src="assets/myframe-logo-final.png" alt="MyFrame"></a>
+            <div class="nav-links" id="cartNavLinks"></div>
+            <div class="nav-right">
+                <select id="languageSelect" class="nav-lang"></select>
+                <a class="nav-cta" href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
+            </div>
+        </div>
+    </nav>
+    <div class="page">
+        <div class="top">
+            <h1 class="title">Cart & Checkout</h1>
+        </div>
+        <div class="layout">
+            <div class="card">
+                <h2 style="margin-bottom: 10px;">Items in Cart</h2>
+                <div id="cartItems"></div>
+                <div class="row" style="border-bottom: none;">
+                    <strong>Subtotal</strong>
+                    <strong id="subtotal">$0</strong>
+                </div>
+            </div>
+            <div class="card">
+                <h2 style="margin-bottom: 10px;">Address & Checkout</h2>
+                <div class="grid-2">
+                    <input id="firstName" class="field" placeholder="First Name">
+                    <input id="lastName" class="field" placeholder="Last Name">
+                </div>
+                <div class="grid-2">
+                    <input id="emailAddress" class="field" placeholder="Email Address">
+                    <input id="phoneNumber" class="field" placeholder="Phone Number">
+                </div>
+                <div class="grid-2">
+                    <input id="country" class="field" placeholder="Country">
+                    <input id="stateRegion" class="field" placeholder="State / Region">
+                </div>
+                <div class="grid-2">
+                    <input id="city" class="field" placeholder="City">
+                    <input id="postalCode" class="field" placeholder="Postal Code">
+                </div>
+                <input id="companyName" class="field" placeholder="Company (Optional)">
+                <input id="addressLine" class="field" placeholder="Street Address">
+                <input id="addressLine2" class="field" placeholder="Apartment, suite, unit, building (Optional)">
+                <textarea id="frameMessage" class="field" rows="3" placeholder="Order note, delivery note, or gift message"></textarea>
+                <label style="display:flex;align-items:center;gap:10px;margin:4px 0 10px;font-size:14px;color:var(--muted);">
+                    <input id="isGift" type="checkbox"> This order is a gift
+                </label>
+                <div class="row"><span>Delivery</span><span>Express (3-5 days)</span></div>
+                <div class="row"><strong>Total</strong><strong id="total">$0</strong></div>
+                <button class="btn btn-primary" id="paypalFallbackButton" type="button" style="display:none;" onclick="showPayPalMissing()">Pay with PayPal</button>
+                <div id="paypal-button-container"></div>
+                <button class="btn btn-secondary" id="stripeButton" onclick="payStripe()">Pay with Stripe</button>
+                <button class="btn btn-secondary" id="cashButton" onclick="payCash()">Place Cash on Delivery Order</button>
+                <div id="ok" class="status ok"><i class="fas fa-check-circle"></i> Payment successful (mock)</div>
+                <div id="bad" class="status bad"><i class="fas fa-times-circle"></i> Payment failed (mock)</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let productCatalog = { 'YX-133P': { price: 360, desc: 'Large format display', name: 'YX-133P', currency: 'USD' }, 'YX-6P': { price: 160, desc: 'Compact elegance', name: 'YX-6P', currency: 'USD' } };
+        let siteData = null;
+        let currentLang = 'en';
+        let currentCurrency = localStorage.getItem('myframeCurrency') || 'USD';
+        let tr = {};
+        const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const cart = JSON.parse(localStorage.getItem('frampCart') || '{}');
+        const profileFields = ['firstName','lastName','emailAddress','phoneNumber','country','stateRegion','city','postalCode','companyName','addressLine','addressLine2','frameMessage'];
+
+        function saveCart() { localStorage.setItem('frampCart', JSON.stringify(cart)); }
+        function formatMoney(amount) {
+            const currencies = siteData?.currencies || [];
+            const row = currencies.find(item => String(item.name || '').toUpperCase() === String(currentCurrency || '').toUpperCase());
+            const sign = row?.sign || currentCurrency || 'USD';
+            const factor = Number(row?.value || 1);
+            const converted = Number(amount || 0) * factor;
+            return `${sign === '$' ? '$' : `${sign} `}${converted.toFixed(currentCurrency === 'USD' ? 0 : 2)}`;
+        }
+        function saveProfileDraft() {
+            const draft = {};
+            profileFields.forEach(id => draft[id] = document.getElementById(id).value);
+            draft.isGift = document.getElementById('isGift').checked;
+            localStorage.setItem('myframeCheckoutProfile', JSON.stringify(draft));
+        }
+        function applyProfile(data) {
+            if (!data) return;
+            const map = {
+                firstName: data.first_name || data.firstName,
+                lastName: data.last_name || data.lastName,
+                emailAddress: data.email,
+                phoneNumber: data.phone,
+                country: data.country,
+                stateRegion: data.state_region || data.stateRegion,
+                city: data.city,
+                postalCode: data.postal_code || data.postalCode,
+                companyName: data.company,
+                addressLine: data.address_line1 || data.addressLine,
+                addressLine2: data.address_line2 || data.addressLine2,
+                frameMessage: data.notes || data.note
+            };
+            Object.entries(map).forEach(([id, value]) => {
+                const field = document.getElementById(id);
+                if (field && value && !field.value.trim()) field.value = value;
+            });
+            if (typeof data.isGift === 'boolean') document.getElementById('isGift').checked = data.isGift;
+        }
+        function currentCartPath(lang = currentLang) { return lang === 'en' ? '/cart-checkout.html' : `/${lang}/cart`; }
+        function currentHomePath(lang = currentLang) { return lang === 'en' ? '/' : `/${lang}`; }
+        function setPersistentLanguage(lang) { localStorage.setItem('myframeLang', lang); }
+        function currencyForLanguage(lang) {
+            if (lang === 'zh') return 'CNY';
+            if (['fr', 'de', 'es'].includes(lang)) return 'EUR';
+            return 'USD';
+        }
+        function resolveLanguage(data, geo) {
+            const codes = (data.languages || []).map(l => l.code);
+            const pathLang = location.pathname.split('/').filter(Boolean)[0];
+            const saved = localStorage.getItem('myframeLang');
+            if (codes.includes(pathLang)) return pathLang;
+            if (codes.includes(saved)) return saved;
+            if (codes.includes(geo.recommendedLanguage)) return geo.recommendedLanguage;
+            return 'en';
+        }
+
+        function addFromQuery() {
+            const p = new URLSearchParams(window.location.search);
+            const item = p.get('add');
+            if (!item) return;
+            if (productCatalog[item]) cart[item] = (cart[item] || 0) + 1;
+            saveCart();
+            history.replaceState({}, '', currentCartPath() + (p.get('payment') ? `?payment=${encodeURIComponent(p.get('payment'))}` : ''));
+        }
+
+        function updateQty(name, delta) {
+            if (!cart[name]) return;
+            cart[name] += delta;
+            if (cart[name] <= 0) delete cart[name];
+            saveCart();
+            render();
+        }
+
+        async function loadCatalog() {
+            try {
+                const data = await fetch('/api/public/site', { credentials: 'same-origin' }).then(res => res.json());
+                siteData = data;
+                const geo = await fetch('/api/public/location', { credentials: 'same-origin' }).then(res => res.json()).catch(() => ({ recommendedLanguage: 'en' }));
+                currentLang = resolveLanguage(data, geo);
+                const currencyCodes = (data.currencies || []).map(c => String(c.name || '').toUpperCase());
+                const languageCurrency = currencyForLanguage(currentLang);
+                currentCurrency = currencyCodes.includes(languageCurrency) ? languageCurrency : (currencyCodes.includes(String(geo.recommendedCurrency || '').toUpperCase()) ? String(geo.recommendedCurrency).toUpperCase() : (currencyCodes.includes(localStorage.getItem('myframeCurrency')) ? localStorage.getItem('myframeCurrency') : 'USD'));
+                localStorage.setItem('myframeCurrency', currentCurrency);
+                setPersistentLanguage(currentLang);
+                tr = currentLang === 'en' ? {} : ((data.translations || {})[currentLang] || {});
+                if (data.basic?.headerLogo) document.querySelectorAll('.brand-logo').forEach(img => img.src = data.basic.headerLogo);
+                renderNav(data);
+                applyTranslations();
+                bindDraftPersistence();
+                productCatalog = Object.fromEntries((data.products || []).map(p => [p.sku, { price: Number(p.price), desc: p.description, name: p.name, currency: p.currency || 'USD' }]));
+                await prefillBuyer();
+                loadPayPalSdk(data);
+            } catch (_) {}
+        }
+
+        function renderNav(data) {
+            const navLinks = document.getElementById('cartNavLinks');
+            const select = document.getElementById('languageSelect');
+            const languages = data.languages || [];
+            select.innerHTML = languages.map(l => `<option value="${escHtml(l.code)}" ${l.code===currentLang?'selected':''}>${escHtml(l.native_name || l.name)}</option>`).join('');
+            select.addEventListener('change', () => {
+                setPersistentLanguage(select.value);
+                localStorage.setItem('myframeCurrency', currencyForLanguage(select.value));
+                location.href = currentCartPath(select.value) + location.search;
+            });
+            const logo = document.querySelector('.nav-logo');
+            const rightButton = document.querySelector('.nav-cta');
+            if (logo) logo.href = currentHomePath();
+            if (rightButton) {
+                rightButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backHomeLabel','Back to Home')}`;
+                rightButton.href = currentHomePath();
+            }
+            navLinks.innerHTML = (data.menus || []).map(item => {
+                const label = /cart/i.test(item.label) ? t('menuCart','Cart') :
+                    item.url === '#features' ? t('menuFeatures','Features') :
+                    item.url === '#product' ? t('menuProduct','Product') :
+                    item.url === '#pricing' ? t('menuPricing','Pricing') :
+                    item.url === '#family' ? t('menuFamilies','For Families') : item.label;
+                const href = /cart-checkout\.html/.test(item.url) ? currentCartPath() : (item.url.startsWith('#') ? currentHomePath() + item.url : item.url);
+                return `<a class="${/cart/i.test(item.label) ? 'nav-cart-link' : ''}" href="${escHtml(href)}">${escHtml(label)}${/cart/i.test(item.label) ? ' <span id="cartNavBadge" class="cart-badge">0</span>' : ''}</a>`;
+            }).join('');
+        }
+
+        function applyTranslations() {
+            document.documentElement.lang = currentLang;
+            document.title = t('cartPageTitle', 'Cart & Checkout');
+            document.querySelector('.title').textContent = t('cartPageTitle', 'Cart & Checkout');
+            document.querySelectorAll('.card h2')[0].textContent = t('itemsInCartTitle', 'Items in Cart');
+            document.querySelectorAll('.card h2')[1].textContent = t('addressCheckoutTitle', 'Address & Checkout');
+            document.querySelector('#subtotal').closest('.row').children[0].textContent = t('subtotalLabel', 'Subtotal');
+            document.querySelector('#total').closest('.row').children[0].textContent = t('totalLabel', 'Total');
+            document.querySelectorAll('.row')[0].children[0].textContent = t('deliveryLabel', 'Delivery');
+            document.querySelectorAll('.row')[0].children[1].textContent = t('expressDeliveryLabel', 'Express (3-5 days)');
+            document.getElementById('paypalFallbackButton').textContent = t('paypalButton', 'Pay with PayPal');
+            document.getElementById('stripeButton').textContent = t('stripeButton', 'Pay with Stripe');
+            document.getElementById('cashButton').textContent = t('codButton', 'Place Cash on Delivery Order');
+            document.getElementById('firstName').placeholder = t('firstNameLabel', 'First Name');
+            document.getElementById('lastName').placeholder = t('lastNameLabel', 'Last Name');
+            document.getElementById('emailAddress').placeholder = t('emailLabel', 'Email Address');
+            document.getElementById('phoneNumber').placeholder = t('phoneLabel', 'Phone Number');
+            document.getElementById('country').placeholder = t('countryLabel', 'Country');
+            document.getElementById('stateRegion').placeholder = t('stateLabel', 'State / Region');
+            document.getElementById('city').placeholder = t('cityLabel', 'City');
+            document.getElementById('postalCode').placeholder = t('postalCodeLabel', 'Postal Code');
+            document.getElementById('companyName').placeholder = t('companyLabel', 'Company (Optional)');
+            document.getElementById('addressLine').placeholder = t('addressLabel', 'Street Address');
+            document.getElementById('addressLine2').placeholder = t('addressLine2Label', 'Apartment, suite, unit, building (Optional)');
+            document.getElementById('frameMessage').placeholder = t('orderNoteLabel', 'Order note, delivery note, or gift message');
+            document.querySelector('label').lastChild.textContent = ' ' + t('giftCheckbox', 'This order is a gift');
+        }
+
+        function t(key, fallback) { return tr[key] || fallback; }
+
+        async function prefillBuyer() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('myframeCheckoutProfile') || 'null');
+                if (saved) applyProfile(saved);
+                const profile = await fetch('/api/public/customer-profile', { credentials: 'same-origin' }).then(res => res.json()).catch(() => ({ customer: null }));
+                if (profile.customer) applyProfile(profile.customer);
+                const data = await fetch('/api/public/location', { credentials: 'same-origin' }).then(res => res.json());
+                if (data.country && !document.getElementById('country').value) document.getElementById('country').value = data.country;
+                if (data.city && !document.getElementById('city').value) document.getElementById('city').value = data.city;
+            } catch (_) {}
+        }
+
+        function bindDraftPersistence() {
+            profileFields.forEach(id => document.getElementById(id).addEventListener('input', saveProfileDraft));
+            document.getElementById('isGift').addEventListener('change', saveProfileDraft);
+        }
+
+        function render() {
+            const root = document.getElementById('cartItems');
+            root.innerHTML = '';
+            let total = 0;
+            const items = Object.entries(cart);
+            if (!items.length) {
+                root.innerHTML = `<div class="cart-item"><div><h4>${t('cartEmptyTitle','Cart is empty')}</h4><p style="color:var(--muted);font-size:13px;">${t('cartEmptyDescription','Add products from store.')}</p></div></div>`;
+            } else {
+                items.forEach(([name, qty]) => {
+                    const info = productCatalog[name];
+                    const line = info.price * qty;
+                    total += line;
+                    const row = document.createElement('div');
+                    row.className = 'cart-item';
+                    row.innerHTML = `<div><h4>${escHtml(name)}</h4><p style="color:var(--muted);font-size:13px;">${escHtml(info.desc || '')}</p><div class="qty"><button type="button" onclick="updateQty(${JSON.stringify(name)},-1)">-</button><span>${qty}</span><button type="button" onclick="updateQty(${JSON.stringify(name)},1)">+</button></div></div><strong>${formatMoney(line)}</strong>`;
+                    root.appendChild(row);
+                });
+            }
+            document.getElementById('subtotal').textContent = formatMoney(total);
+            document.getElementById('total').textContent = formatMoney(total);
+            const navBadge = document.getElementById('cartNavBadge');
+            const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+            if (navBadge) {
+                navBadge.textContent = count;
+                navBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        function collectPayload(gateway) {
+            return {
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                customer_name: `${document.getElementById('firstName').value.trim()} ${document.getElementById('lastName').value.trim()}`.trim(),
+                email: document.getElementById('emailAddress').value.trim(),
+                phone: document.getElementById('phoneNumber').value.trim(),
+                country: document.getElementById('country').value.trim(),
+                state_region: document.getElementById('stateRegion').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                postal_code: document.getElementById('postalCode').value.trim(),
+                company: document.getElementById('companyName').value.trim(),
+                address_line1: document.getElementById('addressLine').value.trim(),
+                address_line2: document.getElementById('addressLine2').value.trim(),
+                address: [document.getElementById('addressLine').value.trim(), document.getElementById('addressLine2').value.trim()].filter(Boolean).join(', '),
+                city_country: [document.getElementById('city').value.trim(), document.getElementById('country').value.trim()].filter(Boolean).join(', '),
+                note: document.getElementById('frameMessage').value.trim(),
+                is_gift: document.getElementById('isGift').checked,
+                gateway,
+                language: currentLang,
+                currency: currentCurrency,
+                items: Object.entries(cart).map(([sku, quantity]) => ({ sku, quantity }))
+            };
+        }
+
+        function validateCheckout() {
+            const required = ['firstName', 'lastName', 'emailAddress', 'phoneNumber', 'country', 'city', 'postalCode', 'addressLine'];
+            const missing = required.some(id => !document.getElementById(id).value.trim());
+            const cartCount = Object.keys(cart).length;
+            if (!cartCount) return alert(t('cartEmptyAlert','Cart is empty. Add items first.'));
+            if (missing) return alert(t('checkoutIncompleteAlert','Please complete the buyer information and full shipping address.'));
+            return true;
+        }
+
+        async function payCash() {
+            if (!validateCheckout()) return;
+            try {
+                const payload = collectPayload('cash_on_delivery');
+                const res = await fetch('/api/public/orders', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Order failed');
+                saveProfileDraft();
+                localStorage.removeItem('frampCart');
+                Object.keys(cart).forEach(key => delete cart[key]);
+                location.href = currentLang === 'en' ? `/order-success.html?order=${encodeURIComponent(data.orderNumber)}` : `/${currentLang}/order-success?order=${encodeURIComponent(data.orderNumber)}`;
+            } catch (err) {
+                document.getElementById('bad').textContent = err.message;
+                document.getElementById('bad').style.display = 'block';
+                document.getElementById('ok').style.display = 'none';
+            }
+        }
+
+        async function payStripe() {
+            if (!validateCheckout()) return;
+            try {
+                const payload = collectPayload('stripe');
+                const res = await fetch('/api/public/payments/stripe/session', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Stripe checkout failed');
+                saveProfileDraft();
+                location.href = data.url;
+            } catch (err) {
+                document.getElementById('bad').textContent = err.message;
+                document.getElementById('bad').style.display = 'block';
+            }
+        }
+
+        function showPayPalMissing() {
+            document.getElementById('bad').textContent = t('paypalButton', 'Pay with PayPal') + ': credentials are not configured yet.';
+            document.getElementById('bad').style.display = 'block';
+            document.getElementById('ok').style.display = 'none';
+        }
+
+        function loadPayPalSdk(data) {
+            const paypal = (data.gateways || []).find(g => g.code === 'paypal');
+            if (!paypal?.config?.clientId) {
+                document.getElementById('paypalFallbackButton').style.display = 'block';
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://www.paypal.com/sdk/js?client-id=${paypal.config.clientId}&currency=${encodeURIComponent(currentCurrency)}`;
+            script.onload = renderPayPalButtons;
+            document.body.appendChild(script);
+        }
+
+        function renderPayPalButtons() {
+            if (!window.paypal) return;
+            window.paypal.Buttons({
+                createOrder: async () => {
+                    if (!validateCheckout()) throw new Error('Checkout form incomplete');
+                    const payload = collectPayload('paypal');
+                    const res = await fetch('/api/public/payments/paypal/create-order', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'PayPal create order failed');
+                    saveProfileDraft();
+                    return data.id;
+                },
+                onApprove: async (paypalData) => {
+                    const captureRes = await fetch('/api/public/payments/paypal/capture-order', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderID: paypalData.orderID })
+                    });
+                    const capture = await captureRes.json();
+                    if (!captureRes.ok) throw new Error(capture.error || 'PayPal capture failed');
+                    localStorage.removeItem('frampCart');
+                    Object.keys(cart).forEach(key => delete cart[key]);
+                    const orderNumber = capture.orderNumber ? `?order=${encodeURIComponent(capture.orderNumber)}` : '';
+                    location.href = currentLang === 'en' ? `/order-success.html${orderNumber}` : `/${currentLang}/order-success${orderNumber}`;
+                },
+                onError: (err) => {
+                    document.getElementById('bad').textContent = err.message || 'PayPal failed';
+                    document.getElementById('bad').style.display = 'block';
+                }
+            }).render('#paypal-button-container');
+        }
+
+        loadCatalog().then(() => { addFromQuery(); render(); });
+    </script>
+</body>
+</html>

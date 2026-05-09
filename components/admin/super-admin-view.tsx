@@ -41,6 +41,15 @@ type AdminUser = {
   frames: Array<{ id: string; bleMac: string; wifiStatus: string }>;
 };
 
+type UploadItem = {
+  id: string;
+  filename: string;
+  bytes: number;
+  deviceId: string;
+  atMs: number;
+  imageUrl?: string;
+};
+
 type AdminFrame = {
   id: string;
   bleMac: string;
@@ -56,6 +65,27 @@ type ContentOps = {
   storageByUser: Array<{ userId: string; email: string; bytes: number }>;
   featureFlags: Record<string, { enabled: boolean; tier: string }>;
   auditLog: Array<{ id: string; actor: string; action: string; target: string; atMs: number }>;
+  recentUploads: Array<UploadItem>;
+};
+
+type CommerceSummary = {
+  ok?: boolean;
+  orderCount?: number;
+  framesSoldApprox?: number;
+  revenueUsdApprox?: number;
+};
+
+type CommerceOrder = {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  email: string;
+  status: string;
+  gateway: string;
+  currency: string;
+  total: number;
+  createdAtMs: number;
+  items: Array<{ sku: string; quantity: number }>;
 };
 
 function formatBytes(n: number): string {
@@ -96,12 +126,20 @@ export function SuperAdminView() {
   const [q, setQ] = useState("");
   const [a, setA] = useState("");
   const [saving, setSaving] = useState(false);
+  const [userPage, setUserPage] = useState(1);
+  const [userPageSize] = useState(25);
+  const [userTotal, setUserTotal] = useState(0);
+  const [selectedUserUploads, setSelectedUserUploads] = useState<UploadItem[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [commerceSummary, setCommerceSummary] = useState<CommerceSummary | null>(null);
+  const [commerceOrders, setCommerceOrders] = useState<CommerceOrder[]>([]);
 
   const loadCore = useCallback(async () => {
     if (!authed) return;
     setLoading(true);
     const failed: string[] = [];
-    const qParam = encodeURIComponent(userSearchApplied.trim());
+    const q = userSearchApplied.trim();
+    const qParam = encodeURIComponent(q);
     const [oRes, fRes] = await Promise.all([
       fetchJson<Overview>("/api/admin/overview"),
       fetchJson<Faq[]>("/api/admin/faqs"),
@@ -111,24 +149,46 @@ export function SuperAdminView() {
     if (fRes.ok && fRes.data) setFaqs(fRes.data);
     else failed.push(`faqs (${fRes.status})`);
 
-    const [fleetRes, userRes, frameRes, opsRes] = await Promise.all([
+    const [fleetRes, userRes, frameRes, opsRes, coSumRes, ordRes] = await Promise.all([
       fetchJson<FleetOverview>("/api/admin/fleet/overview"),
-      fetchJson<AdminUser[]>(qParam ? `/api/admin/users?q=${qParam}` : "/api/admin/users"),
+      fetchJson<{ items: AdminUser[]; total: number; page: number; pageSize: number }>(
+        `/api/admin/users?page=${userPage}&pageSize=${userPageSize}${qParam ? `&q=${qParam}` : ""}`,
+      ),
       fetchJson<AdminFrame[]>("/api/admin/frames"),
       fetchJson<ContentOps>("/api/admin/content/ops"),
+      fetchJson<CommerceSummary>("/api/admin/commerce/orders/summary"),
+      fetchJson<{ ok: boolean; orders: CommerceOrder[] }>("/api/admin/commerce/orders"),
     ]);
     if (fleetRes.ok && fleetRes.data) setFleet(fleetRes.data);
     else failed.push(`fleet (${fleetRes.status})`);
-    if (userRes.ok && Array.isArray(userRes.data)) setUsers(userRes.data);
-    else failed.push(`users (${userRes.status})`);
+    if (userRes.ok && userRes.data) {
+      const anyData = userRes.data as unknown as { items?: AdminUser[]; total?: number } | AdminUser[];
+      if (Array.isArray(anyData)) {
+        setUsers(anyData);
+        setUserTotal(anyData.length);
+      } else {
+        setUsers(Array.isArray(anyData.items) ? anyData.items : []);
+        setUserTotal(Number(anyData.total ?? 0));
+      }
+    } else {
+      failed.push(`users (${userRes.status})`);
+    }
     if (frameRes.ok && Array.isArray(frameRes.data)) setFrames(frameRes.data);
     else failed.push(`frames (${frameRes.status})`);
     if (opsRes.ok && opsRes.data) setOps(opsRes.data);
     else failed.push(`ops (${opsRes.status})`);
+    if (coSumRes.ok && coSumRes.data) setCommerceSummary(coSumRes.data);
+    else failed.push(`commerce summary (${coSumRes.status})`);
+    if (ordRes.ok && ordRes.data && Array.isArray((ordRes.data as { orders?: CommerceOrder[] }).orders)) {
+      setCommerceOrders((ordRes.data as { orders: CommerceOrder[] }).orders);
+    } else {
+      setCommerceOrders([]);
+      if (!ordRes.ok) failed.push(`commerce orders (${ordRes.status})`);
+    }
 
     setLoadFailed(failed);
     setLoading(false);
-  }, [authed, userSearchApplied]);
+  }, [authed, userPage, userPageSize, userSearchApplied]);
 
   useEffect(() => {
     void (async () => {
@@ -181,6 +241,58 @@ export function SuperAdminView() {
       body: JSON.stringify({ status }),
     });
     await loadCore();
+  }
+
+  async function setUserTier(userId: string, tier: "free" | "pro") {
+    await fetch(`/api/admin/users/${encodeURIComponent(userId)}/tier`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tier }),
+    });
+    await loadCore();
+  }
+
+  async function deleteUser(userId: string) {
+    const ok = globalThis.confirm(`Delete user ${userId}?`);
+    if (!ok) return;
+    await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
+    await loadCore();
+  }
+
+  async function openUserUploads(userId: string) {
+    const res = await fetchJson<{ items: UploadItem[] }>(`/api/admin/users/${encodeURIComponent(userId)}/uploads`);
+    if (res.ok && res.data) {
+      setSelectedUserId(userId);
+      setSelectedUserUploads(res.data.items);
+    }
+  }
+
+  async function deleteFrame(frameId: string) {
+    const ok = globalThis.confirm(`Delete frame ${frameId}?`);
+    if (!ok) return;
+    await fetch(`/api/admin/frames/${encodeURIComponent(frameId)}`, { method: "DELETE" });
+    await loadCore();
+  }
+
+  async function deleteUpload(uploadId: string) {
+    await fetch(`/api/admin/uploads/${encodeURIComponent(uploadId)}`, { method: "DELETE" });
+    if (selectedUserId) await openUserUploads(selectedUserId);
+    await loadCore();
+  }
+
+  async function patchOrderStatus(orderId: string, status: "pending" | "shipped" | "delivered") {
+    await fetch(`/api/admin/commerce/orders/${encodeURIComponent(orderId)}/status`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    await loadCore();
+  }
+
+  function exportUsersCsv() {
+    const q = userSearchApplied.trim();
+    const url = `/api/admin/users?format=csv${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+    window.open(url, "_blank");
   }
 
   async function loginAdmin() {
@@ -288,6 +400,81 @@ export function SuperAdminView() {
         <Stat label="Device SN" value={overview?.deviceSn ?? "—"} />
       </section>
 
+      <section className="rounded-xl border bg-white p-4 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold">Sales &amp; orders</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat label="Orders" value={String(commerceSummary?.orderCount ?? 0)} />
+          <Stat label="Frames sold (qty)" value={String(commerceSummary?.framesSoldApprox ?? 0)} />
+          <Stat label="Revenue (sum totals)" value={String(commerceSummary?.revenueUsdApprox ?? 0)} />
+        </div>
+          <h3 className="mt-6 text-sm font-semibold text-gray-800">Recent orders</h3>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b text-xs text-gray-500">
+                  <th className="py-2 pr-2">Order</th>
+                  <th className="py-2 pr-2">Customer</th>
+                  <th className="py-2 pr-2">Email</th>
+                  <th className="py-2 pr-2">Items</th>
+                  <th className="py-2 pr-2">Total</th>
+                  <th className="py-2 pr-2">Status</th>
+                  <th className="py-2 pr-2">Date</th>
+                  <th className="py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commerceOrders.slice(0, 50).map((o) => (
+                  <tr key={o.id} className="border-b border-gray-100">
+                    <td className="py-2 pr-2 font-mono text-xs">{o.orderNumber}</td>
+                    <td className="py-2 pr-2">{o.customerName}</td>
+                    <td className="max-w-[200px] truncate py-2 pr-2">{o.email}</td>
+                    <td className="py-2 pr-2 text-xs text-gray-600">
+                      {o.items?.map((i) => `${i.sku}×${i.quantity}`).join(", ") || "—"}
+                    </td>
+                    <td className="py-2 pr-2">
+                      {o.total} {o.currency}
+                    </td>
+                    <td className="py-2 pr-2 capitalize">{o.status}</td>
+                    <td className="py-2 pr-2 text-xs">{new Date(o.createdAtMs).toLocaleString()}</td>
+                    <td className="py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {o.status !== "pending" && (
+                          <button
+                            type="button"
+                            className="rounded border px-2 py-0.5 text-xs"
+                            onClick={() => patchOrderStatus(o.id, "pending")}
+                          >
+                            Pending
+                          </button>
+                        )}
+                        {o.status !== "shipped" && (
+                          <button
+                            type="button"
+                            className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-900"
+                            onClick={() => patchOrderStatus(o.id, "shipped")}
+                          >
+                            Shipped
+                          </button>
+                        )}
+                        {o.status !== "delivered" && (
+                          <button
+                            type="button"
+                            className="rounded border border-emerald-600 px-2 py-0.5 text-xs text-emerald-900"
+                            onClick={() => patchOrderStatus(o.id, "delivered")}
+                          >
+                            Delivered
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!commerceOrders.length && <p className="mt-2 text-sm text-gray-500">No commerce orders yet.</p>}
+          </div>
+      </section>
+
       {fleet && (
         <section className="rounded-xl border bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Fleet</h2>
@@ -348,9 +535,15 @@ export function SuperAdminView() {
           <button
             type="button"
             className="rounded bg-gray-900 px-4 py-2 text-sm text-white"
-            onClick={() => setUserSearchApplied(userSearchInput)}
+            onClick={() => {
+              setUserPage(1);
+              setUserSearchApplied(userSearchInput);
+            }}
           >
             Search
+          </button>
+          <button type="button" className="rounded border px-4 py-2 text-sm" onClick={exportUsersCsv}>
+            Export CSV
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -408,6 +601,27 @@ export function SuperAdminView() {
                           Ban
                         </button>
                       )}
+                      <button
+                        type="button"
+                        className="rounded border border-blue-600 px-2 py-0.5 text-xs text-blue-800"
+                        onClick={() => setUserTier(u.id, u.subscriptionTier === "pro" ? "free" : "pro")}
+                      >
+                        {u.subscriptionTier === "pro" ? "Set Free" : "Set Pro"}
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border border-indigo-600 px-2 py-0.5 text-xs text-indigo-800"
+                        onClick={() => openUserUploads(u.id)}
+                      >
+                        Uploads
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border border-red-700 px-2 py-0.5 text-xs text-red-900"
+                        onClick={() => deleteUser(u.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -415,6 +629,46 @@ export function SuperAdminView() {
             </tbody>
           </table>
         </div>
+        <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
+          <span>
+            Page {userPage} · Showing {users.length} / {userTotal}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="rounded border px-2 py-1 disabled:opacity-50"
+              disabled={userPage <= 1}
+              onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              className="rounded border px-2 py-1 disabled:opacity-50"
+              disabled={userPage * userPageSize >= userTotal}
+              onClick={() => setUserPage((p) => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+        {selectedUserId && (
+          <div className="mt-3 rounded border bg-gray-50 p-3">
+            <p className="mb-2 text-sm font-semibold">Uploads for {selectedUserId}</p>
+            <ul className="max-h-44 overflow-auto text-xs">
+              {selectedUserUploads.map((up) => (
+                <li key={up.id} className="flex items-center justify-between border-b border-gray-200 py-1">
+                  <span className="truncate pr-2">
+                    {new Date(up.atMs).toLocaleString()} · {up.filename} · {formatBytes(up.bytes)}
+                  </span>
+                  <button className="rounded border px-2 py-0.5 text-red-700" onClick={() => deleteUpload(up.id)}>
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border bg-white p-4 shadow-sm">
@@ -428,6 +682,7 @@ export function SuperAdminView() {
                 <th className="py-2 pr-2">Wi‑Fi</th>
                 <th className="py-2 pr-2">Firmware</th>
                 <th className="py-2">Last seen</th>
+                <th className="py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -440,12 +695,35 @@ export function SuperAdminView() {
                   <td className="py-2 text-xs text-gray-600">
                     {f.lastSeenAtMs ? new Date(f.lastSeenAtMs).toLocaleString() : "—"}
                   </td>
+                  <td className="py-2">
+                    <button className="rounded border border-red-700 px-2 py-0.5 text-xs text-red-900" onClick={() => deleteFrame(f.id)}>
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+
+      {ops && (
+        <section className="rounded-xl border bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold">Recent uploads</h2>
+          <ul className="max-h-52 overflow-auto text-xs">
+            {(ops.recentUploads ?? []).map((u) => (
+              <li key={u.id} className="flex items-center justify-between border-b border-gray-100 py-1">
+                <span className="truncate pr-2">
+                  {new Date(u.atMs).toLocaleString()} · {u.deviceId} · {u.filename} · {formatBytes(u.bytes)}
+                </span>
+                <button className="rounded border px-2 py-0.5 text-red-700" onClick={() => deleteUpload(u.id)}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="rounded-xl border bg-white p-4 shadow-sm">
         <h2 className="mb-2 text-lg font-semibold">FAQ Management</h2>

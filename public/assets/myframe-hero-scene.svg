@@ -1,0 +1,24 @@
+<svg width="1800" height="1120" viewBox="0 0 1800 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1800" height="1120" fill="#F7F7F5"/>
+  <rect y="760" width="1800" height="360" fill="#E9ECE8"/>
+  <rect x="120" y="148" width="1560" height="704" rx="6" fill="#FFFFFF"/>
+  <rect x="120" y="148" width="1560" height="704" rx="6" stroke="#E5E5E0" stroke-width="2"/>
+  <rect x="148" y="176" width="1504" height="648" fill="#FAFAF8"/>
+  <path d="M148 645C270 594 355 598 445 632C553 672 675 718 801 668C915 623 1000 514 1119 530C1240 547 1309 686 1431 691C1522 694 1585 628 1652 572V824H148V645Z" fill="#BFD9D2"/>
+  <path d="M148 599C307 486 430 494 554 552C663 603 766 678 909 627C1053 575 1104 403 1259 416C1393 428 1438 563 1547 569C1587 571 1621 554 1652 531V824H148V599Z" fill="#F1C5C0"/>
+  <circle cx="421" cy="372" r="112" fill="#EFD56F"/>
+  <path d="M188 721C309 639 399 624 506 666C600 703 692 781 815 755C924 732 984 642 1080 651C1188 661 1242 762 1362 763C1488 765 1567 671 1652 614V824H148V755C160 743 173 732 188 721Z" fill="#1F7A68"/>
+  <path d="M148 737C256 681 355 678 462 714C593 758 703 817 848 788C983 761 1096 700 1221 738C1349 777 1484 837 1652 736V824H148V737Z" fill="#23312F"/>
+  <rect x="258" y="238" width="1284" height="524" rx="3" stroke="#111111" stroke-width="46"/>
+  <rect x="222" y="202" width="1356" height="596" rx="18" stroke="#D9D9D4" stroke-width="18"/>
+  <rect x="716" y="836" width="368" height="16" rx="8" fill="#CFCFC8"/>
+  <rect x="304" y="872" width="1192" height="20" rx="10" fill="#D7D7D0"/>
+  <rect x="510" y="908" width="780" height="34" rx="17" fill="#E1E1DB"/>
+  <rect x="1320" y="214" width="196" height="48" rx="24" fill="#FFFFFF" fill-opacity="0.88"/>
+  <circle cx="1351" cy="238" r="8" fill="#059669"/>
+  <text x="1370" y="245" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" fill="#1A1A1A">Connected</text>
+  <rect x="292" y="678" width="286" height="54" rx="27" fill="#FFFFFF" fill-opacity="0.9"/>
+  <text x="325" y="712" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" fill="#1A1A1A">Mom sent a photo</text>
+  <rect x="1195" y="694" width="260" height="54" rx="27" fill="#FFFFFF" fill-opacity="0.9"/>
+  <text x="1228" y="728" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" fill="#1A1A1A">Paper-like color</text>
+</svg>

@@ -75,6 +75,14 @@ authRouter.post("/auth/register", (req, res) => {
     });
     draft.settings.account.name = draft.settings.account.name || name;
     draft.settings.account.email = draft.settings.account.email || email;
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}_${crypto.randomBytes(2).toString("hex")}`,
+      actor: `user:${id}`,
+      action: "register",
+      target: id,
+      atMs: Date.now(),
+      meta: { email },
+    });
   });
 
   const token = issueToken(id, email);
@@ -116,6 +124,14 @@ authRouter.post("/auth/login", (req, res) => {
 
   db.mutate((draft) => {
     draft.users = draft.users.map((u) => (u.id === user.id ? { ...u, lastSeenAtMs: Date.now() } : u));
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}_${crypto.randomBytes(2).toString("hex")}`,
+      actor: `user:${user.id}`,
+      action: "login",
+      target: user.id,
+      atMs: Date.now(),
+      meta: { email: user.email },
+    });
   });
 
   const token = issueToken(user.id, user.email);
@@ -154,6 +170,14 @@ authRouter.post("/auth/test-login", (_req, res) => {
   } else {
     db.mutate((draft) => {
       draft.users = draft.users.map((u) => (u.id === user!.id ? { ...u, lastSeenAtMs: now } : u));
+      draft.auditLog.unshift({
+        id: `audit_${Date.now()}_${crypto.randomBytes(2).toString("hex")}`,
+        actor: `user:${user!.id}`,
+        action: "test_login",
+        target: user!.id,
+        atMs: Date.now(),
+        meta: { email: user!.email },
+      });
     });
   }
 

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>MyFrame Admin</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root { --primary:#DC2626; --primary-dark:#B91C1C; --primary-light:#FEE2E2; --text:#1A1A1A; --muted:#666; --soft:#FAFAFA; --border:#FECACA; --ok:#059669; --warn:#D97706; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: var(--soft); color: var(--text); }
+    button, input, textarea, select { font: inherit; }
+    .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(180deg,#FEF2F2,#fff); }
+    .login-card { width: min(420px,100%); background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 28px; box-shadow: 0 18px 40px rgba(220,38,38,.12); }
+    .login-card img { max-height: 36px; margin-bottom: 18px; }
+    .app { display: none; min-height: 100vh; }
+    .sidebar { width: 282px; position: fixed; inset: 0 auto 0 0; background: #fff; border-right: 1px solid var(--border); overflow-y: auto; }
+    .brand { padding: 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand img { max-height: 40px; }
+    .nav { padding: 12px; }
+    .nav button { width: 100%; border: 0; background: transparent; color: var(--muted); padding: 11px 13px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; font-size: 14px; font-weight: 600; }
+    .nav button:hover, .nav button.active { background: var(--primary-light); color: var(--primary); }
+    .nav .group { margin-top: 12px; padding: 10px 13px 6px; color: #999; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; }
+    .main { margin-left: 282px; padding: 28px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    h1 { font-size: 30px; letter-spacing: -.02em; }
+    h2 { font-size: 18px; margin-bottom: 14px; }
+    .crumb { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin-bottom: 18px; }
+    .card { background: #fff; border: 1px solid rgba(254,202,202,.75); border-radius: 12px; padding: 18px; box-shadow: 0 10px 26px rgba(17,24,39,.06); }
+    .stat { display: flex; gap: 14px; align-items: center; }
+    .stat i { width: 44px; height: 44px; border-radius: 10px; background: var(--primary); color: white; display: grid; place-items: center; }
+    .stat strong { font-size: 28px; display: block; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .three { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .field { display: grid; gap: 7px; margin-bottom: 12px; }
+    label { color: #444; font-size: 13px; font-weight: 700; }
+    input, textarea, select { width: 100%; border: 1px solid #E5E7EB; border-radius: 9px; padding: 10px 12px; background: #fff; color: var(--text); }
+    textarea { min-height: 88px; resize: vertical; }
+    .btn { border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: 800; display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.soft { background: var(--primary-light); color: var(--primary); }
+    .btn.light { background: #fff; color: var(--text); border: 1px solid #E5E7EB; }
+    .btn.danger { background: #FEE2E2; color: #991B1B; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid #F1F1F1; text-align: left; font-size: 13px; vertical-align: top; }
+    th { color: #777; background: #FFF7F7; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .pill { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 12px; background: #F3F4F6; color: #555; font-weight: 700; }
+    .pill.ok { background: #DCFCE7; color: #166534; }
+    .pill.warn { background: #FEF3C7; color: #92400E; }
+    .toast { position: fixed; right: 22px; bottom: 22px; background: #111827; color: white; border-radius: 10px; padding: 12px 14px; display: none; z-index: 20; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .list-item { display:flex; gap:10px; align-items:flex-start; padding: 10px 0; border-bottom: 1px solid #F3F4F6; }
+    .list-item i { color: var(--primary); margin-top: 4px; }
+    .small { color: var(--muted); font-size: 12px; }
+    .search { max-width: 260px; }
+    @media (max-width: 1000px) { .sidebar { position: static; width: 100%; height: auto; } .main { margin: 0; } .app { display: none; } .grid, .two, .three { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="login" class="login">
+    <form class="login-card" id="loginForm">
+      <img src="/assets/myframe-logo-final.svg" alt="MyFrame">
+      <h1>Admin Login</h1>
+      <p class="crumb" style="margin-bottom:18px;">Secure access to website content, SEO, products, orders and payments.</p>
+      <div class="field"><label>Email or username</label><input id="email" type="text" autocomplete="username" required placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Password"></div>
+      <button class="btn primary" style="width:100%; margin-top:6px;"><i class="fas fa-lock"></i> Sign In</button>
+      <p id="loginError" class="small" style="color:#B91C1C; margin-top:12px;"></p>
+    </form>
+  </div>
+
+  <div id="app" class="app">
+    <aside class="sidebar">
+      <div class="brand"><img src="/assets/myframe-logo-final.svg" alt="MyFrame"><button class="btn light" onclick="logout()"><i class="fas fa-right-from-bracket"></i></button></div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div><h1 id="pageTitle">Dashboard</h1><div class="crumb">Home / <span id="pageCrumb">Dashboard</span></div></div>
+        <div class="actions"><a class="btn light" href="/" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> View Site</a><button class="btn primary" onclick="loadAll()"><i class="fas fa-rotate"></i> Refresh</button></div>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let csrfToken = '';
+    let state = {};
+    let current = 'dashboard';
+    const sections = [
+      ['Dashboard','dashboard','fa-gauge'],
+      ['Products','group'],
+      ['Products','products','fa-box'],
+      ['Product Categories','categories','fa-layer-group'],
+      ['All Order','orders','fa-receipt'],
+      ['Blogs','blogs','fa-newspaper'],
+      ['Subscribers','subscribers','fa-bell'],
+      ['Website Customization','group'],
+      ['Basic Information','basic','fa-sliders'],
+      ['Menu Builder','menus','fa-bars'],
+      ['Social Links','social','fa-share-nodes'],
+      ['Media Library','media','fa-images'],
+      ['Languages','languages','fa-language'],
+      ['Content Pages','pages','fa-file-lines'],
+      ['SEO','group'],
+      ['Meta Info','seo','fa-magnifying-glass'],
+      ['Contact','contact','fa-address-book'],
+      ['Sitemap','sitemap','fa-sitemap'],
+      ['Permalink','permalinks','fa-link'],
+      ['Maintenance Mode','maintenance','fa-screwdriver-wrench'],
+      ['Footer','footer','fa-window-maximize'],
+      ['Mail Configuration','mail','fa-envelope'],
+      ['Administration','group'],
+      ['My Account','admin_account','fa-id-badge'],
+      ['Admin Users','admin_users','fa-users-cog'],
+      ['Documentation PDF','documentation_pdf','fa-file-pdf'],
+      ['Payment Settings','group'],
+      ['Currencies','currencies','fa-coins'],
+      ['Payment Gateway','gateways','fa-credit-card'],
+      ['Shipping Method','shipping','fa-truck']
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    async function api(url, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+      if (!['GET','HEAD'].includes(options.method || 'GET')) headers['CSRF-Token'] = csrfToken;
+      const res = await fetch(url, { credentials: 'same-origin', ...options, headers });
+      if (res.status === 403) await refreshCsrf();
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Request failed');
+      return res.json();
+    }
+
+    async function refreshCsrf() {
+      csrfToken = (await fetch('/api/csrf-token', { credentials: 'same-origin' }).then(r => r.json())).csrfToken;
+    }
+
+    async function boot() {
+      await refreshCsrf();
+      const me = await api('/api/auth/me');
+      if (me.admin) showApp(); else showLogin();
+    }
+
+    function showLogin() { $('login').style.display = 'grid'; $('app').style.display = 'none'; }
+    async function showApp() {
+      $('login').style.display = 'none'; $('app').style.display = 'block';
+      try {
+        const me = await api('/api/auth/me');
+        state.me = me.admin;
+      } catch (_) {}
+      renderNav();
+      await loadAll();
+    }
+
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('email').value, password: $('password').value }) });
+        await refreshCsrf();
+        await showApp();
+      } catch (err) { $('loginError').textContent = err.message; }
+    });
+
+    async function logout() { await api('/api/auth/logout', { method:'POST', body:'{}' }); showLogin(); }
+
+    function renderNav() {
+      const mine = state.me || state.account;
+      $('nav').innerHTML = sections.filter(([_, key]) => key !== 'admin_users' || mine?.role === 'super_admin')
+        .map(([label, key, icon]) => key === 'group'
+          ? `<div class="group">${label}</div>`
+          : `<button class="${key === current ? 'active' : ''}" onclick="route('${key}')"><i class="fas ${icon}"></i>${label}</button>`).join('');
+    }
+
+    async function route(key) {
+      current = key; renderNav();
+      const label = sections.find(s => s[1] === key)?.[0] || 'Dashboard';
+      $('pageTitle').textContent = label; $('pageCrumb').textContent = label;
+      render();
+    }
+
+    async function loadAll() {
+      const [bootstrap, dashboard, orders, subscribers] = await Promise.all([
+        api('/api/admin/bootstrap'),
+        api('/api/admin/dashboard'),
+        api('/api/admin/orders'),
+        api('/api/admin/subscribers')
+      ]);
+      state = { ...bootstrap, dashboard, orders, subscribers };
+      state.me = bootstrap.account ? { ...bootstrap.account } : state.me;
+      renderNav();
+      render();
+    }
+
+    function render() {
+      const map = {
+        dashboard, basic, menus, social, media, languages, pages, seo, contact, sitemap, permalinks, maintenance,
+        footer, mail, currencies, gateways, shipping, categories, products, orders, blogs, subscribers,
+        admin_account, admin_users, documentation_pdf
+      };
+      $('content').innerHTML = (map[current] || dashboard)();
+    }
+
+    function dashboard() {
+      const c = state.dashboard?.counts || {};
+      return `<div class="grid">
+        ${stat('fa-box', c.products, 'Products')}
+        ${stat('fa-cart-shopping', c.allOrders, 'All Orders')}
+        ${stat('fa-hourglass-half', c.pendingOrders, 'Pending Orders')}
+        ${stat('fa-spinner', c.inProgressOrders, 'In Progress')}
+        ${stat('fa-circle-check', c.completedOrders, 'Completed')}
+        ${stat('fa-circle-xmark', c.rejectedOrders, 'Rejected')}
+        ${stat('fa-newspaper', c.blogs, 'Blogs')}
+        ${stat('fa-bell', c.subscribers, 'Subscribers')}
+        ${stat('fa-user-shield', c.users, 'Users')}
+      </div>
+      <div class="two">
+        <div class="card"><h2>Latest Features</h2>${(state.dashboard?.latestFeatures || []).map(f => `<div class="list-item"><i class="${esc(f.icon)}"></i><div><strong>${esc(f.title)}</strong><p class="small">${esc(f.description)}</p></div></div>`).join('')}</div>
+        <div class="card"><h2>Latest Orders</h2>${table(['Order','Gateway','Total','Status'], (state.dashboard?.latestOrders || []).map(o => [o.order_number, o.gateway, money(o.total,o.currency), badge(o.order_status)]))}</div>
+      </div>`;
+    }
+
+    function stat(icon, value, label) { return `<div class="card stat"><i class="fas ${icon}"></i><div><strong>${value ?? 0}</strong><span>${label}</span></div></div>`; }
+    function money(v,c='USD') { return `${c} ${Number(v || 0).toFixed(2)}`; }
+    function badge(v) { return `<span class="pill ${v === 'completed' || v === 'publish' || v === 'active' ? 'ok' : 'warn'}">${esc(v)}</span>`; }
+    function table(headers, rows) {
+      return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${headers.length}">No data found</td></tr>`}</tbody></table>`;
+    }
+
+    function input(name, value, label, type='text') { return `<div class="field"><label>${label}</label><input name="${name}" type="${type}" value="${esc(value)}"></div>`; }
+    function hidden(name, value) { return `<input name="${name}" type="hidden" value="${esc(value)}">`; }
+    function imageInput(name, value, label) {
+      const id = `file_${name}_${Math.random().toString(16).slice(2)}`;
+      return `<div class="field"><label>${label}</label><div class="actions"><input name="${name}" value="${esc(value || '')}" placeholder="/uploads/image.png"><label class="btn light" for="${id}"><i class="fas fa-image"></i> Choose New Image</label><input id="${id}" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="uploadImage(this,'${name}')"></div>${value ? `<img src="${esc(value)}" alt="" style="max-height:46px;max-width:160px;border:1px solid #eee;border-radius:8px;padding:4px;background:#fff;">` : ''}</div>`;
+    }
+    function text(name, value, label) { return `<div class="field"><label>${label}</label><textarea name="${name}">${esc(value)}</textarea></div>`; }
+    function select(name, value, label, opts) { return `<div class="field"><label>${label}</label><select name="${name}">${opts.map(o => `<option value="${o}" ${String(value)===String(o)?'selected':''}>${o}</option>`).join('')}</select></div>`; }
+    function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
+    function parseLines(value) { return String(value || '').split('\n').map(s => s.trim()).filter(Boolean); }
+    function findSetting(key) { return state[key] || {}; }
+
+    function basic() {
+      const b = state.basic || {};
+      return `<form class="card" onsubmit="saveSetting(event,'basic')"><h2>Update Basic Information</h2>
+        <div class="actions" style="margin-bottom:12px;"><button class="btn soft" type="button" onclick="resetDefaultTheme()"><i class="fas fa-rotate-left"></i> Restore Default Theme</button></div>
+        <div class="three">${input('siteTitle', b.siteTitle, 'Site Title *')}${input('themeColor', b.themeColor || '#DC2626', 'Theme Color', 'color')}${select('darkMode', b.darkMode ? 'true' : 'false', 'Dark Mode*', ['false','true'])}</div>
+        <div class="three">${input('gradientColor1', b.gradientColor1, 'Color 1', 'color')}${input('gradientColor2', b.gradientColor2, 'Color 2', 'color')}${input('gradientColor3', b.gradientColor3, 'Color 3', 'color')}</div>
+        <div class="three">${select('currencyDirection', b.currencyDirection, 'Currency Direction *', ['ltr','rtl'])}${imageInput('favicon', b.favicon, 'Favicon *')}${imageInput('headerLogo', b.headerLogo, 'Site Header Logo *')}</div>
+        ${imageInput('breadcrumbImage', b.breadcrumbImage, 'Breadcrumb Image *')}
+        <div class="two">${input('heroBadge', b.heroBadge, 'Hero Badge')}${input('heroPrimaryButton', b.heroPrimaryButton, 'Hero Primary Button')}</div>
+        <div class="two">${input('heroSecondaryButton', b.heroSecondaryButton, 'Hero Secondary Button')}${input('heroImageCaption', b.heroImageCaption, 'Photo Preview Caption')}</div>
+        <div class="two">${input('heroTitle', b.heroTitle, 'Hero Title')}${input('heroHighlight', b.heroHighlight, 'Hero Highlight')}</div>
+        ${text('heroSubtitle', b.heroSubtitle, 'Hero Subtitle')}
+        <div class="two">${input('featureTitle', b.featureTitle, 'Feature Title')}${input('pricingTitle', b.pricingTitle, 'Pricing Title')}</div>
+        ${text('featureDescription', b.featureDescription, 'Feature Description')}${text('pricingDescription', b.pricingDescription, 'Pricing Description')}
+        <div class="two">${input('productTitle', b.productTitle, 'Product Title')}${input('specsTitle', b.specsTitle, 'Specs Title')}</div>
+        ${text('productDescription', b.productDescription, 'Product Description')}
+        <div class="two">${input('familyTitle', b.familyTitle, 'Family Title')}${input('familyDescription', b.familyDescription, 'Family Description')}</div>
+        <div class="actions"><button class="btn primary"><i class="fas fa-save"></i> Update</button></div></form>
+        <div class="card" style="margin-top:16px;"><h2>Features Section</h2>${featureEditor()}</div>`;
+    }
+
+    function resetDefaultTheme() {
+      const form = $('content').querySelector('form');
+      form.elements.themeColor.value = '#DC2626';
+      form.elements.gradientColor1.value = '#FEF2F2';
+      form.elements.gradientColor2.value = '#FFFFFF';
+      form.elements.gradientColor3.value = '#FECACA';
+      toast('Default theme restored. Click Update to save.');
+    }
+
+    function featureEditor() {
+      return `<form onsubmit="saveFeatures(event)">
+        <div id="featureRows">${(state.features || []).map((f,i) => featureRow(f,i)).join('')}</div>
+        <div class="actions"><button class="btn soft" type="button" onclick="addFeatureRow()"><i class="fas fa-plus"></i> Add Feature</button><button class="btn primary"><i class="fas fa-save"></i> Save Features</button></div>
+      </form>`;
+    }
+    function featureRow(f,i) { return `<div class="four feature-row">${input(`icon_${i}`, f.icon, 'Icon')}${input(`image_${i}`, f.image || '', 'Image URL')}${input(`title_${i}`, f.title, 'Title')}${input(`description_${i}`, f.description, 'Description')}</div>`; }
+    function addFeatureRow() { $('featureRows').insertAdjacentHTML('beforeend', featureRow({icon:'fas fa-star',image:'',title:'',description:''}, document.querySelectorAll('.feature-row').length)); }
+    async function saveFeatures(e) {
+      e.preventDefault();
+      const rows = [...document.querySelectorAll('.feature-row')].map(row => {
+        const fields = row.querySelectorAll('input'); return { icon: fields[0].value, image: fields[1].value, title: fields[2].value, description: fields[3].value };
+      });
+      await api('/api/admin/settings/features', { method:'PUT', body: JSON.stringify(rows) }); toast('Features updated'); await loadAll();
+    }
+
+    async function saveSetting(e, key) { e.preventDefault(); await api(`/api/admin/settings/${key}`, { method:'PUT', body: JSON.stringify(coerce(formData(e.target))) }); toast('Updated'); await loadAll(); }
+    function coerce(data) { for (const k in data) if (data[k] === 'true' || data[k] === 'false') data[k] = data[k] === 'true'; return data; }
+
+    function menus() { return crud('Menu Builder','menus',['label','url','target','menu_order','is_active'], state.menus, { label:'Text', url:'URL', target:'Target', menu_order:'Order', is_active:'Active' }); }
+    function social() { return crud('Social Links','social_links',['icon','url','link_order','is_active'], state.socials, { icon:'Social Icon *', url:'Social URL*', link_order:'Order', is_active:'Active' }); }
+    function media() {
+      const m = state.media || {};
+      return `<form class="card" onsubmit="saveSetting(event,'media')"><h2>Website Images</h2>
+        ${imageInput('heroFrameImage', m.heroFrameImage, 'Hero Frame Image')}
+        ${imageInput('productShowcaseImage', m.productShowcaseImage, 'Product Showcase Image')}
+        ${imageInput('familyPhoneImage1', m.familyPhoneImage1, 'Family Phone Image 1')}
+        ${imageInput('familyPhoneImage2', m.familyPhoneImage2, 'Family Phone Image 2')}
+        ${input('watchVideoUrl', m.watchVideoUrl, 'Watch Video Link')}
+        <button class="btn primary"><i class="fas fa-save"></i> Update Images</button>
+      </form>`;
+    }
+    function languages() {
+      return `<div class="card"><h2>Language Content</h2><p class="small" style="margin-bottom:12px;">Supported frontend languages use separate URLs and hreflang: English, Chinese, Spanish, French, German, Japanese.</p>${translationEditor()}${translatedFeatureEditor()}</div>
+      <div style="margin-top:16px;">${crud('Language','languages',['code','name','native_name','language_order','is_default','is_active'], state.languages, { code:'Code', name:'Name', native_name:'Native Name', language_order:'Order', is_default:'Default', is_active:'Active' })}</div>`;
+    }
+    function pages() {
+      return `<div class="card"><h2>Footer Content Pages</h2>${contentPagesEditor()}</div>`;
+    }
+    function sitemap() {
+      return `<div class="card"><h2>Add Sitemap</h2><form id="form_sitemaps" onsubmit="saveRow(event,'sitemaps','loc,changefreq,priority')">${input('loc','', 'Sitemap Url*')}${hidden('changefreq','weekly')}${hidden('priority','0.8')}<button class="btn primary"><i class="fas fa-save"></i> Save</button></form></div>
+      <div class="card" style="margin-top:16px;"><h2>Sitemap List</h2>${table(['Sitemap Url','Action'], (state.sitemaps || []).map(r => [esc(r.loc), `<button class="btn soft" onclick="editRow('sitemaps',${r.id},'loc,changefreq,priority')"><i class="fas fa-pen"></i> Edit</button> <button class="btn danger" onclick="delRow('sitemaps',${r.id})"><i class="fas fa-trash"></i></button>`]))}</div>`;
+    }
+    function currencies() { return crud('Currency','currencies',['name','sign','value','is_default','is_active'], state.currencies, { name:'Name', sign:'Sign', value:'Value', is_default:'Default', is_active:'Active' }); }
+    function shipping() { return crud('Shipping Method','shipping_methods',['name','price','eta','is_active'], state.shippingMethods, { name:'Name', price:'Price', eta:'ETA', is_active:'Active' }); }
+    function categories() { return crud('Product Categories','product_categories',['name','image_url','popular','featured','status'], state.categories, { name:'Name', image_url:'Image', popular:'Popular', featured:'Featured', status:'Status' }, ['image_url']); }
+    function blogBodyField(name, value, label) {
+      return `<div class="field"><label>${label}</label><textarea name="${name}" style="min-height:220px">${esc(value)}</textarea></div>`;
+    }
+    function blogs() {
+      const fieldsTop = [['title','Title'],['slug','Slug'],['status','Status']];
+      return `<div class="card"><h2>Add / edit blog post</h2>
+        <form id="form_blogs" onsubmit="saveBlog(event)"><input type="hidden" name="id">
+          <div class="three">${fieldsTop.map(([f, lab]) => f === 'status' ? select(f, '', lab, ['draft','publish','published']) : input(f, '', lab)).join('')}</div>
+          ${imageInput('featured_image', '', 'Featured image URL')}
+          <div class="two">${input('meta_title', '', 'SEO meta title')}${text('meta_description', '', 'SEO meta description')}</div>
+          ${text('excerpt', '', 'Excerpt')}
+          ${blogBodyField('body', '', 'Body (HTML)')}
+          <div class="actions"><button class="btn primary"><i class="fas fa-save"></i> Save post</button><button type="button" class="btn light" onclick="clearBlogForm()">Clear</button></div>
+        </form></div>
+      <div class="card" style="margin-top:16px;"><div class="actions" style="justify-content:space-between;margin-bottom:12px;"><h2>Published posts</h2><input class="search" placeholder="Search" oninput="filterTable(this)"></div>${table(['Title','Slug','Status','Image','SEO title','Updated','Action'], (state.blogs || []).map(b => [
+        esc(b.title), esc(b.slug), badge(b.status), b.featured_image ? `<img src="${esc(b.featured_image)}" alt="" style="max-height:40px;border-radius:6px;">` : '',
+        esc((b.meta_title || '').slice(0,48)), esc(String(b.updated_at || b.created_at || '').slice(0,16)),
+        `<button class="btn soft" onclick="editBlog(${b.id})"><i class="fas fa-pen"></i></button> <button class="btn danger" onclick="delRow('blogs',${b.id})"><i class="fas fa-trash"></i></button>`
+      ]))}</div>`;
+    }
+    function clearBlogForm() { clearForm('blogs'); ['meta_title','meta_description','featured_image'].forEach(n => { const el = $('form_blogs')?.elements[n]; if (el) el.value = ''; }); }
+    async function saveBlog(e) {
+      e.preventDefault();
+      const data = formData(e.target);
+      const id = data.id;
+      delete data.id;
+      await api(`/api/admin/blogs${id ? '/' + id : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) });
+      toast(id ? 'Blog updated' : 'Blog added');
+      await loadAll();
+    }
+    function editBlog(id) {
+      const row = (state.blogs || []).find((b) => Number(b.id) === Number(id));
+      const form = $('form_blogs');
+      if (!row || !form) return;
+      form.elements.id.value = row.id;
+      ['title','slug','excerpt','body','status','featured_image','meta_title','meta_description'].forEach((f) => {
+        if (form.elements[f]) form.elements[f].value = displayVal(row[f]);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function admin_account() {
+      const me = state.me || state.account || {};
+      return `<div class="card"><h2>My administrator account</h2>
+        <p class="small" style="margin-bottom:14px;">Signed in as <strong>${esc(me.email || '')}</strong> · role <strong>${esc(me.role || 'admin')}</strong></p>
+        <form onsubmit="saveMyAdminAccount(event)">
+          <div class="two">${input('acc_name', me.name || '', 'Display name')}${input('acc_email', me.email || '', 'Email','email')}</div>
+          ${input('acc_username', me.username || '', 'Username (optional)')}
+          ${input('acc_current_pw', '', 'Current password (required if changing password)', 'password')}
+          ${input('acc_new_pw', '', 'New password (optional, min 8 characters)', 'password')}
+          <div class="actions"><button type="submit" class="btn primary"><i class="fas fa-save"></i> Update my account</button></div>
+        </form></div>`;
+    }
+    async function saveMyAdminAccount(e) {
+      e.preventDefault();
+      const d = formData(e.target);
+      const body = { name: d.acc_name, email: d.acc_email, username: d.acc_username || '' };
+      if (d.acc_new_pw) {
+        body.currentPassword = d.acc_current_pw || '';
+        body.newPassword = d.acc_new_pw;
+      }
+      const res = await api('/api/admin/admins/me', { method:'PUT', body: JSON.stringify(body) });
+      if (res.admin) state.me = res.admin;
+      toast('Account updated');
+      await loadAll();
+      render();
+    }
+
+    function admin_users() {
+      if (state.me?.role !== 'super_admin') {
+        return '<div class="card"><p>Super administrator access is required to manage other admin accounts.</p></div>';
+      }
+      const admins = state.admins || [];
+      const rows = admins.map((a) =>
+        `<tr><td>${esc(a.name)}</td><td>${esc(a.email)}</td><td>${esc(a.username || '—')}</td><td>${badge(a.role)}</td><td class="actions">
+          <button type="button" class="btn soft" onclick="fillSuperAdmin(${a.id})"><i class="fas fa-pen"></i></button>
+          ${Number(a.id) === Number(state.me.id) ? '<span class="small">Self</span>' : `<button class="btn danger" onclick="delAdmin(${a.id})"><i class="fas fa-trash"></i></button>`}
+        </td></tr>`).join('');
+      return `<div class="two">
+        <div class="card"><h2 id="admFormTitle">Add administrator</h2>
+          <form id="form_super_admin" onsubmit="saveSuperAdmin(event)">
+            <input type="hidden" name="editId" id="super_edit_id" value="">
+            <div class="field"><label>Name</label><input name="name" required></div>
+            <div class="field"><label>Email</label><input name="email" type="email" required></div>
+            <div class="field"><label>Username</label><input name="username" placeholder="letters, digits, dot, _ or -"></div>
+            <div class="field" id="super_pw_wrap"><label>Password</label><input name="password" type="password" id="super_pw_field" required></div>
+            <div class="field"><label>New password (when editing)</label><input name="newPasswordEdit" type="password" placeholder="Leave blank to keep current"></div>
+            ${select('role', 'admin', 'Role', ['admin','super_admin'])}
+            <div class="actions">
+              <button type="submit" class="btn primary"><i class="fas fa-save"></i> Save</button>
+              <button type="button" class="btn light" onclick="resetSuperAdminForm()">Clear</button>
+            </div>
+          </form>
+        </div>
+        <div class="card"><h2>All administrators (${admins.length})</h2>
+          <table><thead><tr><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5">No admins</td></tr>'}</tbody></table>
+        </div></div>`;
+    }
+    function fillSuperAdmin(id) {
+      const rec = (state.admins || []).find((x) => Number(x.id) === Number(id));
+      const f = $('form_super_admin');
+      if (!rec || !f) return;
+      $('admFormTitle').textContent = 'Edit administrator';
+      $('super_edit_id').value = rec.id;
+      f.name.value = rec.name || '';
+      f.email.value = rec.email || '';
+      f.username.value = rec.username || '';
+      f.role.value = rec.role === 'super_admin' ? 'super_admin' : 'admin';
+      f.password.value = '';
+      f.newPasswordEdit.value = '';
+      $('super_pw_wrap').style.display = 'none';
+      $('super_pw_field').required = false;
+      window.scrollTo({ top: 0, behavior:'smooth' });
+    }
+    function resetSuperAdminForm() {
+      const f = $('form_super_admin'); if (!f) return;
+      $('admFormTitle').textContent = 'Add administrator';
+      $('super_edit_id').value = '';
+      $('super_pw_wrap').style.display = '';
+      $('super_pw_field').required = true;
+      f.reset();
+    }
+    async function saveSuperAdmin(e) {
+      e.preventDefault();
+      const f = $('form_super_admin');
+      const editId = $('super_edit_id').value.trim();
+      const body = { name: f.name.value.trim(), email: f.email.value.trim(), username: f.username.value.trim(), role: f.role.value };
+      if (editId) {
+        const np = f.newPasswordEdit.value.trim();
+        if (np) body.newPassword = np;
+        await api(`/api/admin/admins/${editId}`, { method:'PUT', body: JSON.stringify(body) });
+        toast('Administrator updated');
+      } else if (f.password.value) {
+        body.password = f.password.value;
+        await api('/api/admin/admins', { method:'POST', body: JSON.stringify(body) });
+        toast('Administrator created');
+      } else return toast('Password is required for new admins');
+      resetSuperAdminForm();
+      await loadAll();
+    }
+    async function delAdmin(id) {
+      if (!confirm('Remove this administrator?')) return;
+      await api(`/api/admin/admins/${id}`, { method:'DELETE', body:'{}' });
+      toast('Removed');
+      await loadAll();
+    }
+
+    function documentation_pdf() {
+      const d = state.documentation || {};
+      return `<div class="card"><h2>Documentation download (PDF)</h2>
+        <p class="small" style="margin-bottom:14px;">The documentation content page inserts a button that points to this URL. The server creates a starter PDF at startup if missing: <code>public/downloads/myframe-product-documentation.pdf</code>.</p>
+        <form id="doc_form_setting" onsubmit="saveDocumentationSetting(event)">
+          ${input('pdfUrl', d.pdfUrl || '', 'PDF URL')}
+          ${input('pdfButtonLabel', d.pdfButtonLabel || 'Download MyFrame product documentation (PDF)', 'Button label')}
+          <button class="btn primary" type="submit"><i class="fas fa-save"></i> Save link &amp; label</button>
+        </form>
+        <hr style="margin:18px 0;border:0;border-top:1px solid #F3F4F6;">
+        <div class="field"><label>Replace PDF file</label>
+          <div class="actions"><input type="file" accept="application/pdf" id="docPdfPick"><button type="button" class="btn soft" onclick="uploadDocPdf()"><i class="fas fa-upload"></i> Upload</button></div>
+          <p class="small">Up to 12&nbsp;MB. Stored under <code>/uploads/</code> and wired into settings automatically.</p>
+        </div>
+        ${d.pdfUrl ? `<p style="margin-top:12px;"><a class="btn light" href="${esc(d.pdfUrl)}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Open current PDF</a></p>` : ''}
+      </div>`;
+    }
+    async function saveDocumentationSetting(ev) {
+      ev.preventDefault();
+      const fd = formData(ev.target);
+      await api('/api/admin/settings/documentation', { method:'PUT', body: JSON.stringify({ pdfUrl: fd.pdfUrl, pdfButtonLabel: fd.pdfButtonLabel }) });
+      toast('Saved');
+      await loadAll();
+      render();
+    }
+    async function uploadDocPdf() {
+      const pick = $('docPdfPick');
+      if (!pick?.files?.length) return toast('Choose a PDF file first');
+      const fd = new FormData();
+      fd.append('pdf', pick.files[0]);
+      const res = await fetch('/api/admin/upload/pdf', {
+        credentials: 'same-origin',
+        method: 'POST',
+        headers: { 'CSRF-Token': csrfToken },
+        body: fd
+      });
+      if (!res.ok) {
+        toast((await res.json().catch(() => ({}))).error || 'Upload failed');
+        return;
+      }
+      pick.value = '';
+      await loadAll();
+      render();
+      toast('PDF uploaded');
+    }
+
+    function subscribers() {
+      return `<div class="card"><div class="actions" style="justify-content:space-between;margin-bottom:12px;"><h2>Notify Me Subscribers</h2><input class="search" placeholder="Search" oninput="filterTable(this)"></div>${table(['Name','Email','Product','Language','Status','Source','Created','Action'], (state.subscribers || []).map(s => [esc(s.name), esc(s.email), `${esc(s.product_name)}<div class="small">${esc(s.sku)}</div>`, esc(String(s.language || 'en').toUpperCase()), badge(s.status), esc(s.source || 'notify_me'), esc(new Date(s.created_at).toLocaleString()), `<button class="btn danger" onclick="delRow('subscribers',${s.id})"><i class="fas fa-trash"></i></button>`]))}</div>`;
+    }
+
+    function crud(title, endpoint, fields, rows, labels, imageFields = []) {
+      const formFields = fields.map(f => imageFields.includes(f) ? imageInput(f, defaultValue(f), labels[f] || f) : input(f, defaultValue(f), labels[f] || f)).join('');
+      return `<div class="card"><h2>Add/Edit/Update Area</h2><form id="form_${endpoint}" onsubmit="saveRow(event,'${endpoint}','${fields.join(',')}')"><input type="hidden" name="id"><div class="three">${formFields}</div><div class="actions"><button class="btn primary"><i class="fas fa-save"></i> Save ${title}</button><button class="btn light" type="button" onclick="clearForm('${endpoint}')">Clear</button></div></form></div>
+      <div class="card" style="margin-top:16px;"><div class="actions" style="justify-content:space-between;margin-bottom:12px;"><h2>${title} List</h2><input class="search" placeholder="Search" oninput="filterTable(this)"></div>${table([...fields,'Action'], (rows || []).map(r => [...fields.map(f => esc(displayVal(r[f]))), `<button class="btn soft" onclick="editRow('${endpoint}',${r.id},'${fields.join(',')}')"><i class="fas fa-pen"></i> Edit</button> <button class="btn danger" onclick="delRow('${endpoint}',${r.id})"><i class="fas fa-trash"></i></button>`]))}</div>`;
+    }
+    function defaultValue(f) { return f === 'target' ? '_self' : f === 'status' ? 'publish' : ['is_active','is_default'].includes(f) ? '1' : f === 'priority' ? '0.8' : f === 'group_name' ? 'Product' : ''; }
+    function displayVal(v) { return typeof v === 'object' ? JSON.stringify(v) : v; }
+    function rowsFor(endpoint) {
+      return { menus: state.menus, social_links: state.socials, footer_links: state.footerLinks, sitemaps: state.sitemaps, currencies: state.currencies, shipping_methods: state.shippingMethods, product_categories: state.categories, blogs: state.blogs, products: state.products, languages: state.languages, subscribers: state.subscribers }[endpoint] || [];
+    }
+    async function saveRow(e, endpoint, fieldList) {
+      e.preventDefault();
+      const data = formData(e.target);
+      const id = data.id;
+      delete data.id;
+      await api(`/api/admin/${endpoint}${id ? '/' + id : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) });
+      toast(id ? 'Updated' : 'Added'); await loadAll();
+    }
+    function editRow(endpoint, id, fieldList) {
+      const row = rowsFor(endpoint).find(item => Number(item.id) === Number(id));
+      const form = $(`form_${endpoint}`);
+      if (!row || !form) return;
+      form.elements.id.value = row.id;
+      fieldList.split(',').forEach(field => { if (form.elements[field]) form.elements[field].value = displayVal(row[field]); });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function clearForm(endpoint) { const form = $(`form_${endpoint}`); if (form) form.reset(); if (form?.elements.id) form.elements.id.value = ''; }
+    async function delRow(endpoint, id) { if (!confirm('Delete this item?')) return; await api(`/api/admin/${endpoint}/${id}`, { method:'DELETE', body:'{}' }); toast('Deleted'); await loadAll(); }
+    function filterTable(input) { const term = input.value.toLowerCase(); input.closest('.card').querySelectorAll('tbody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none'); }
+
+    async function uploadImage(fileInput, targetName) {
+      if (!fileInput.files.length) return;
+      const fd = new FormData();
+      fd.append('image', fileInput.files[0]);
+      const res = await api('/api/admin/upload', { method: 'POST', body: fd, headers: { 'CSRF-Token': csrfToken } });
+      const form = fileInput.closest('form');
+      if (form?.elements[targetName]) form.elements[targetName].value = res.url;
+      toast('Image uploaded. Click Update or Save to apply.');
+    }
+
+    function seo() {
+      return `<div class="card"><h2>Update SEO Information</h2><p class="small" style="margin-bottom:12px;">Only real MyFrame frontend pages are listed. Google ranking basics used here: descriptive unique titles/descriptions, crawlable URLs, sitemap and hreflang for languages.</p>${(state.seo || []).map(s => `<form style="border-bottom:1px solid #F3F4F6;padding:12px 0;" onsubmit="saveSeo(event,'${s.page_key}')"><strong>${esc(s.page_name)} Page</strong>${text('meta_title', s.meta_title || s.meta_keywords || '', 'Meta Title / Keywords')}${text('meta_description', s.meta_description, 'Meta Description')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>`).join('')}</div>`;
+    }
+    async function saveSeo(e, pageKey) {
+      e.preventDefault();
+      const d = formData(e.target);
+      if (!d.meta_keywords || !String(d.meta_keywords).trim()) d.meta_keywords = d.meta_title;
+      await api(`/api/admin/seo/${pageKey}`, { method:'PUT', body: JSON.stringify(d) });
+      toast('SEO updated');
+    }
+
+    function contact() {
+      const c = state.contact || {};
+      return `<div class="two">
+        <div class="card">
+          <h2>Email All Subscribers</h2>
+          <p class="small" style="margin-bottom:12px;">Uses the SMTP settings from Mail Configuration and sends with subscribers in BCC (batched).</p>
+          <form onsubmit="sendBroadcast(event)">
+            <div class="field"><label>Email Subject</label><input id="bcSub" required></div>
+            <div class="field"><label>Email Body</label><textarea id="bcBody" required style="min-height:120px;"></textarea></div>
+            <button class="btn primary" type="submit"><i class="fas fa-paper-plane"></i> Send To All Subscribers</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2>${esc(c.officeTitle || 'Hong Kong Headquarters')}</h2>
+          <p style="margin-bottom:12px;">${esc(c.officeDescription || '')}</p>
+          <p class="small" style="margin-bottom:16px;white-space:pre-wrap;">${esc(c.officeAddress || '')}</p>
+          <p class="small" style="margin-bottom:12px;">Public email: <strong>${esc(c.publicEmail || 'contact@myframe.ink')}</strong></p>
+          <a class="btn light" href="/page/contact-us" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> Open Contact Page</a>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h2>Contact Messages</h2>
+        <form onsubmit="saveContactBlock(event)" style="margin-bottom:18px;">
+          <div class="two">${input('publicEmail', c.publicEmail || 'contact@myframe.ink', 'Public email')}${input('officeTitle', c.officeTitle, 'Office title')}</div>
+          ${text('officeAddress', c.officeAddress, 'Office address')}
+          ${text('officeDescription', c.officeDescription, 'Office description')}
+          ${input('mapEmbedUrl', c.mapEmbedUrl, 'Map embed URL')}
+          <button class="btn primary"><i class="fas fa-save"></i> Save Contact Block</button>
+        </form>
+        <div class="actions" style="justify-content:flex-end;margin-bottom:10px;">
+          <input class="search" placeholder="Search" oninput="filterTable(this)">
+        </div>
+        ${table(['Sender','Message','Status','Email','Created','Action'], (state.contactMessages || []).map(m => [
+          esc(m.name),
+          `<div style="max-width:260px;max-height:120px;overflow:auto;">${esc(m.message)}</div>`,
+          `<select id="cms_${m.id}">${['new','read','replied','archived'].map(s => `<option value="${s}" ${String(m.status)===s?'selected':''}>${s}</option>`).join('')}</select>`,
+          esc(m.email),
+          esc(new Date(m.created_at).toLocaleString()),
+          `<button class="btn soft" type="button" onclick="saveMsgStatus(${m.id})"><i class="fas fa-save"></i></button>`
+        ]))}
+      </div>`;
+    }
+
+    async function saveContactBlock(e) {
+      e.preventDefault();
+      await api('/api/admin/settings/contact', { method:'PUT', body: JSON.stringify(formData(e.target)) });
+      toast('Contact block saved');
+      await loadAll();
+    }
+
+    async function sendBroadcast(e) {
+      e.preventDefault();
+      try {
+        const res = await api('/api/admin/contact/broadcast', { method:'POST', body: JSON.stringify({ subject: $('bcSub').value, body: $('bcBody').value }) });
+        toast(`Sent to ${res.recipients || 0} subscribers`);
+      } catch (err) { toast(err.message); }
+    }
+
+    async function saveMsgStatus(id) {
+      const sel = $('cms_' + id);
+      if (!sel) return;
+      await api('/api/admin/contact-messages/' + id, { method:'PUT', body: JSON.stringify({ status: sel.value }) });
+      toast('Message updated');
+      await loadAll();
+    }
+
+    function permalinks() {
+      const origin = location.origin;
+      return `<div class="card"><h2>Update Permalink</h2><p class="small" style="margin-bottom:12px;">You can change the main slug. Slug will change only for Frontend.</p>${(state.permalinks || []).map(p => `<form class="two" style="border-bottom:1px solid #F3F4F6;padding:12px 0;align-items:end;" onsubmit="savePermalink(event,'${p.page_key}')"><div><strong>Page Name : ${esc(p.page_name)}</strong><p class="small">Full Path : ${origin}/${esc(p.slug)}</p></div>${input('slug', p.slug, 'Slug')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>`).join('')}</div>`;
+    }
+    async function savePermalink(e, key) { e.preventDefault(); await api(`/api/admin/permalinks/${key}`, { method:'PUT', body: JSON.stringify(formData(e.target)) }); toast('Permalink updated'); await loadAll(); }
+
+    function maintenance() {
+      const m = state.maintenance || {};
+      return `<form class="card" onsubmit="saveSetting(event,'maintenance')"><h2>Update Maintenance Mode</h2>${select('enabled', m.enabled ? 'true' : 'false', 'Maintenance Mode*', ['false','true'])}${imageInput('image', m.image, 'Maintenance Image *')}${text('text', m.text, 'Maintenance Text *')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>`;
+    }
+
+    function footer() {
+      const f = state.footer || {};
+      return `<form class="card" onsubmit="saveSetting(event,'footer')"><h2>Footer Information</h2>${imageInput('footerLogo', f.footerLogo, 'Footer Logo *')}${imageInput('footerBgImage', f.footerBgImage, 'Footer BG Image')}${text('footerText', f.footerText, 'Footer Text*')}${input('copyrightText', f.copyrightText, 'Copyright Text*')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>
+      <div style="margin-top:16px;">${crud('Footer Link','footer_links',['group_name','name','url','link_order','is_active'], state.footerLinks, { group_name:'Group', name:'Name', url:'URL', link_order:'Order', is_active:'Active' })}</div>`;
+    }
+
+    function translationEditor() {
+      const translations = state.translations || {};
+      const langs = (state.languages || []).filter(l => l.code !== 'en');
+      return `<form onsubmit="saveTranslations(event)">${langs.map(lang => {
+        const t = translations[lang.code] || {};
+        return `<div style="border-top:1px solid #F3F4F6;padding-top:14px;margin-top:14px;"><h2>${esc(lang.name)} (${esc(lang.code)})</h2><div class="three">${input(`${lang.code}.menuFeatures`, t.menuFeatures, 'Menu Features')}${input(`${lang.code}.menuProduct`, t.menuProduct, 'Menu Product')}${input(`${lang.code}.menuPricing`, t.menuPricing, 'Menu Pricing')}</div><div class="three">${input(`${lang.code}.menuFamilies`, t.menuFamilies, 'Menu Families')}${input(`${lang.code}.menuCart`, t.menuCart, 'Menu Cart')}${input(`${lang.code}.buyForGift`, t.buyForGift, 'Buy For Gift')}</div><div class="two">${input(`${lang.code}.heroBadge`, t.heroBadge, 'Hero Badge')}${input(`${lang.code}.heroPrimaryButton`, t.heroPrimaryButton, 'Primary Button')}</div><div class="two">${input(`${lang.code}.heroSecondaryButton`, t.heroSecondaryButton, 'Watch Video Button')}${input(`${lang.code}.heroImageCaption`, t.heroImageCaption, 'Hero Image Caption')}</div><div class="two">${input(`${lang.code}.heroTitle`, t.heroTitle, 'Hero Title')}${input(`${lang.code}.heroHighlight`, t.heroHighlight, 'Hero Highlight')}</div>${text(`${lang.code}.heroSubtitle`, t.heroSubtitle, 'Hero Subtitle')}<div class="two">${input(`${lang.code}.featureLabel`, t.featureLabel, 'Feature Label')}${input(`${lang.code}.featureTitle`, t.featureTitle, 'Feature Title')}</div>${text(`${lang.code}.featureDescription`, t.featureDescription, 'Feature Description')}<div class="two">${input(`${lang.code}.productTitle`, t.productTitle, 'Product Title')}${input(`${lang.code}.productLabel`, t.productLabel, 'Product Label')}</div>${text(`${lang.code}.productDescription`, t.productDescription, 'Product Description')}<div class="two">${input(`${lang.code}.specsLabel`, t.specsLabel, 'Specs Label')}${input(`${lang.code}.specsTitle`, t.specsTitle, 'Specs Title')}</div>${text(`${lang.code}.specsDescription`, t.specsDescription, 'Specs Description')}<div class="two">${input(`${lang.code}.pricingTitle`, t.pricingTitle, 'Pricing Title')}${text(`${lang.code}.pricingDescription`, t.pricingDescription, 'Pricing Description')}</div><div class="three">${input(`${lang.code}.footerGroupProduct`, t.footerGroupProduct, 'Footer Product Group')}${input(`${lang.code}.footerGroupSupport`, t.footerGroupSupport, 'Footer Support Group')}${input(`${lang.code}.footerGroupCompany`, t.footerGroupCompany, 'Footer Company Group')}</div><div class="three">${input(`${lang.code}.badgeAvailableNow`, t.badgeAvailableNow, 'Badge Available Now')}${input(`${lang.code}.badgeComingSoon`, t.badgeComingSoon, 'Badge Coming Soon')}${input(`${lang.code}.badgeUnderDevelopment`, t.badgeUnderDevelopment, 'Badge Under Development')}</div>${input(`${lang.code}.oneTimePurchase`, t.oneTimePurchase, 'One Time Purchase')}<div class="four"></div>${input(`${lang.code}.familyTitle`, t.familyTitle, 'Family Title')}${text(`${lang.code}.familyDescription`, t.familyDescription, 'Family Description')}<div class="two">${input(`${lang.code}.familyStep1Title`, t.familyStep1Title, 'Step 1 Title')}${text(`${lang.code}.familyStep1Description`, t.familyStep1Description, 'Step 1 Description')}</div><div class="two">${input(`${lang.code}.familyStep2Title`, t.familyStep2Title, 'Step 2 Title')}${text(`${lang.code}.familyStep2Description`, t.familyStep2Description, 'Step 2 Description')}</div><div class="two">${input(`${lang.code}.familyStep3Title`, t.familyStep3Title, 'Step 3 Title')}${text(`${lang.code}.familyStep3Description`, t.familyStep3Description, 'Step 3 Description')}</div>${text(`${lang.code}.footerText`, t.footerText, 'Footer Text')}<div class="field"><label>Full Translation JSON</label><textarea name="${lang.code}.__json__">${esc(JSON.stringify(t, null, 2))}</textarea></div></div>`;
+      }).join('')}<button class="btn primary" style="margin-top:14px;"><i class="fas fa-save"></i> Save Language Content</button></form>`;
+    }
+    async function saveTranslations(e) {
+      e.preventDefault();
+      const data = {};
+      for (const [key, value] of new FormData(e.target).entries()) {
+        const [lang, field] = key.split('.');
+        if (field === '__json__') {
+          try { data[lang] = JSON.parse(value); } catch (_) {}
+          continue;
+        }
+        data[lang] = data[lang] || {};
+        data[lang][field] = value;
+      }
+      await api('/api/admin/settings/translations', { method:'PUT', body: JSON.stringify(data) });
+      toast('Language content updated'); await loadAll();
+    }
+
+    function translatedFeatureEditor() {
+      const translations = state.translatedFeatures || {};
+      const langs = (state.languages || []).filter(l => l.code !== 'en');
+      return `<form onsubmit="saveTranslatedFeatures(event)">${langs.map(lang => {
+        const items = translations[lang.code] || [];
+        return `<div style="border-top:1px solid #F3F4F6;padding-top:14px;margin-top:14px;"><h2>${esc(lang.name)} Features</h2>${items.map((item, index) => `<div class="two">${input(`${lang.code}.${index}.title`, item.title, `Feature ${index + 1} Title`)}${text(`${lang.code}.${index}.description`, item.description, `Feature ${index + 1} Description`)}</div>`).join('')}</div>`;
+      }).join('')}<button class="btn primary" style="margin-top:14px;"><i class="fas fa-save"></i> Save Translated Features</button></form>`;
+    }
+    async function saveTranslatedFeatures(e) {
+      e.preventDefault();
+      const data = {};
+      for (const [key, value] of new FormData(e.target).entries()) {
+        const [lang, index, field] = key.split('.');
+        data[lang] = data[lang] || [];
+        data[lang][Number(index)] = data[lang][Number(index)] || {};
+        data[lang][Number(index)][field] = value;
+      }
+      await api('/api/admin/settings/translated_features', { method:'PUT', body: JSON.stringify(data) });
+      toast('Translated features updated'); await loadAll();
+    }
+
+    function contentPagesEditor() {
+      const pages = state.contentPages || {};
+      const langs = state.languages || [];
+      const slugs = Object.keys(pages.en || {});
+      return `<form onsubmit="saveContentPages(event)">${langs.map(lang => `<div style="border-top:1px solid #F3F4F6;padding-top:14px;margin-top:14px;"><h2>${esc(lang.name)} Pages</h2>${slugs.map(slug => {
+        const page = pages[lang.code]?.[slug] || {};
+        return `<div class="card" style="margin-bottom:12px;padding:14px;"><strong style="display:block;margin-bottom:10px;">${esc(slug)}</strong>${input(`${lang.code}.${slug}.title`, page.title, 'Title')}${text(`${lang.code}.${slug}.excerpt`, page.excerpt, 'Excerpt')}${text(`${lang.code}.${slug}.body`, page.body, 'Body (HTML allowed)')}</div>`;
+      }).join('')}</div>`).join('')}<button class="btn primary"><i class="fas fa-save"></i> Save Content Pages</button></form>`;
+    }
+    async function saveContentPages(e) {
+      e.preventDefault();
+      const data = {};
+      for (const [key, value] of new FormData(e.target).entries()) {
+        const [lang, slug, field] = key.split('.');
+        data[lang] = data[lang] || {};
+        data[lang][slug] = data[lang][slug] || {};
+        data[lang][slug][field] = value;
+      }
+      await api('/api/admin/settings/content_pages', { method:'PUT', body: JSON.stringify(data) });
+      toast('Content pages updated'); await loadAll();
+    }
+
+    function mail() {
+      const m = state.mail || {};
+      return `<form class="card" onsubmit="saveSetting(event,'mail')"><h2>Mail From Admin</h2><div class="three">${select('smtpEnabled', m.smtpEnabled ? 'true':'false', 'SMTP*', ['false','true'])}${input('engine', m.engine, 'Mail Engine*')}${input('host', m.host, 'SMTP HOST*')}</div><div class="three">${input('port', m.port, 'SMTP PORT*')}${input('encryption', m.encryption, 'Encryption')}${input('username', m.username, 'SMTP Username*')}</div>${input('password', m.password, 'SMTP Password*','password')}<div class="two">${input('fromEmail', m.fromEmail, 'From Email*')}${input('fromName', m.fromName, 'From Name*')}</div><h2>Mail To Admin</h2>${input('adminEmail', m.adminEmail, 'Email Address*')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>`;
+    }
+
+    function gateways() {
+      return `<div class="card"><h2>Payment Gateway List</h2>${table(['Title','Status','Config','Action'], (state.gateways || []).map(g => [esc(g.title), badge(g.status), `<textarea id="gw_${g.code}">${esc(JSON.stringify(g.config || {}, null, 2))}</textarea>`, `<button class="btn primary" onclick="saveGateway('${g.code}','${esc(g.title)}')"><i class="fas fa-save"></i> Configure</button>`]))}<p class="small" style="margin-top:12px;">Stripe and Paypal are ready for real credentials. Only public-safe gateway data is exposed to the frontend.</p></div>`;
+    }
+    async function saveGateway(code,title) { await api(`/api/admin/payment-gateways/${code}`, { method:'PUT', body: JSON.stringify({ title, status:'active', config: JSON.parse($(`gw_${code}`).value || '{}') }) }); toast('Gateway updated'); await loadAll(); }
+
+    function products() {
+      return `<div class="card"><h2>Add/Edit Product</h2><form id="form_products" onsubmit="saveProduct(event)"><input type="hidden" name="id"><div class="three">${input('sku','','SKU')}${input('name','','Name')}${input('price','','Price','number')}</div>${text('description','','Description')}<div class="three">${input('currency','USD','Currency')}${input('badge','','Badge')}${input('button_text','Add to Cart','Button Text')}</div>${imageInput('image_url','','Product Image')}${text('features','','Features, one per line')}${text('specs','{}','Specs JSON')}<input name="status" type="hidden" value="publish"><div class="actions"><button class="btn primary"><i class="fas fa-save"></i> Save Product</button><button type="button" class="btn light" onclick="clearForm('products')">Clear</button></div></form></div>
+      <div class="card" style="margin-top:16px;"><h2>Products List</h2>${table(['SKU','Name','Price','Status','Action'], (state.products || []).map(p => [esc(p.sku), esc(p.name), money(p.price,p.currency), badge(p.status), `<button class="btn soft" onclick="editProduct(${p.id})"><i class="fas fa-pen"></i> Edit</button> <button class="btn danger" onclick="delRow('products',${p.id})"><i class="fas fa-trash"></i></button>`]))}</div>`;
+    }
+    function editProduct(id) {
+      const p = (state.products || []).find(item => Number(item.id) === Number(id));
+      const form = $('form_products');
+      if (!p || !form) return;
+      ['id','sku','name','price','description','currency','badge','button_text','image_url','status'].forEach(k => { if (form.elements[k]) form.elements[k].value = p[k] ?? ''; });
+      form.elements.features.value = Array.isArray(p.features) ? p.features.join('\n') : parseLines(p.features).join('\n');
+      form.elements.specs.value = JSON.stringify(p.specs || {}, null, 2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    async function saveProduct(e) {
+      e.preventDefault();
+      const data = formData(e.target);
+      const id = data.id;
+      delete data.id;
+      data.category_id = state.categories?.[0]?.id || null;
+      data.features = parseLines(data.features);
+      data.specs = JSON.parse(data.specs || '{}');
+      await api(`/api/admin/products${id ? '/' + id : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) });
+      toast(id ? 'Product updated' : 'Product added'); await loadAll();
+    }
+
+    function orders() {
+      const rows = (state.orders || []).map(o => [o.order_number, esc(o.customer_name || ''), esc(o.gateway), money(o.total,o.currency), badge(o.order_status), badge(o.payment_status), `<div class="small">${esc(o.email || '')}<br>${esc(o.phone || '')}<br>${esc(o.city_country || '')}</div><div class="actions"><select id="os_${o.id}"><option ${o.order_status==='pending'?'selected':''}>pending</option><option ${o.order_status==='in_progress'?'selected':''}>in_progress</option><option ${o.order_status==='completed'?'selected':''}>completed</option><option ${o.order_status==='rejected'?'selected':''}>rejected</option></select><select id="ps_${o.id}"><option ${o.payment_status==='pending'?'selected':''}>pending</option><option ${o.payment_status==='paid'?'selected':''}>paid</option><option ${o.payment_status==='failed'?'selected':''}>failed</option><option ${o.payment_status==='refunded'?'selected':''}>refunded</option></select><button class="btn primary" onclick="saveOrder(${o.id})"><i class="fas fa-save"></i></button></div>`]);
+      return `<div class="card"><h2>All Order List</h2>${table(['Order Number','Customer','Gateway','Total','Order Status','Payment Status','Actions'], rows)}</div>`;
+    }
+    async function saveOrder(id) { await api(`/api/admin/orders/${id}`, { method:'PUT', body: JSON.stringify({ order_status: $(`os_${id}`).value, payment_status: $(`ps_${id}`).value }) }); toast('Order updated'); await loadAll(); }
+
+    function toast(message) { $('toast').textContent = message; $('toast').style.display = 'block'; setTimeout(() => $('toast').style.display = 'none', 2200); }
+    boot();
+  </script>
+</body>
+</html>

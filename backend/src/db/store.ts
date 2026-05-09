@@ -156,6 +156,39 @@ export type MyframeDb = {
     atMs: number;
     meta: Record<string, unknown> | null;
   }>;
+  /** Visitor “notify me” signups from the marketing site (no CRM integration). */
+  notifySubscribers: Array<{
+    id: string;
+    name: string;
+    email: string;
+    sku: string;
+    productName: string;
+    language: string;
+    createdAtMs: number;
+  }>;
+  /** E‑commerce orders (marketing checkout — flat file; not a payments processor). */
+  orders: Array<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    email: string;
+    phone: string;
+    address: string;
+    cityCountry?: string;
+    note?: string;
+    isGift: boolean;
+    gateway: string;
+    currency: string;
+    subtotal: number;
+    shipping: number;
+    total: number;
+    status: "pending" | "shipped" | "delivered";
+    paymentStatus: string;
+    language?: string;
+    items: Array<{ sku: string; name?: string; quantity: number; unitPrice: number; lineTotal: number }>;
+    createdAtMs: number;
+    updatedAtMs: number;
+  }>;
 };
 
 const dbDir = path.join(process.cwd(), "data");
@@ -261,6 +294,8 @@ function createInitialDb(): MyframeDb {
     auditLog: [],
     slideshowsByBleMac: {},
     commerceEvents: [],
+    notifySubscribers: [],
+    orders: [],
     faqs: [
       {
         id: "faq_pair",
@@ -305,6 +340,12 @@ function readDbRaw(): MyframeDb {
   }
   if (!Array.isArray(parsed.commerceEvents)) {
     parsed.commerceEvents = [];
+  }
+  if (!Array.isArray(parsed.notifySubscribers)) {
+    parsed.notifySubscribers = [];
+  }
+  if (!Array.isArray(parsed.orders)) {
+    parsed.orders = [];
   }
   if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
     parsed.slideshowsByBleMac = {};

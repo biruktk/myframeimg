@@ -73,6 +73,12 @@ export function AppShell({
     }
   };
 
+  const isPortalHome = pathname.endsWith("/app/home");
+
+  if (isPortalHome) {
+    return <div className="min-h-screen w-full bg-[#FAFAFA]">{children}</div>;
+  }
+
   return (
     <div className="min-h-screen w-full bg-myframe-soft text-gray-900 md:flex">
       <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-white md:block">

@@ -15,6 +15,8 @@ import { frameCloudRouter } from "./routes/frame_cloud";
 import { familyRouter } from "./routes/family";
 import { frameSlideshowRouter } from "./routes/frame_slideshow";
 import { enterpriseRouter } from "./routes/enterprise";
+import { publicSiteRouter } from "./routes/public_site";
+import { userPortalRouter } from "./routes/user_portal";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -114,8 +116,20 @@ app.get("/", (_req, res) => {
 </html>`);
 });
 
+app.use("/api", publicSiteRouter);
+
+const manageHtmlPath = path.join(packageRoot, "static", "manage.html");
+app.get("/managemyframe", (_req, res) => {
+  if (!fs.existsSync(manageHtmlPath)) {
+    res.status(404).type("html").send("<!DOCTYPE html><html><body><p>manage.html not found on server.</p></body></html>");
+    return;
+  }
+  res.type("html").send(fs.readFileSync(manageHtmlPath, "utf8"));
+});
+
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
+app.use("/api", userPortalRouter);
 app.use("/api", familyRouter);
 app.use("/api", frameSlideshowRouter());
 app.use("/api", miniProgramRouter);
