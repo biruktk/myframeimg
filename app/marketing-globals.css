@@ -870,11 +870,14 @@
             background: var(--primary);
             box-shadow: none;
             z-index: 2;
+            box-sizing: border-box;
         }
 
         .product-frame-screen {
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            inset: 22px 16px;
+            width: auto;
+            height: auto;
             border-radius: 2px;
             background: #fff;
             border: 0;
@@ -3044,6 +3047,17 @@ h4,
   height: auto !important;
   aspect-ratio: 0.86 / 1 !important;
   padding: 22px 16px !important;
+  box-sizing: border-box !important;
+}
+
+.product .product-frame-screen {
+  position: absolute !important;
+  inset: 22px 16px !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .product #productShowcaseMedia,
