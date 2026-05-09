@@ -1,6 +1,90 @@
 import fs from "fs";
 import path from "path";
 
+import type { MarketingSiteStored } from "../data/marketing_defaults";
+import { marketingSiteSeed } from "../data/marketing_defaults";
+
+/** Extra persisted tables for `/managemyframe` (not merged into MarketingSiteStored). */
+export type MarketingCmsState = {
+  sitemaps: Array<{ id: number; loc: string; changefreq: string; priority: string }>;
+  shippingMethods: Array<{ id: number; name: string; price: string; eta: string; is_active: string }>;
+  productCategories: Array<{
+    id: number;
+    name: string;
+    image_url: string;
+    popular: string;
+    featured: string;
+    status: string;
+  }>;
+  blogs: Array<Record<string, unknown>>;
+  languages: Array<{
+    id: number;
+    code: string;
+    name: string;
+    native_name: string;
+    language_order: number;
+    is_default: string;
+    is_active: string;
+  }> | null;
+  currencies: Array<{
+    id: number;
+    name: string;
+    sign: string;
+    value: string;
+    is_default: string;
+    is_active: string;
+  }> | null;
+  mail: Record<string, string>;
+  documentation: { pdfUrl: string; pdfButtonLabel: string };
+  contact: Record<string, string>;
+  contactMessages: Array<{
+    id: string;
+    name: string;
+    email: string;
+    message: string;
+    status: string;
+    created_at: string;
+  }>;
+  permalinks: Array<{ page_key: string; page_name: string; slug: string }>;
+  cmsAdmins: Array<{
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+    role: string;
+    passwordHash?: string;
+  }>;
+};
+
+export function marketingCmsSeed(): MarketingCmsState {
+  return {
+    sitemaps: [],
+    shippingMethods: [],
+    productCategories: [],
+    blogs: [],
+    languages: null,
+    currencies: null,
+    mail: {},
+    documentation: {
+      pdfUrl: "/downloads/myframe-product-documentation.pdf",
+      pdfButtonLabel: "Download MyFrame product documentation (PDF)",
+    },
+    contact: {
+      publicEmail: "contact@myframe.ink",
+      officeTitle: "Hong Kong Headquarters",
+      officeAddress: "",
+      officeDescription: "",
+      mapEmbedUrl: "",
+    },
+    contactMessages: [],
+    permalinks: [
+      { page_key: "home", page_name: "Home", slug: "" },
+      { page_key: "cart", page_name: "Cart & Checkout", slug: "cart-checkout.html" },
+    ],
+    cmsAdmins: [{ id: 1, name: "Administrator", email: "admin@local", username: "admin", role: "super_admin" }],
+  };
+}
+
 export type MyframeDb = {
   organizations: Array<{
     id: string;
@@ -166,6 +250,11 @@ export type MyframeDb = {
     language: string;
     createdAtMs: number;
   }>;
+  /** Marketing/CMS content for GET /api/public/site (edited via /managemyframe admin routes). */
+  marketingSite?: MarketingSiteStored;
+
+  marketingCms?: MarketingCmsState;
+
   /** E‑commerce orders (marketing checkout — flat file; not a payments processor). */
   orders: Array<{
     id: string;
@@ -296,6 +385,8 @@ function createInitialDb(): MyframeDb {
     commerceEvents: [],
     notifySubscribers: [],
     orders: [],
+    marketingSite: marketingSiteSeed(),
+    marketingCms: marketingCmsSeed(),
     faqs: [
       {
         id: "faq_pair",
@@ -347,10 +438,44 @@ function readDbRaw(): MyframeDb {
   if (!Array.isArray(parsed.orders)) {
     parsed.orders = [];
   }
+  if (!parsed.marketingSite || typeof parsed.marketingSite !== "object") {
+    parsed.marketingSite = marketingSiteSeed();
+  }
+  if (!parsed.marketingCms || typeof parsed.marketingCms !== "object") {
+    parsed.marketingCms = marketingCmsSeed();
+  }
+  hydrateManageRowIds(parsed);
   if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
     parsed.slideshowsByBleMac = {};
   }
   return parsed;
+}
+
+/** Assign numeric [id]s to menus/socials/footerLinks so CRUD in manage.html works. */
+function hydrateManageRowIds(parsed: MyframeDb) {
+  const ms = parsed.marketingSite;
+  if (!ms) return;
+  const menusArr = ms.menus as unknown as Array<Record<string, unknown>>;
+  let nextMenu = menusArr.reduce((m, row) => Math.max(m, typeof row.id === "number" ? (row.id as number) : 0), 0) + 1;
+  ms.menus = menusArr.map((row) =>
+    typeof row.id === "number"
+      ? (row as unknown as (typeof ms.menus)[number])
+      : ({ ...row, id: nextMenu++ } as unknown as (typeof ms.menus)[number]),
+  );
+  const socialArr = ms.socials as unknown as Array<Record<string, unknown>>;
+  let nextSoc = socialArr.reduce((m, row) => Math.max(m, typeof row.id === "number" ? (row.id as number) : 0), 0) + 1;
+  ms.socials = socialArr.map((row) =>
+    typeof row.id === "number"
+      ? (row as unknown as (typeof ms.socials)[number])
+      : ({ ...row, id: nextSoc++ } as unknown as (typeof ms.socials)[number]),
+  );
+  const flArr = ms.footerLinks as unknown as Array<Record<string, unknown>>;
+  let nextFl = flArr.reduce((m, row) => Math.max(m, typeof row.id === "number" ? (row.id as number) : 0), 0) + 1;
+  ms.footerLinks = flArr.map((row) =>
+    typeof row.id === "number"
+      ? (row as unknown as (typeof ms.footerLinks)[number])
+      : ({ ...row, id: nextFl++ } as unknown as (typeof ms.footerLinks)[number]),
+  );
 }
 
 function writeDbRaw(db: MyframeDb) {

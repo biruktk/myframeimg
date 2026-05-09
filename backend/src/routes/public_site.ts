@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
-import { catalogPriceBySku, marketingSitePayload } from "../data/marketing_site_payload";
+
 import { db } from "../db/store";
+import { getPublicSitePayload, priceBySkuFromDb } from "../services/marketing_public";
 
 export const publicSiteRouter = Router();
 publicSiteRouter.use(express.json({ limit: "512kb" }));
@@ -39,28 +40,9 @@ function nextOrderNumber(): string {
   return `MF-${t}-${r}`;
 }
 
-/** GET /api/public/site */
+/** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */
 publicSiteRouter.get("/public/site", (_req: Request, res: Response) => {
-  const p = marketingSitePayload();
-  res.json({
-    ...p,
-    basic: p.basic,
-    footer: p.footer,
-    maintenance: p.maintenance,
-    media: p.media,
-    languages: p.languages,
-    currencies: p.currencies,
-    translations: p.translations,
-    translatedFeatures: p.translatedFeatures,
-    contentPages: p.contentPages,
-    seo: p.seo,
-    menus: p.menus,
-    footerLinks: p.footerLinks,
-    socials: p.socials,
-    features: p.features,
-    products: p.products,
-    gateways: p.gateways,
-  });
+  res.json(getPublicSitePayload());
 });
 
 /** GET /api/public/location — static geo stub (no upstream IP database). */
@@ -127,8 +109,17 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
   const customerName = String(req.body?.customer_name ?? "").trim();
   const email = String(req.body?.email ?? "").trim();
   const phone = String(req.body?.phone ?? "").trim();
-  const address = String(req.body?.address ?? req.body?.address_line1 ?? "").trim();
-  if (!customerName || !email || !phone || !address) {
+  const addressLine = String(req.body?.address ?? req.body?.address_line1 ?? "").trim();
+  const city = String(req.body?.city ?? "").trim();
+  const country = String(req.body?.country ?? "").trim();
+  /** Checkout must include address + city + country (legacy callers may send city_country instead). */
+  const cityCountryRaw = String(req.body?.city_country ?? "").trim();
+  const address = addressLine;
+  const cityCountry =
+    cityCountryRaw ||
+    [city, country].filter(Boolean).join(", ") ||
+    undefined;
+  if (!customerName || !email || !address || (!city && !country && !cityCountryRaw)) {
     res.status(400).json({ ok: false, error: "buyer_fields_required" });
     return;
   }
@@ -137,15 +128,15 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
   const language = String(req.body?.language ?? "").trim() || undefined;
   const note = String(req.body?.note ?? "").trim() || undefined;
   const isGift = Boolean(req.body?.is_gift);
-  const cityCountry = String(req.body?.city_country ?? "").trim() || undefined;
 
+  const priceMap = priceBySkuFromDb();
   const lines: Array<{ sku: string; name?: string; quantity: number; unitPrice: number; lineTotal: number }> = [];
   let subtotal = 0;
   for (const row of itemsIn) {
     const sku = String(row?.sku ?? "").trim();
-    const quantity = Math.max(0, Math.min(99, Math.round(Number(row?.quantity) || 0)));
+    const quantity = Math.max(0, Math.min(99, Math.round(Number(row?.quantity ?? row?.qty) || 0)));
     if (!sku || quantity <= 0) continue;
-    const unit = catalogPriceBySku[sku];
+    const unit = priceMap[sku];
     if (unit == null) {
       res.status(400).json({ ok: false, error: "unknown_sku", sku });
       return;
@@ -170,7 +161,7 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
       orderNumber,
       customerName,
       email,
-      phone,
+      phone: phone || "",
       address,
       cityCountry,
       note,

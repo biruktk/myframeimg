@@ -1,0 +1,80 @@
+.content-page-wrap {
+  min-height: 100vh;
+}
+
+.content-page-main {
+  width: min(var(--max-width), calc(100% - 40px));
+  margin: 0 auto;
+  padding: 124px 0 100px;
+}
+
+.content-page-back {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.content-page-back:hover {
+  color: var(--primary);
+}
+
+.content-page-title {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+
+.content-page-excerpt {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  margin-bottom: 2rem;
+  max-width: 52rem;
+}
+
+.content-prose {
+  max-width: 52rem;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.content-prose h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 2rem 0 0.65rem;
+  color: var(--ink);
+}
+
+.content-prose h2:first-child {
+  margin-top: 0;
+}
+
+.content-prose p {
+  margin: 0.85rem 0;
+}
+
+.content-prose ul {
+  margin: 0.75rem 0 0.75rem 1.25rem;
+  padding: 0;
+}
+
+.content-prose li {
+  margin: 0.35rem 0;
+}
+
+.content-prose a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.content-prose a:hover {
+  text-decoration: underline;
+}

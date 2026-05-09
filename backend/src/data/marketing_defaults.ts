@@ -1,5 +1,5 @@
 /**
- * Static payload for `/api/public/site` (was MySQL-backed settings in legacy stack).
+ * Seed values for persisted `marketingSite` in JSON DB merged by GET /api/public/site.
  */
 
 const languages = [
@@ -136,6 +136,20 @@ const products = [
     features: ['13.3" + 6 Color E-ink', "WiFi + MQTT Connected", "SD Card Support", "Up to 5 family members", "Memory Flashback", "Automated Care"],
     specs: { display: '13.3" + 6 Color', sdCard: true, nfc: true, bluetooth: true, wifi: true, notes: "" },
   },
+  {
+    id: 4,
+    sku: "SPECTRA-001",
+    name: "Spectra 001",
+    description: "Spectra colour e‑paper frame",
+    price: 399,
+    currency: "USD",
+    category_id: 1,
+    badge: "Available Now",
+    button_text: "Add to Cart",
+    status: "publish",
+    features: ["Spectra colour e‑paper", "Wi‑Fi connected", "Private family albums"],
+    specs: { display: '13.3"', sdCard: true, nfc: false, bluetooth: true, wifi: true, notes: "" },
+  },
 ];
 
 const basic = {
@@ -262,13 +276,6 @@ const gateways = [
   { code: "cash_on_delivery", title: "Cash On Delivery", config: {} },
 ];
 
-/** Server-side price book for checkout validation (USD base). */
-export const catalogPriceBySku: Record<string, number> = {
-  "YX-6": 160,
-  "YX-6P": 160,
-  "YX-133P": 360,
-};
-
 const translationsZh: Record<string, string> = {
   menuFeatures: "功能",
   menuProduct: "产品",
@@ -308,32 +315,36 @@ const translationsZh: Record<string, string> = {
   notifyMeSuccess: "提交成功，我们会在产品开售时通知您。",
 };
 
-export function marketingSitePayload() {
+const zhScenarioFeatures = [
+  { title: "给远方的父母", description: "把当天的一张照片发送过去，让它成为家中安静可见的片刻。" },
+  { title: "给日常家庭生活", description: "让小小的日常一直可见：孩子的笑脸，或一句来自同城的问候。" },
+  { title: "给婚礼和礼物", description: "有意义的礼物能在特别的一天之后继续生长，变成家中的相册。" },
+  { title: "生日之后", description: "让庆祝过后的细小瞬间也一直留在家中。" },
+  { title: "房间里的艺术展", description: "把喜欢的作品和旅行照片，变成安静的家庭画廊角落。" },
+  { title: "给动物和宠物", description: "让宠物照片留在比相册更温暖的地方。" },
+];
+
+/** Persisted CMS payload (languages/currencies are merged at runtime from exports below). */
+export function marketingSiteSeed() {
   return {
-    languages,
-    currencies,
-    menus,
-    footerLinks,
-    socials,
-    features,
-    products,
-    basic,
-    footer,
-    maintenance,
-    media,
-    seo,
-    gateways,
-    translations: { zh: translationsZh },
-    translatedFeatures: {
-      zh: [
-        { title: "给远方的父母", description: "把当天的一张照片发送过去，让它成为家中安静可见的片刻。" },
-        { title: "给日常家庭生活", description: "让小小的日常一直可见：孩子的笑脸，或一句来自同城的问候。" },
-        { title: "给婚礼和礼物", description: "有意义的礼物能在特别的一天之后继续生长，变成家中的相册。" },
-        { title: "生日之后", description: "让庆祝过后的细小瞬间也一直留在家中。" },
-        { title: "房间里的艺术展", description: "把喜欢的作品和旅行照片，变成安静的家庭画廊角落。" },
-        { title: "给动物和宠物", description: "让宠物照片留在比相册更温暖的地方。" },
-      ],
-    },
+    basic: { ...basic },
+    footer: { ...footer },
+    maintenance: { ...maintenance },
+    media: { ...media },
+    translations: { zh: { ...translationsZh } },
+    translatedFeatures: { zh: zhScenarioFeatures.map((item) => ({ ...item })) },
     contentPages: { en: {}, zh: {} },
+    seo: seo.map((row) => ({ ...row })),
+    menus: menus.map((row) => ({ ...row })),
+    footerLinks: footerLinks.map((row) => ({ ...row })),
+    socials: socials.map((row) => ({ ...row })),
+    features: features.map((row) => ({ ...row })),
+    products: products.map((row) => ({ ...row })),
+    gateways: gateways.map((row) => ({ ...row })),
   };
 }
+
+export type MarketingSiteStored = ReturnType<typeof marketingSiteSeed>;
+
+export const staticLanguages = languages;
+export const staticCurrencies = currencies;

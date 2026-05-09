@@ -143,19 +143,39 @@
       csrfToken = (await fetch('/api/csrf-token', { credentials: 'same-origin' }).then(r => r.json())).csrfToken;
     }
 
+    function buildDashboard(orders, site, subscribers) {
+      const o = orders || [];
+      const pending = o.filter((x) => x.order_status === 'pending').length;
+      const inprog = o.filter((x) => x.order_status === 'in_progress').length;
+      const completed = o.filter((x) => x.order_status === 'completed').length;
+      const rejected = o.filter((x) => x.order_status === 'rejected').length;
+      return {
+        counts: {
+          products: (site.products || []).length,
+          allOrders: o.length,
+          pendingOrders: pending,
+          inProgressOrders: inprog,
+          completedOrders: completed,
+          rejectedOrders: rejected,
+          blogs: 0,
+          subscribers: (subscribers || []).length,
+          users: 0,
+        },
+        latestFeatures: (site.features || []).slice(0, 6),
+        latestOrders: o.slice(0, 8),
+      };
+    }
+
     async function boot() {
       await refreshCsrf();
-      const me = await api('/api/auth/me');
-      if (me.admin) showApp(); else showLogin();
+      const session = await fetch('/api/admin/session', { credentials: 'same-origin' }).then((r) => r.json());
+      if (session.ok) await showApp();
+      else showLogin();
     }
 
     function showLogin() { $('login').style.display = 'grid'; $('app').style.display = 'none'; }
     async function showApp() {
       $('login').style.display = 'none'; $('app').style.display = 'block';
-      try {
-        const me = await api('/api/auth/me');
-        state.me = me.admin;
-      } catch (_) {}
       renderNav();
       await loadAll();
     }
@@ -163,13 +183,25 @@
     $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('email').value, password: $('password').value }) });
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: $('email').value.trim(), password: $('password').value }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Login failed');
+        }
         await refreshCsrf();
         await showApp();
       } catch (err) { $('loginError').textContent = err.message; }
     });
 
-    async function logout() { await api('/api/auth/logout', { method:'POST', body:'{}' }); showLogin(); }
+    async function logout() {
+      await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+      showLogin();
+    }
 
     function renderNav() {
       const mine = state.me || state.account;
@@ -187,14 +219,66 @@
     }
 
     async function loadAll() {
-      const [bootstrap, dashboard, orders, subscribers] = await Promise.all([
-        api('/api/admin/bootstrap'),
-        api('/api/admin/dashboard'),
-        api('/api/admin/orders'),
-        api('/api/admin/subscribers')
-      ]);
-      state = { ...bootstrap, dashboard, orders, subscribers };
-      state.me = bootstrap.account ? { ...bootstrap.account } : state.me;
+      const site = await fetch('/api/public/site', { credentials: 'same-origin' }).then((r) => {
+        if (!r.ok) throw new Error('site_load_failed');
+        return r.json();
+      });
+      let overlay = {};
+      try { overlay = await api('/api/admin/manage-state'); } catch (_) {}
+      let ordData = { orders: [] };
+      let subData = { subscribers: [] };
+      try { ordData = await api('/api/admin/orders'); } catch (_) {}
+      try { subData = await api('/api/admin/subscribers'); } catch (_) {}
+      const orders = ordData.orders || [];
+      const subscribers = subData.subscribers || [];
+      const prevMe = state.me;
+      state = {
+        ...site,
+        ...overlay,
+        basic: site.basic || {},
+        footer: site.footer || {},
+        maintenance: site.maintenance || {},
+        media: site.media || {},
+        menus: site.menus || [],
+        socials: site.socials || [],
+        footerLinks: site.footerLinks || [],
+        features: site.features || [],
+        products: site.products || [],
+        seo: site.seo || [],
+        gateways: site.gateways || [],
+        currencies: overlay.currencies?.length ? overlay.currencies : (site.currencies || []),
+        languages: overlay.languages?.length ? overlay.languages : (site.languages || []).map((l, i) => ({
+          id: i + 1,
+          code: l.code,
+          name: l.name,
+          native_name: l.native_name,
+          language_order: l.language_order ?? i + 1,
+          is_default: l.code === 'en' ? '1' : '0',
+          is_active: '1',
+        })),
+        translations: site.translations || {},
+        translatedFeatures: site.translatedFeatures || {},
+        contentPages: site.contentPages || {},
+        orders,
+        subscribers,
+        dashboard: buildDashboard(orders, site, subscribers),
+        sitemaps: overlay.sitemaps || [],
+        categories: overlay.categories || [],
+        blogs: overlay.blogs || [],
+        contact: overlay.contact || {},
+        permalinks: overlay.permalinks || [],
+        mail: overlay.mail || {},
+        documentation: overlay.documentation || {},
+        contactMessages: overlay.contactMessages || [],
+        shippingMethods: overlay.shippingMethods || [],
+        account: {},
+        admins: overlay.admins || [],
+        me: prevMe,
+      };
+      try {
+        const me = await fetch('/api/admin/me', { credentials: 'same-origin' }).then((r) => r.json());
+        if (me.admin) state.me = me.admin;
+      } catch (_) {}
       renderNav();
       render();
     }
@@ -605,10 +689,10 @@
         ${table(['Sender','Message','Status','Email','Created','Action'], (state.contactMessages || []).map(m => [
           esc(m.name),
           `<div style="max-width:260px;max-height:120px;overflow:auto;">${esc(m.message)}</div>`,
-          `<select id="cms_${m.id}">${['new','read','replied','archived'].map(s => `<option value="${s}" ${String(m.status)===s?'selected':''}>${s}</option>`).join('')}</select>`,
+          `<select id="cms_${String(m.id).replace(/[^a-zA-Z0-9_-]/g,'_')}">${['new','read','replied','archived'].map(s => `<option value="${s}" ${String(m.status)===s?'selected':''}>${s}</option>`).join('')}</select>`,
           esc(m.email),
           esc(new Date(m.created_at).toLocaleString()),
-          `<button class="btn soft" type="button" onclick="saveMsgStatus(${m.id})"><i class="fas fa-save"></i></button>`
+          `<button class="btn soft" type="button" onclick="saveMsgStatus(${JSON.stringify(m.id)})"><i class="fas fa-save"></i></button>`
         ]))}
       </div>`;
     }
@@ -629,7 +713,8 @@
     }
 
     async function saveMsgStatus(id) {
-      const sel = $('cms_' + id);
+      const safe = String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const sel = $('cms_' + safe);
       if (!sel) return;
       await api('/api/admin/contact-messages/' + id, { method:'PUT', body: JSON.stringify({ status: sel.value }) });
       toast('Message updated');
@@ -756,7 +841,7 @@
     }
 
     function orders() {
-      const rows = (state.orders || []).map(o => [o.order_number, esc(o.customer_name || ''), esc(o.gateway), money(o.total,o.currency), badge(o.order_status), badge(o.payment_status), `<div class="small">${esc(o.email || '')}<br>${esc(o.phone || '')}<br>${esc(o.city_country || '')}</div><div class="actions"><select id="os_${o.id}"><option ${o.order_status==='pending'?'selected':''}>pending</option><option ${o.order_status==='in_progress'?'selected':''}>in_progress</option><option ${o.order_status==='completed'?'selected':''}>completed</option><option ${o.order_status==='rejected'?'selected':''}>rejected</option></select><select id="ps_${o.id}"><option ${o.payment_status==='pending'?'selected':''}>pending</option><option ${o.payment_status==='paid'?'selected':''}>paid</option><option ${o.payment_status==='failed'?'selected':''}>failed</option><option ${o.payment_status==='refunded'?'selected':''}>refunded</option></select><button class="btn primary" onclick="saveOrder(${o.id})"><i class="fas fa-save"></i></button></div>`]);
+      const rows = (state.orders || []).map(o => [o.order_number, esc(o.customer_name || ''), esc(o.gateway), money(o.total,o.currency), badge(o.order_status), badge(o.payment_status), `<div class="small">${esc(o.email || '')}<br>${esc(o.phone || '')}<br>${esc(o.city_country || '')}</div><div class="actions"><select id="os_${o.id}"><option ${o.order_status==='pending'?'selected':''}>pending</option><option ${o.order_status==='in_progress'?'selected':''}>in_progress</option><option ${o.order_status==='completed'?'selected':''}>completed</option><option ${o.order_status==='rejected'?'selected':''}>rejected</option></select><select id="ps_${o.id}"><option ${o.payment_status==='pending'?'selected':''}>pending</option><option ${o.payment_status==='paid'?'selected':''}>paid</option><option ${o.payment_status==='failed'?'selected':''}>failed</option><option ${o.payment_status==='refunded'?'selected':''}>refunded</option></select><button class="btn primary" onclick="saveOrder(${JSON.stringify(o.id)})"><i class="fas fa-save"></i></button></div>`]);
       return `<div class="card"><h2>All Order List</h2>${table(['Order Number','Customer','Gateway','Total','Order Status','Payment Status','Actions'], rows)}</div>`;
     }
     async function saveOrder(id) { await api(`/api/admin/orders/${id}`, { method:'PUT', body: JSON.stringify({ order_status: $(`os_${id}`).value, payment_status: $(`ps_${id}`).value }) }); toast('Order updated'); await loadAll(); }

@@ -118,15 +118,6 @@ app.get("/", (_req, res) => {
 
 app.use("/api", publicSiteRouter);
 
-const manageHtmlPath = path.join(packageRoot, "static", "manage.html");
-app.get("/managemyframe", (_req, res) => {
-  if (!fs.existsSync(manageHtmlPath)) {
-    res.status(404).type("html").send("<!DOCTYPE html><html><body><p>manage.html not found on server.</p></body></html>");
-    return;
-  }
-  res.type("html").send(fs.readFileSync(manageHtmlPath, "utf8"));
-});
-
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
 app.use("/api", userPortalRouter);

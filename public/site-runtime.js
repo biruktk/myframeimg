@@ -1,8 +1,28 @@
 (async function () {
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-  const json = await fetch('/api/public/site', { credentials: 'same-origin' }).then((res) => res.json()).catch(() => null);
-  if (!json) {
-    console.warn('[MyFrame] /api/public/site did not return JSON. Check Next rewrites BACKEND_ORIGIN / backend port; hero uses static link if any.');
+  /** 502 payloads can be `{ ok: false }` JSON (truthy) — previously we cleared `.nav-links` with empty menus. */
+  let json = null;
+  const siteRes = await fetch('/api/public/site', { credentials: 'same-origin' }).catch(() => null);
+  if (siteRes) {
+    try {
+      if (siteRes.ok) {
+        json = await siteRes.json();
+      }
+    } catch (_) {}
+  }
+  const siteBad =
+    !json ||
+    typeof json !== 'object' ||
+    json.ok === false ||
+    !Array.isArray(json.menus) ||
+    json.menus.length < 1;
+  if (siteBad) {
+    const status = siteRes && typeof siteRes.status === 'number' ? siteRes.status : 'offline';
+    console.warn(
+      '[MyFrame] /api/public/site is not returning a usable marketing payload (HTTP ' +
+        status +
+        '). Keeping static homepage nav/footer markup. Tip: run the API from web/backend (`npm run dev`, default http://127.0.0.1:3001) or rely on Next’s bundled fallback if configured.'
+    );
     return;
   }
 
@@ -12,7 +32,14 @@
   const media = json.media || {};
   const watchVideoUrl = String(media.watchVideoUrl || '').trim() || 'https://youtu.be/_8bVyx_Jiv8';
   const languages = json.languages || [];
-  const geo = await fetch('/api/public/location', { credentials: 'same-origin' }).then((res) => res.json()).catch(() => ({ recommendedLanguage: 'en' }));
+  const locRes = await fetch('/api/public/location', { credentials: 'same-origin' }).catch(() => null);
+  let geo = { recommendedLanguage: 'en', recommendedCurrency: 'USD' };
+  if (locRes && locRes.ok) {
+    try {
+      const parsed = await locRes.json();
+      if (parsed && typeof parsed === 'object' && parsed.ok !== false) geo = parsed;
+    } catch (_) {}
+  }
   const currentLang = resolveLanguage(languages, geo.recommendedLanguage);
 
   // Persist language preference (path / IP / saved) so future visits skip the lookup

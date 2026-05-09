@@ -1,8 +1,16 @@
 import fs from "fs";
 import path from "path";
 import { Router } from "express";
-import { db } from "../db/store";
+
+import type { MarketingSiteStored } from "../data/marketing_defaults";
+
+/** CMS product row (JSON-backed); tolerate dynamic specs from manage.html */
+type StoredProductRow = MarketingSiteStored["products"][number];
+import { marketingSiteSeed } from "../data/marketing_defaults";
+import { db, type MyframeDb } from "../db/store";
 import { requireAdminToken } from "../middleware/security";
+
+import { attachCmsManageRoutes } from "./cms_manage_routes";
 
 export const adminRouter = Router();
 adminRouter.use(requireAdminToken);
@@ -23,6 +31,51 @@ function effectiveUploadBytes(filename: string, bytes: number): number {
     /* ignore */
   }
   return 0;
+}
+
+function ensureMarketingSiteDraft(draft: MyframeDb): MarketingSiteStored {
+  const site = draft.marketingSite;
+  if (!site || typeof site !== "object") {
+    draft.marketingSite = marketingSiteSeed();
+  }
+  return draft.marketingSite as MarketingSiteStored;
+}
+
+/** Map persisted shipment status ↔ legacy CMS labels used by manage.html */
+function uiToDbOrderStatus(ui: string): "pending" | "shipped" | "delivered" {
+  if (ui === "in_progress") return "shipped";
+  if (ui === "completed") return "delivered";
+  return "pending";
+}
+
+function normalizeProductBody(body: Record<string, unknown>) {
+  const specsRaw = body.specs;
+  let specs: Record<string, unknown> = {};
+  if (specsRaw && typeof specsRaw === "object" && !Array.isArray(specsRaw)) specs = specsRaw as Record<string, unknown>;
+  else if (typeof specsRaw === "string" && specsRaw.trim()) {
+    try {
+      const p = JSON.parse(specsRaw) as unknown;
+      if (p && typeof p === "object" && !Array.isArray(p)) specs = p as Record<string, unknown>;
+    } catch {
+      /* keep {} */
+    }
+  }
+  const features = Array.isArray(body.features) ? body.features : [];
+  const price = Number(body.price);
+  return {
+    sku: String(body.sku ?? "").trim(),
+    name: String(body.name ?? "").trim(),
+    description: String(body.description ?? "").trim(),
+    price: Number.isFinite(price) ? price : 0,
+    currency: String(body.currency ?? "USD").trim() || "USD",
+    category_id: body.category_id != null ? Number(body.category_id) : 1,
+    badge: String(body.badge ?? "").trim(),
+    button_text: String(body.button_text ?? "Add to Cart").trim(),
+    status: String(body.status ?? "publish").trim(),
+    features: features.map(String),
+    specs,
+    image_url: body.image_url != null ? String(body.image_url).trim() : undefined,
+  };
 }
 
 function appendAudit(actor: string, action: string, target: string, meta?: Record<string, unknown>) {
@@ -486,6 +539,205 @@ adminRouter.get("/admin/commerce/orders", (_req, res) => {
   });
 });
 
+/** manage.html-compatible list (snake_case + CMS order statuses). */
+adminRouter.get("/admin/orders", (_req, res) => {
+  const data = db.read();
+  res.json({
+    ok: true,
+    orders: data.orders.map((o) => ({
+      id: o.id,
+      order_number: o.orderNumber,
+      customer_name: o.customerName,
+      email: o.email,
+      phone: o.phone,
+      gateway: o.gateway,
+      total: o.total,
+      currency: o.currency,
+      order_status:
+        o.status === "shipped"
+          ? "in_progress"
+          : o.status === "delivered"
+            ? "completed"
+            : o.status === "pending"
+              ? "pending"
+              : "pending",
+      payment_status: o.paymentStatus || "pending",
+      city_country: o.cityCountry || "",
+    })),
+  });
+});
+
+adminRouter.put("/admin/orders/:id", (req, res) => {
+  const id = String(req.params.id);
+  const orderStatus = String(req.body?.order_status ?? "").trim();
+  const paymentStatus = String(req.body?.payment_status ?? "").trim();
+  if (!paymentStatus) {
+    res.status(400).json({ ok: false, error: "payment_status_required" });
+    return;
+  }
+  let found = false;
+  db.mutate((draft) => {
+    draft.orders = draft.orders.map((o) => {
+      if (o.id !== id) return o;
+      found = true;
+      const nextStatus = uiToDbOrderStatus(orderStatus);
+      return {
+        ...o,
+        status: nextStatus,
+        paymentStatus,
+        updatedAtMs: Date.now(),
+      };
+    });
+  });
+  if (!found) {
+    res.status(404).json({ ok: false, error: "order_not_found" });
+    return;
+  }
+  appendAudit("superadmin", "order_cms_update", id, { order_status: orderStatus, payment_status: paymentStatus });
+  res.json({ ok: true });
+});
+
+adminRouter.get("/admin/subscribers", (_req, res) => {
+  const data = db.read();
+  res.json({
+    ok: true,
+    subscribers: data.notifySubscribers.map((s) => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      sku: s.sku,
+      product_name: s.productName,
+      language: s.language || "en",
+      status: "active",
+      source: "notify_me",
+      created_at: new Date(s.createdAtMs).toISOString(),
+    })),
+  });
+});
+
+adminRouter.delete("/admin/subscribers/:id", (req, res) => {
+  const id = String(req.params.id);
+  let removed = false;
+  db.mutate((draft) => {
+    const before = draft.notifySubscribers.length;
+    draft.notifySubscribers = draft.notifySubscribers.filter((s) => s.id !== id);
+    removed = draft.notifySubscribers.length < before;
+  });
+  if (!removed) {
+    res.status(404).json({ ok: false, error: "subscriber_not_found" });
+    return;
+  }
+  appendAudit("admin", "notify_subscriber_delete", id, {});
+  res.json({ ok: true });
+});
+
+adminRouter.put("/admin/settings/basic", (req, res) => {
+  const patch = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    ms.basic = { ...(ms.basic as Record<string, unknown>), ...patch } as MarketingSiteStored["basic"];
+  });
+  appendAudit("admin", "marketing_basic_update", "basic", {});
+  res.json({ ok: true });
+});
+
+adminRouter.put("/admin/settings/media", (req, res) => {
+  const patch = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    ms.media = { ...(ms.media as Record<string, unknown>), ...patch } as MarketingSiteStored["media"];
+  });
+  appendAudit("admin", "marketing_media_update", "media", {});
+  res.json({ ok: true });
+});
+
+adminRouter.put("/admin/settings/features", (req, res) => {
+  const rows = Array.isArray(req.body) ? req.body : Array.isArray((req.body as { features?: unknown })?.features) ? (req.body as { features: unknown[] }).features : null;
+  if (!rows || !Array.isArray(rows)) {
+    res.status(400).json({ ok: false, error: "features_array_required" });
+    return;
+  }
+  const next = rows
+    .filter((r): r is Record<string, unknown> => r != null && typeof r === "object")
+    .map((r) => ({
+      icon: String(r.icon ?? ""),
+      image: String(r.image ?? ""),
+      title: String(r.title ?? ""),
+      description: String(r.description ?? ""),
+    }));
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    ms.features = next;
+  });
+  appendAudit("admin", "marketing_features_update", "features", { count: next.length });
+  res.json({ ok: true });
+});
+
+adminRouter.post("/admin/products", (req, res) => {
+  const body = normalizeProductBody((req.body ?? {}) as Record<string, unknown>);
+  if (!body.sku || !body.name) {
+    res.status(400).json({ ok: false, error: "sku_and_name_required" });
+    return;
+  }
+  let row: StoredProductRow | undefined;
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    const nums = ms.products.map((p) => Number(p.id)).filter(Number.isFinite);
+    const maxId = nums.length ? Math.max(...nums) : 0;
+    const id = maxId + 1;
+    row = { id, ...body } as unknown as StoredProductRow;
+    ms.products = [...ms.products, row];
+  });
+  if (!row) {
+    res.status(500).json({ ok: false, error: "product_create_failed" });
+    return;
+  }
+  appendAudit("admin", "marketing_product_create", body.sku, { id: row.id });
+  res.status(201).json(row);
+});
+
+adminRouter.put("/admin/products/:id", (req, res) => {
+  const idRaw = req.params.id;
+  const pid = Number(idRaw);
+  const body = normalizeProductBody((req.body ?? {}) as Record<string, unknown>);
+  let updated = false;
+  let row: StoredProductRow | undefined;
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    ms.products = ms.products.map((p) => {
+      if (Number(p.id) !== pid && String(p.id) !== String(idRaw)) return p;
+      updated = true;
+      const merged = { ...p, ...body, id: p.id } as unknown as StoredProductRow;
+      row = merged;
+      return merged;
+    });
+  });
+  if (!updated || !row) {
+    res.status(404).json({ ok: false, error: "product_not_found" });
+    return;
+  }
+  appendAudit("admin", "marketing_product_update", body.sku, { id: idRaw });
+  res.json(row);
+});
+
+adminRouter.delete("/admin/products/:id", (req, res) => {
+  const idRaw = req.params.id;
+  const pid = Number(idRaw);
+  let removed = false;
+  db.mutate((draft) => {
+    const ms = ensureMarketingSiteDraft(draft);
+    const before = ms.products.length;
+    ms.products = ms.products.filter((p) => Number(p.id) !== pid && String(p.id) !== String(idRaw));
+    removed = ms.products.length < before;
+  });
+  if (!removed) {
+    res.status(404).json({ ok: false, error: "product_not_found" });
+    return;
+  }
+  appendAudit("admin", "marketing_product_delete", idRaw, {});
+  res.json({ ok: true });
+});
+
 adminRouter.patch("/admin/commerce/orders/:id/status", (req, res) => {
   const id = String(req.params.id);
   const status = String(req.body?.status ?? "").trim() as "pending" | "shipped" | "delivered";
@@ -538,3 +790,5 @@ adminRouter.post("/admin/content/notify", (req, res) => {
   });
   res.json({ ok: true });
 });
+
+attachCmsManageRoutes(adminRouter);

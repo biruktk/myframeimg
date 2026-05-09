@@ -115,7 +115,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
   const load = useCallback(async () => {
     setErr(false);
     try {
-      const res = await fetch("/api/home", { cache: "no-store" });
+      const res = await fetch("/api/home", { cache: "no-store", credentials: "include" });
       if (!res.ok) throw new Error("bad");
       const j = (await res.json()) as DashboardPayload;
       setData(j);
