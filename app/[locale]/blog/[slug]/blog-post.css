@@ -1,0 +1,101 @@
+.blog-post-page {
+  min-height: 100vh;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 28%);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  line-height: 1.65;
+}
+
+.blog-post-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
+  border-bottom: 0.5px solid #fecaca;
+}
+
+.blog-post-nav-shell {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.blog-post-logo {
+  max-height: 36px;
+  width: auto;
+}
+
+.blog-post-nav-a {
+  color: #dc2626;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.blog-post-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+}
+
+.blog-post-eyebrow {
+  color: #dc2626;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.blog-post-title {
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  margin-bottom: 14px;
+}
+
+.blog-post-meta {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 26px;
+}
+
+.blog-post-feat {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(254, 202, 202, 0.75);
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: #fafafa;
+}
+
+.blog-post-feat img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.article-prose {
+  font-size: 18px;
+  color: #374151;
+}
+
+.article-prose p {
+  margin-bottom: 18px;
+}
+
+.article-prose h2 {
+  font-size: 24px;
+  color: #1a1a1a;
+  margin: 28px 0 12px;
+  letter-spacing: -0.02em;
+}
+
+.article-prose ul {
+  margin: 0 0 18px 1.2rem;
+}

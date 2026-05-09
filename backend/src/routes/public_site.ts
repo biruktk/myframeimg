@@ -2,6 +2,7 @@ import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 
 import { db } from "../db/store";
+import { defaultBlogPosts, publishedBlogs } from "../data/blog_defaults";
 import { getPublicSitePayload, priceBySkuFromDb } from "../services/marketing_public";
 
 export const publicSiteRouter = Router();
@@ -43,6 +44,29 @@ function nextOrderNumber(): string {
 /** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */
 publicSiteRouter.get("/public/site", (_req: Request, res: Response) => {
   res.json(getPublicSitePayload());
+});
+
+/** GET /api/public/blogs — published blog cards for the marketing blog. */
+publicSiteRouter.get("/public/blogs", (_req: Request, res: Response) => {
+  const blogs = db.read().marketingCms?.blogs;
+  res.json(publishedBlogs(blogs?.length ? blogs : defaultBlogPosts));
+});
+
+/** GET /api/public/blogs/by-slug/:slug — published blog detail. */
+publicSiteRouter.get("/public/blogs/by-slug/:slug", (req: Request, res: Response) => {
+  const slug = String(req.params.slug ?? "").trim();
+  const cmsBlogs = db.read().marketingCms?.blogs;
+  const blogs = publishedBlogs(cmsBlogs?.length ? cmsBlogs : defaultBlogPosts);
+  const post = blogs.find((row) => String(row.slug ?? "") === slug);
+  if (!post) {
+    res.status(404).json({ ok: false, error: "not_found" });
+    return;
+  }
+  res.json({
+    ...post,
+    meta_title_pub: String(post.meta_title ?? post.title ?? ""),
+    meta_description_pub: String(post.meta_description ?? post.excerpt ?? ""),
+  });
 });
 
 /** GET /api/public/location — static geo stub (no upstream IP database). */

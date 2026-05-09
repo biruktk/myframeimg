@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 import type { MarketingSiteStored } from "../data/marketing_defaults";
+import { defaultBlogPosts } from "../data/blog_defaults";
 import { marketingSiteSeed } from "../data/marketing_defaults";
 
 /** Extra persisted tables for `/managemyframe` (not merged into MarketingSiteStored). */
@@ -61,7 +62,7 @@ export function marketingCmsSeed(): MarketingCmsState {
     sitemaps: [],
     shippingMethods: [],
     productCategories: [],
-    blogs: [],
+    blogs: defaultBlogPosts.map((post) => ({ ...post })),
     languages: null,
     currencies: null,
     mail: {},

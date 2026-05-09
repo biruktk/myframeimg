@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { getMyframeApiBase } from "@/lib/backend-url";
 import { USER_EMAIL_COOKIE, USER_ID_COOKIE, USER_NAME_COOKIE, USER_TOKEN_COOKIE } from "@/lib/user-auth";
 
+type AuthResponse = {
+  token?: unknown;
+  user?: {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+  };
+};
+
 export async function POST() {
   try {
     const res = await fetch(`${getMyframeApiBase()}/api/auth/test-login`, {
@@ -11,7 +20,7 @@ export async function POST() {
       cache: "no-store",
     });
     const text = await res.text();
-    let parsed: any = null;
+    let parsed: AuthResponse | null = null;
     try {
       parsed = JSON.parse(text);
     } catch {

@@ -11,6 +11,15 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 } as const;
 
+type AuthResponse = {
+  token?: unknown;
+  user?: {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+  };
+};
+
 /** CORS preflight (Flutter web / SPA); native Flutter typically skips OPTIONS. */
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: { ...corsHeaders } });
@@ -26,7 +35,7 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
     const text = await res.text();
-    let parsed: any = null;
+    let parsed: AuthResponse | null = null;
     try {
       parsed = JSON.parse(text);
     } catch {

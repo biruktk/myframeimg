@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase } from "@/lib/backend-url";
 import { USER_EMAIL_COOKIE, USER_ID_COOKIE, USER_NAME_COOKIE, USER_TOKEN_COOKIE } from "@/lib/user-auth";
 
+type AuthResponse = {
+  token?: unknown;
+  user?: {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+  };
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -12,7 +21,7 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
     const text = await res.text();
-    let parsed: any = null;
+    let parsed: AuthResponse | null = null;
     try {
       parsed = JSON.parse(text);
     } catch {

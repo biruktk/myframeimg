@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "MyFrame — Paper-like photo frame",
   description:
     "Smart photo frame: AI art, family sharing, live sync. Design aligned with ra/ui references.",
+  icons: {
+    icon: "/assets/myframe-logo-final.svg",
+    shortcut: "/assets/myframe-logo-final.svg",
+    apple: "/assets/myframe-logo-icon.png",
+  },
 };
 
 export default function RootLayout({

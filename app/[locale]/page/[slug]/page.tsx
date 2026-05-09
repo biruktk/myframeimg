@@ -40,7 +40,7 @@ export default async function MarketingContentPage({ params }: Props) {
   const translated = locale === defaultLocale ? {} : site.translations?.[locale] ?? {};
   const menus = site.menus ?? [];
   const languages = site.languages ?? [];
-  const logo = site.basic?.headerLogo?.trim() || "/ra/logo.svg";
+  const logo = site.basic?.headerLogo?.trim() || "/assets/myframe-logo-final.svg";
   const home = locale === defaultLocale ? `/${defaultLocale}` : `/${locale}`;
 
   return (

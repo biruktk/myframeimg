@@ -29,17 +29,16 @@ const footerLinks = [
   { group_name: "Product", name: "Features", url: "#features", link_order: 1 },
   { group_name: "Product", name: "Pricing", url: "#pricing", link_order: 2 },
   { group_name: "Product", name: "For Families", url: "#family", link_order: 3 },
-  { group_name: "Product", name: "Download App", url: "download-app", link_order: 4 },
+  { group_name: "Product", name: "Download the MyFrame App", url: "download-app", link_order: 4 },
   { group_name: "Support", name: "Help Center", url: "help-center", link_order: 1 },
   { group_name: "Support", name: "Contact Us", url: "contact-us", link_order: 2 },
   { group_name: "Support", name: "Privacy Policy", url: "privacy-policy", link_order: 3 },
   { group_name: "Support", name: "Terms of Service", url: "terms-of-service", link_order: 4 },
-  { group_name: "Support", name: "FAQ", url: "faq", link_order: 5 },
-  { group_name: "Company", name: "About", url: "about", link_order: 1 },
+  { group_name: "Support", name: "Frequently Asked Questions", url: "faq", link_order: 5 },
+  { group_name: "Company", name: "About MyFrame", url: "about", link_order: 1 },
   { group_name: "Company", name: "Blog", url: "blog", link_order: 2 },
   { group_name: "Company", name: "Press Kit", url: "press-kit", link_order: 3 },
   { group_name: "Company", name: "Documentation", url: "documentation", link_order: 4 },
-  { group_name: "Account", name: "Customer login", url: "customer-login", link_order: 1 },
 ];
 
 const socials = [
@@ -137,20 +136,6 @@ const products = [
     features: ['13.3" + 6 Color E-ink', "WiFi + MQTT Connected", "SD Card Support", "Up to 5 family members", "Memory Flashback", "Automated Care"],
     specs: { display: '13.3" + 6 Color', sdCard: true, nfc: true, bluetooth: true, wifi: true, notes: "" },
   },
-  {
-    id: 4,
-    sku: "SPECTRA-001",
-    name: "Spectra 001",
-    description: "Spectra colour e‑paper frame",
-    price: 399,
-    currency: "USD",
-    category_id: 1,
-    badge: "Available Now",
-    button_text: "Add to Cart",
-    status: "publish",
-    features: ["Spectra colour e‑paper", "Wi‑Fi connected", "Private family albums"],
-    specs: { display: '13.3"', sdCard: true, nfc: false, bluetooth: true, wifi: true, notes: "" },
-  },
 ];
 
 const basic = {
@@ -161,8 +146,8 @@ const basic = {
   gradientColor3: "#FECACA",
   darkMode: false,
   currencyDirection: "ltr",
-  favicon: "/ra/logo.svg",
-  headerLogo: "/ra/logo.svg",
+  favicon: "/assets/myframe-logo-final.svg",
+  headerLogo: "/assets/myframe-logo-final.svg",
   breadcrumbImage: "",
   heroBadge: "Where Family Appears",
   heroTitle: "Stay Close,",
@@ -212,8 +197,8 @@ const basic = {
   familyStep2Description: "Send a QR code or invite link via WeChat, SMS, or email.",
   familyStep3Title: "Share photos instantly",
   familyStep3Description: "Photos appear on the frame within seconds.",
-  specsLabel: "Specs",
-  specsDescription: "From compact to large format—pick the MyFrame that fits your space.",
+  specsLabel: "Specifications",
+  specsDescription: "From compact to large format, find the perfect MyFrame for your space.",
   specsAsideTitle: "Built for everyday life",
   specsAsideBody:
     "MyFrame is designed first as a home object: low power, low glare, and quiet enough to live with for years.",
@@ -235,7 +220,7 @@ const basic = {
 };
 
 const footer = {
-  footerLogo: "/ra/logo.svg",
+  footerLogo: "/assets/myframe-logo-final.svg",
   footerBgImage: "",
   footerText: 'A device where family can "appear" anytime. Built with love for the ones who matter most.',
   copyrightText: "Copyright by @MyFrame - 2026",

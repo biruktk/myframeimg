@@ -140,6 +140,8 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
   }, []);
 
   useEffect(() => {
+    // Initial dashboard fetch hydrates local UI state from the backend.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 

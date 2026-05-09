@@ -79,7 +79,7 @@
   const localizedPages = json.contentPages?.[currentLang] || json.contentPages?.en || {};
 
   if (maintenance.enabled) {
-    document.body.innerHTML = `<main style="min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#FEF2F2;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div><img src="${esc(maintenance.image || basic.headerLogo || '/ra/logo.svg')}" alt="" style="max-width:180px;max-height:100px;margin-bottom:22px;"><h1 style="font-size:42px;margin-bottom:12px;">Maintenance Mode</h1><p style="font-size:18px;color:#666;max-width:560px;">${esc(maintenance.text)}</p></div></main>`;
+    document.body.innerHTML = `<main style="min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#FEF2F2;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div><img src="${esc(maintenance.image || basic.headerLogo || '/assets/myframe-logo-final.svg')}" alt="" style="max-width:180px;max-height:100px;margin-bottom:22px;"><h1 style="font-size:42px;margin-bottom:12px;">Maintenance Mode</h1><p style="font-size:18px;color:#666;max-width:560px;">${esc(maintenance.text)}</p></div></main>`;
     return;
   }
 
@@ -98,7 +98,7 @@
   setPropertyMeta('og:url', currentLang === 'en' ? `${location.origin}/` : `${location.origin}/${currentLang}`);
   setPropertyMeta('og:type', 'website');
   setPropertyMeta('og:site_name', 'MyFrame');
-  const ogImg = basic.headerLogo ? `${location.origin}${basic.headerLogo}` : `${location.origin}/ra/logo.svg`;
+  const ogImg = basic.headerLogo ? `${location.origin}${basic.headerLogo}` : `${location.origin}/assets/myframe-logo-final.svg`;
   setPropertyMeta('og:image', ogImg);
   setPropertyMeta('twitter:title', document.title);
   setPropertyMeta('twitter:description', homeSeo.meta_description);
