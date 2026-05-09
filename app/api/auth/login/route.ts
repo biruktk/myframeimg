@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMyframeApiBase } from "@/lib/backend-url";
 import { USER_EMAIL_COOKIE, USER_ID_COOKIE, USER_NAME_COOKIE, USER_TOKEN_COOKIE } from "@/lib/user-auth";
 
+export const dynamic = "force-dynamic";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+  "Access-Control-Max-Age": "86400",
+} as const;
+
+/** CORS preflight (Flutter web / SPA); native Flutter typically skips OPTIONS. */
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: { ...corsHeaders } });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -21,17 +35,22 @@ export async function POST(req: NextRequest) {
     if (!res.ok || !parsed?.token || !parsed?.user?.id) {
       return new NextResponse(text, {
         status: res.status,
-        headers: { "content-type": res.headers.get("content-type") ?? "application/json" },
+        headers: {
+          "content-type": res.headers.get("content-type") ?? "application/json",
+          ...corsHeaders,
+        },
       });
     }
-    const out = NextResponse.json({ ok: true, user: parsed.user });
+    const tokenStr = String(parsed.token);
+    const out = NextResponse.json({ ok: true, user: parsed.user, token: tokenStr });
     const common = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 };
-    out.cookies.set(USER_TOKEN_COOKIE, String(parsed.token), common);
+    out.cookies.set(USER_TOKEN_COOKIE, tokenStr, common);
     out.cookies.set(USER_ID_COOKIE, String(parsed.user.id ?? ""), common);
     out.cookies.set(USER_EMAIL_COOKIE, String(parsed.user.email ?? ""), common);
     out.cookies.set(USER_NAME_COOKIE, String(parsed.user.name ?? ""), common);
+    Object.entries(corsHeaders).forEach(([k, v]) => out.headers.set(k, v));
     return out;
   } catch {
-    return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400, headers: { ...corsHeaders } });
   }
 }

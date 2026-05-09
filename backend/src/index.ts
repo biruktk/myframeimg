@@ -41,11 +41,6 @@ if (!fs.existsSync(uploadDir)) {
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-const allowedOrigins = String(process.env.CORS_ORIGINS ?? "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
 app.use((req, res, next) => {
   res.setHeader("x-content-type-options", "nosniff");
   res.setHeader("x-frame-options", "DENY");
@@ -55,14 +50,24 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: (origin, cb) => {
-      if (allowedOrigins.length === 0 || !origin || allowedOrigins.includes(origin)) {
-        cb(null, true);
-        return;
-      }
-      cb(new Error("CORS blocked"));
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = String(process.env.CORS_ORIGINS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (allowed.includes(origin)) return callback(null, true);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-pairing-token",
+      "x-admin-token",
+      "x-frame-token",
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   }),
 );
 app.use(express.json({ limit: "2mb" }));
