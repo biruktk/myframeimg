@@ -10,10 +10,8 @@ function envBaseUrl(primary: string | undefined, fallback: string): string {
 
 function mediaBaseUrl(): string {
   const port = Number(process.env.PORT || 3001);
-  return envBaseUrl(
-    process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL,
-    `http://127.0.0.1:${port}`,
-  );
+  const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
+  return envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);
 }
 
 /** Matches `ra/api` device status shape used by the app. */
@@ -87,7 +85,7 @@ deviceRouter.post("/device/send", async (req, res) => {
   try {
     let publicHost = "";
     try {
-      publicHost = new URL(imageUrl).hostname;
+      publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || imageUrl).hostname;
     } catch {
       /* ignore */
     }

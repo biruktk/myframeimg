@@ -102,7 +102,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         } else {
           let publicHost = "";
           try {
-            publicHost = new URL(base).hostname;
+            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
           } catch {
             /* ignore */
           }
