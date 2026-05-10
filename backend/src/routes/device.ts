@@ -10,8 +10,10 @@ function envBaseUrl(primary: string | undefined, fallback: string): string {
 
 function mediaBaseUrl(): string {
   const port = Number(process.env.PORT || 3001);
-  const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
-  return envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);
+  return envBaseUrl(
+    process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL,
+    `http://127.0.0.1:${port}`,
+  );
 }
 
 /** Matches `ra/api` device status shape used by the app. */
