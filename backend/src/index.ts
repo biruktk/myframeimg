@@ -29,7 +29,7 @@ function envBaseUrl(primary: string | undefined, fallback: string): string {
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
-const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+const uploadDir = path.resolve(packageRoot, process.env.UPLOAD_DIR || "uploads");
 const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
 /** MQTT `play` + `/frame-media/` links; use when `PUBLIC_BASE_URL` is the marketing site (Next) not Express. */
 const mediaPublicBaseUrl = envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);

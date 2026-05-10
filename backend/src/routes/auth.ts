@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import express, { Router } from "express";
 import { db } from "../db/store";
-import { signUserJwt } from "../services/app_user_jwt";
+import { signUserJwt, verifyUserJwtBearer } from "../services/app_user_jwt";
 
 export const authRouter = Router();
 const TEST_USER_EMAIL = "test@myframe.local";
@@ -192,5 +192,22 @@ authRouter.post("/auth/test-login", (_req, res) => {
     token,
     user: { id: user.id, email: user.email, name: user.name },
     mode: "test",
+  });
+});
+
+authRouter.get("/auth/session", (req, res) => {
+  const authed = verifyUserJwtBearer(req);
+  if (!authed) {
+    res.status(401).json({ ok: false });
+    return;
+  }
+  const user = db.read().users.find((u) => u.id === authed.userId);
+  if (!user || user.status !== "active") {
+    res.status(401).json({ ok: false });
+    return;
+  }
+  res.json({
+    ok: true,
+    user: { id: user.id, email: user.email, name: user.name },
   });
 });

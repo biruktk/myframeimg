@@ -10,6 +10,48 @@ settingsRouter.get("/settings", (_req, res) => {
   res.json(data.settings);
 });
 
+settingsRouter.put("/settings", requireAdminToken, (req, res) => {
+  const body = req.body as Partial<{
+    account: Partial<{ name: string; email: string; birthday: string | null }>;
+    notifications: Partial<{ birthdayReminders: boolean; uploadAlerts: boolean; offlineAlerts: boolean }>;
+    preferences: Partial<{ theme: "light" | "dark" | "system"; autoRotateMinutes: number; autoSync: boolean }>;
+    integrations: Partial<{ googlePhotosConnected: boolean; icloudConnected: boolean; wechatConnected: boolean }>;
+  }>;
+  const next = db.mutate((draft) => {
+    if (body.account) {
+      if (typeof body.account.name === "string") draft.settings.account.name = body.account.name.trim();
+      if (typeof body.account.email === "string") draft.settings.account.email = body.account.email.trim();
+      if (body.account.birthday === null || typeof body.account.birthday === "string") {
+        draft.settings.account.birthday = body.account.birthday;
+      }
+    }
+    if (body.notifications) {
+      if (typeof body.notifications.birthdayReminders === "boolean") {
+        draft.settings.notifications.birthdayReminders = body.notifications.birthdayReminders;
+      }
+      if (typeof body.notifications.uploadAlerts === "boolean") draft.settings.notifications.uploadAlerts = body.notifications.uploadAlerts;
+      if (typeof body.notifications.offlineAlerts === "boolean") draft.settings.notifications.offlineAlerts = body.notifications.offlineAlerts;
+    }
+    if (body.preferences) {
+      if (body.preferences.theme === "light" || body.preferences.theme === "dark" || body.preferences.theme === "system") {
+        draft.settings.preferences.theme = body.preferences.theme;
+      }
+      if (typeof body.preferences.autoRotateMinutes === "number" && Number.isFinite(body.preferences.autoRotateMinutes)) {
+        draft.settings.preferences.autoRotateMinutes = Math.max(1, Math.min(240, Math.round(body.preferences.autoRotateMinutes)));
+      }
+      if (typeof body.preferences.autoSync === "boolean") draft.settings.preferences.autoSync = body.preferences.autoSync;
+    }
+    if (body.integrations) {
+      if (typeof body.integrations.googlePhotosConnected === "boolean") {
+        draft.settings.integrations.googlePhotosConnected = body.integrations.googlePhotosConnected;
+      }
+      if (typeof body.integrations.icloudConnected === "boolean") draft.settings.integrations.icloudConnected = body.integrations.icloudConnected;
+      if (typeof body.integrations.wechatConnected === "boolean") draft.settings.integrations.wechatConnected = body.integrations.wechatConnected;
+    }
+  });
+  res.json(next.settings);
+});
+
 settingsRouter.put("/settings/account", requireAdminToken, (req, res) => {
   const body = req.body as Partial<{ name: string; email: string; birthday: string | null }>;
   const next = db.mutate((draft) => {
