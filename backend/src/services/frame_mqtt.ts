@@ -165,19 +165,33 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     let imgurlForPlay = imageUrl;
     try {
       const u = new URL(imageUrl);
-      if (
-        u.protocol === "https:" &&
-        String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
-      ) {
-        reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
-        return;
-      }
-      host = u.hostname;
-      port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
       // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
       // (see files/9_API_DOCUMENTATION.md). Full absolute URLs in `imgurl` can break download.
       if (String(process.env.MQTT_PLAY_FULL_IMGURL ?? "").trim() !== "1") {
         imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
+      }
+
+      /** Plain-HTTP fetch host for ESP32 (no HTTPS); path still comes from `imageUrl` above. */
+      const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
+      if (mediaBaseRaw) {
+        try {
+          const mu = new URL(mediaBaseRaw);
+          host = mu.hostname;
+          port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
+        } catch {
+          // bad PUBLIC_MEDIA_BASE_URL — fall through to imageUrl host/port
+        }
+      }
+      if (!host) {
+        if (
+          u.protocol === "https:" &&
+          String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
+        ) {
+          reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
+          return;
+        }
+        host = u.hostname;
+        port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
       }
     } catch {
       host = publicHost ?? "";
