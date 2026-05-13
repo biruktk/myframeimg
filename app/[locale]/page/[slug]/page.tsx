@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { MarketingContentNav } from "@/components/marketing/marketing-content-nav";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n";
@@ -14,6 +15,14 @@ type Props = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw, slug } = await params;
+  if (slug === "download-app") {
+    const locale: Locale = isLocale(raw) ? raw : defaultLocale;
+    return {
+      title: "Download MyFrame App | MyFrame",
+      description: "Download the MyFrame app for iPhone and Android.",
+      alternates: { canonical: locale === defaultLocale ? "/download" : `/${locale}/download` },
+    };
+  }
   const locale: Locale = isLocale(raw) ? raw : defaultLocale;
   const site = await fetchMarketingPublicSite();
   const doc =
@@ -29,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MarketingContentPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : defaultLocale;
+  if (slug === "download-app") redirect(locale === defaultLocale ? "/download" : `/${locale}/download`);
 
   const site = await fetchMarketingPublicSite();
   if (!site) notFound();

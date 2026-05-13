@@ -12,6 +12,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/api/") ||
     pathname === "/api" ||
     pathname.startsWith("/admin") ||
+    pathname === "/download" ||
     pathname.startsWith("/managemyframe") ||
     pathname.includes(".")
   ) {

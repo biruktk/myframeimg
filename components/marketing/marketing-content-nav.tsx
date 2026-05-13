@@ -27,6 +27,12 @@ export function MarketingContentNav({ locale, menus, translated, logoSrc, langua
 
   function hrefForLocale(next: string): string {
     const seg = pathname.split("/").filter(Boolean);
+    if (seg.length === 1 && seg[0] === "download") {
+      return next === defaultLocale ? "/download" : `/${next}/download`;
+    }
+    if (seg.length === 2 && seg[1] === "download") {
+      return next === defaultLocale ? "/download" : `/${next}/download`;
+    }
     if (seg.length >= 3 && seg[1] === "page") {
       const slug = seg.slice(2).join("/");
       return next === defaultLocale ? `/en/page/${slug}` : `/${next}/page/${slug}`;
