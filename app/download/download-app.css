@@ -66,6 +66,11 @@
   overflow: hidden;
 }
 
+.download-page img {
+  max-width: 100%;
+  height: auto;
+}
+
 .download-section {
   width: 100%;
 }
@@ -406,11 +411,20 @@
 }
 
 @media (max-width: 680px) {
+  .download-page .nav-shell {
+    gap: 10px;
+  }
+
+  .download-page .nav-right {
+    min-width: 0;
+  }
+
   .download-hero {
     padding-inline: 16px;
   }
 
   .download-copy.centered {
+    max-width: 100%;
     text-align: left;
   }
 
@@ -419,7 +433,7 @@
   }
 
   .download-copy h1 {
-    max-width: 11.8em;
+    max-width: 100%;
     font-size: clamp(2.05rem, 8.9vw, 3rem);
     line-height: 1.02;
   }
@@ -429,24 +443,36 @@
   }
 
   .hero-phone-row {
-    width: min(520px, 100%);
-    grid-template-columns: repeat(3, 42%);
-    justify-content: center;
-    gap: 8px;
+    width: min(430px, 100%);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: clamp(5px, 2vw, 8px);
     margin-top: 24px;
   }
 
   .hero-phone-row .phone-shot {
-    max-width: none;
+    max-width: 132px;
+    padding: 5px;
+    border-radius: 24px;
   }
 
   .hero-phone-row .phone-shot:first-child,
   .hero-phone-row .phone-shot:last-child {
-    transform: translateY(24px) scale(0.92);
+    transform: translateY(18px) scale(0.94);
   }
 
   .hero-phone-row .phone-shot.is-front {
     transform: none;
+  }
+
+  .hero-phone-row .phone-shot::before {
+    top: 5px;
+    height: 14px;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .hero-phone-row .phone-shot img {
+    border-radius: 19px;
   }
 
   .download-badges a,
@@ -461,11 +487,13 @@
   }
 
   .feature-phone-wrap {
-    min-height: 470px;
+    min-height: auto;
+    padding-block: 24px;
   }
 
   .feature-phone-wrap .phone-shot,
   .cta-phone-wrap .phone-shot {
+    width: min(245px, 78vw);
     max-width: 245px;
   }
 
@@ -478,16 +506,17 @@
 
 @media (max-width: 420px) {
   .download-page .brand-logo {
-    width: 142px;
+    width: clamp(118px, 38vw, 142px);
   }
 
   .download-page .nav-right {
-    gap: 7px;
+    gap: 6px;
   }
 
   .download-page .nav-lang {
-    min-width: 76px;
-    max-width: 84px;
+    min-width: 68px;
+    max-width: 76px;
+    font-size: 12px;
   }
 
   .download-page .nav-cta {
@@ -507,11 +536,40 @@
 
   .download-badges a,
   .download-badges img {
-    width: 146px;
-    height: 44px;
+    width: min(146px, calc((100vw - 42px) / 2));
+    height: auto;
+    min-height: 40px;
   }
 
   .hero-phone-row {
-    grid-template-columns: repeat(3, 48%);
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hero-phone-row .phone-shot {
+    max-width: 112px;
+    border-radius: 20px;
+  }
+
+  .hero-phone-row .phone-shot img {
+    border-radius: 15px;
+  }
+}
+
+@media (max-width: 340px) {
+  .download-page .brand-logo {
+    width: 112px;
+  }
+
+  .download-page .nav-lang {
+    display: none;
+  }
+
+  .download-copy h1 {
+    font-size: 2rem;
+  }
+
+  .hero-phone-row .phone-shot {
+    max-width: 94px;
   }
 }
