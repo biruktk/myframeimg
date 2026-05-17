@@ -436,10 +436,13 @@
     if (url.startsWith('#')) return url;
     if (url.startsWith('http')) return url;
     if (url === 'customer-login') return lang === 'en' ? '/en/auth' : `/${lang}/auth`;
-    if (url === 'blog') return lang === 'en' ? '/blog' : `/${lang}/blog`;
+    if (url === 'blog') return lang === 'en' ? '/en/blog' : `/${lang}/blog`;
+    if (url === 'download-app' || url === 'download' || url === 'page/download-app' || url === '/page/download-app') {
+      return lang === 'en' ? '/download' : `/${lang}/download`;
+    }
     if (url.endsWith('.html')) return localizeMenuUrl(url, lang);
     const clean = url.replace(/^\/+/, '');
-    return lang === 'en' ? `/page/${clean}` : `/${lang}/page/${clean}`;
+    return lang === 'en' ? `/en/page/${clean}` : `/${lang}/page/${clean}`;
   }
 
   function localizeMenuUrl(url, lang) {
