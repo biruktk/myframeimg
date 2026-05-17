@@ -95,8 +95,8 @@
       <img src="/ra/logo.svg" alt="MyFrame">
       <h1>Admin Login</h1>
       <p class="crumb" style="margin-bottom:18px;">Secure access to website content, SEO, products, orders and payments.</p>
-      <div class="field"><label>Email or username</label><input id="email" type="text" autocomplete="username" required placeholder="you@company.com"></div>
-      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Password"></div>
+      <div class="field"><label>Email or username</label><input id="email" type="text" autocomplete="username" required placeholder="admin" value="admin"></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="admin" value="admin"></div>
       <button class="btn primary" style="width:100%; margin-top:6px;"><i class="fas fa-lock"></i> Sign In</button>
       <p id="loginError" class="small" style="color:#B91C1C; margin-top:12px;"></p>
     </form>
@@ -445,7 +445,11 @@
         }
         await refreshCsrf();
         await showApp();
-      } catch (err) { $('loginError').textContent = err.message; }
+      } catch (err) {
+        var m = err.message || 'Login failed';
+        if (m === 'invalid_credentials') m = 'Wrong username or password (default: admin / admin).';
+        $('loginError').textContent = m;
+      }
     });
 
     async function logout() {

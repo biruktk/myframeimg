@@ -16,6 +16,7 @@ type DashboardPayload = {
   };
   devices?: Array<{
     id: string;
+    name?: string;
     bleMac: string;
     wifiStatus: string;
     online: boolean;
@@ -24,10 +25,12 @@ type DashboardPayload = {
     slideshowImageCount: number;
     batteryPct: number | null;
     lastSeenAtMs?: number | null;
+    lastPhotoAtMs?: number | null;
   }>;
   recentPhotos?: Array<{ id: string; thumbUrl: string; atMs: number; deviceId: string }>;
   aiPhotos?: Array<{ id: string; thumbUrl: string }>;
-  familyMembers?: Array<{ userId: string; name: string; email: string; role: string }>;
+  familyMembers?: Array<{ userId: string; name: string; email: string; role: string; isSelf?: boolean }>;
+  familyInviteCode?: string | null;
   activity?: Array<{ id: string; kind: string; label: string; atMs: number }>;
   playlists?: Array<{
     id: string;
@@ -75,6 +78,16 @@ const copy = {
     addDevice: "Add device",
     dashboardPortal: "Portal",
     viewAll: "View all",
+    manageFamily: "Manage",
+    lastPhoto: "Last photo",
+    lastPhotoNever: "No photos yet",
+    youLabel: "You",
+    memberCanSend: "Can send photos",
+    homeAssistant: "Home Assistant",
+    homeAssistantDesc: "Local smart home control",
+    connect: "Connect",
+    copyInvite: "Copy invite code",
+    inviteCopied: "Invite code copied",
   },
   zh: {
     overview: "概览",
@@ -109,6 +122,16 @@ const copy = {
     addDevice: "添加设备",
     dashboardPortal: "门户",
     viewAll: "查看全部",
+    manageFamily: "管理",
+    lastPhoto: "最近照片",
+    lastPhotoNever: "暂无照片",
+    youLabel: "你",
+    memberCanSend: "可发送照片",
+    homeAssistant: "Home Assistant",
+    homeAssistantDesc: "本地智能家居控制",
+    connect: "连接",
+    copyInvite: "复制邀请码",
+    inviteCopied: "邀请码已复制",
   },
 };
 
@@ -286,15 +309,26 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
             <header className="flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-[30px] font-bold tracking-tight">{t.overview}</h1>
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-400 opacity-70"
-                  title="Coming soon"
+                <Link
+                  href={`${base}/family`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
                 >
                   <i className="fa-solid fa-share-nodes" aria-hidden />
                   {t.shareAction}
-                </button>
+                </Link>
+                {data?.familyInviteCode ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(data.familyInviteCode!);
+                      setNotice(t.inviteCopied);
+                    }}
+                  >
+                    <i className="fa-solid fa-link" aria-hidden />
+                    {t.copyInvite}
+                  </button>
+                ) : null}
                 <Link
                   href={`${base}/send`}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#DC2626] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(220,38,38,0.22)] hover:bg-[#B91C1C]"
@@ -317,8 +351,9 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
               <StatCard icon="fa-camera" label={t.photosMonth} value={String(stats?.photosThisMonth ?? 0)} />
               <StatCard icon="fa-wand-magic-sparkles" label={t.aiGen} value={String(stats?.aiGenerated ?? 0)} />
             </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)] lg:col-span-2">
+            <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+              <div className="space-y-6">
+                <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)]">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold">{t.myDevices}</h2>
                   <button
@@ -330,7 +365,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
                   </button>
                 </div>
                 <ul className="space-y-4">
-                  {(data?.devices ?? []).map((d) => (
+                  {(data?.devices ?? []).slice(0, 4).map((d) => (
                     <li
                       key={d.id}
                       className="flex items-center gap-4 rounded-xl border border-transparent bg-[#fafafa] p-4 transition hover:border-[#fecaca]"
@@ -339,8 +374,12 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
                         <i className="fa-solid fa-tablet-screen-button text-xl" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold">{d.id}</p>
-                        <p className="text-xs text-gray-500">{d.bleMac}</p>
+                        <p className="font-semibold">{d.name ?? d.id}</p>
+                        <p className="text-xs text-gray-500">
+                          {d.lastPhotoAtMs
+                            ? `${t.lastPhoto}: ${formatRelativeTime(d.lastPhotoAtMs, langUi)}`
+                            : t.lastPhotoNever}
+                        </p>
                       </div>
                       <span
                         className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
@@ -355,42 +394,72 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
                   {!data?.devices?.length && <li className="text-sm text-gray-500">—</li>}
                 </ul>
               </section>
-              <section className="rounded-2xl bg-white p-6 shadow-md">
-                <h2 className="mb-4 text-lg font-semibold">{t.activity}</h2>
-                <ul className="max-h-80 space-y-2 overflow-auto text-sm text-gray-700">
-                  {(data?.activity ?? []).slice(0, 12).map((a) => (
-                    <li key={a.id} className="border-b border-gray-100 py-2">
-                      <p className="font-medium">{a.label}</p>
-                      <p className="text-xs text-gray-400">{new Date(a.atMs).toLocaleString()}</p>
-                    </li>
-                  ))}
-                  {!data?.activity?.length && <li className="text-gray-500">—</li>}
-                </ul>
-              </section>
-            </div>
-            <section className="rounded-2xl bg-white p-6 shadow-md">
-              <h2 className="mb-4 text-lg font-semibold">{t.recentPhotos}</h2>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-                {(data?.recentPhotos ?? []).slice(0, 12).map((p) => (
-                  <div key={p.id} className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.thumbUrl} alt="" className="aspect-square w-full object-cover" />
+                <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)]">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold">{t.recentPhotos}</h2>
+                    <Link href={`${base}/send`} className="text-sm font-semibold text-[#DC2626] hover:underline">
+                      Upload
+                    </Link>
                   </div>
-                ))}
+                  <div className="grid grid-cols-4 gap-3">
+                    {(data?.recentPhotos ?? []).slice(0, 8).map((p) => (
+                      <div key={p.id} className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.thumbUrl} alt="" className="aspect-square w-full object-cover" />
+                      </div>
+                    ))}
+                    {!data?.recentPhotos?.length && <p className="col-span-4 text-sm text-gray-500">—</p>}
+                  </div>
+                </section>
               </div>
-            </section>
-            <section className="rounded-2xl bg-white p-6 shadow-md">
-              <h2 className="mb-4 text-lg font-semibold">{t.familyMembers}</h2>
-              <ul className="divide-y divide-gray-100">
-                {(data?.familyMembers ?? []).map((m) => (
-                  <li key={m.userId} className="flex items-center justify-between py-3 text-sm">
-                    <span className="font-medium">{m.name}</span>
-                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-[#DC2626]">{m.role}</span>
-                  </li>
-                ))}
-                {!data?.familyMembers?.length && <li className="text-gray-500">—</li>}
-              </ul>
-            </section>
+              <div className="space-y-6">
+                <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)]">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold">{t.familyMembers}</h2>
+                    <Link href={`${base}/family`} className="text-sm font-semibold text-[#DC2626] hover:underline">
+                      {t.manageFamily}
+                    </Link>
+                  </div>
+                  <ul className="space-y-3">
+                    {(data?.familyMembers ?? []).map((m, idx) => (
+                      <li key={m.userId} className="flex items-center gap-3 rounded-xl bg-[#fafafa] p-3">
+                        <MemberAvatar index={idx} name={m.name} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold">{m.name}</p>
+                          <p className="text-xs text-gray-500">{m.isSelf ? t.youLabel : t.memberCanSend}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${memberRoleBadge(m.role)}`}>
+                          {m.role}
+                        </span>
+                      </li>
+                    ))}
+                    {!data?.familyMembers?.length && <li className="text-sm text-gray-500">—</li>}
+                  </ul>
+                </section>
+                <section className="rounded-2xl bg-white p-6 shadow-[0_10px_24px_rgba(17,24,39,0.08)]">
+                  <h2 className="mb-4 text-lg font-semibold">{t.activity}</h2>
+                  <ul className="max-h-[28rem] space-y-3 overflow-auto">
+                    {(data?.activity ?? []).slice(0, 8).map((a) => {
+                      const ic = activityIconKind(a.kind);
+                      return (
+                        <li key={a.id} className="flex items-start gap-3">
+                          <span
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${ic.bg} ${ic.color}`}
+                          >
+                            <i className={`fa-solid ${ic.icon} text-sm`} aria-hidden />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium leading-snug">{a.label}</p>
+                          </div>
+                          <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(a.atMs, langUi)}</span>
+                        </li>
+                      );
+                    })}
+                    {!data?.activity?.length && <li className="text-sm text-gray-500">—</li>}
+                  </ul>
+                </section>
+              </div>
+            </div>
           </div>
         )}
 
@@ -475,7 +544,11 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
             <div className="flex items-center justify-between gap-3">
               <h1 className="text-3xl font-bold">{t.photos}</h1>
               <div className="flex gap-2">
-                <button type="button" className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold">
+                <button
+                  type="button"
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold"
+                  onClick={() => setScreen("playlist")}
+                >
                   <i className="fa-solid fa-list mr-2" /> Playlists
                 </button>
                 <Link href={`${base}/send`} className="rounded-xl bg-[#DC2626] px-3 py-2 text-sm font-semibold text-white">
@@ -579,10 +652,11 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
           <div className="space-y-6">
             <h1 className="text-3xl font-bold">{t.integrations}</h1>
             <p className="text-sm text-gray-600">{t.connectServices}</p>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <IntegrationCard on={data?.integrations?.wechatConnected} label="WeChat" />
               <IntegrationCard on={data?.integrations?.googlePhotosConnected} label="Google Photos" />
               <IntegrationCard on={data?.integrations?.icloudConnected} label="iCloud" />
+              <HomeAssistantCard label={t.homeAssistant} desc={t.homeAssistantDesc} connectLabel={t.connect} />
             </div>
             <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
               <h3 className="text-lg font-semibold">API Access</h3>
@@ -642,7 +716,7 @@ https://api.myframe.app/v1/frames/{"{id}"}/send
                     className="rounded-lg bg-[#DC2626] px-3 py-2 text-sm font-semibold text-white"
                     onClick={async () => {
                       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-                      window.location.href = `/${locale}/app/home`;
+                      window.location.href = `/${locale}/auth`;
                     }}
                   >
                     Logout
@@ -669,6 +743,68 @@ https://api.myframe.app/v1/frames/{"{id}"}/send
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function formatRelativeTime(atMs: number, lang: "en" | "zh"): string {
+  const diff = Date.now() - atMs;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return lang === "zh" ? "刚刚" : "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return lang === "zh" ? `${min} 分钟前` : `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return lang === "zh" ? `${hr} 小时前` : `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return lang === "zh" ? `${day} 天前` : `${day}d ago`;
+}
+
+function activityIconKind(kind: string): { icon: string; bg: string; color: string } {
+  if (/ai|magic|generated/i.test(kind)) {
+    return { icon: "fa-wand-magic-sparkles", bg: "bg-violet-100", color: "text-violet-700" };
+  }
+  if (/voice|mic/i.test(kind)) {
+    return { icon: "fa-microphone", bg: "bg-amber-100", color: "text-amber-700" };
+  }
+  if (/photo|image|upload/i.test(kind)) {
+    return { icon: "fa-image", bg: "bg-red-100", color: "text-[#DC2626]" };
+  }
+  return { icon: "fa-bell", bg: "bg-gray-100", color: "text-gray-600" };
+}
+
+function memberRoleBadge(role: string): string {
+  const r = role.toLowerCase();
+  if (r.includes("owner")) return "bg-violet-100 text-violet-800";
+  if (r.includes("admin")) return "bg-emerald-100 text-emerald-800";
+  return "bg-gray-100 text-gray-700";
+}
+
+const memberAvatarColors = ["bg-[#DC2626]", "bg-emerald-600", "bg-amber-500", "bg-violet-600", "bg-sky-600"];
+
+function MemberAvatar({ index, name }: { index: number; name: string }) {
+  const bg = memberAvatarColors[index % memberAvatarColors.length];
+  return (
+    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white ${bg}`}>
+      {(name || "?").slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+function HomeAssistantCard({ label, desc, connectLabel }: { label: string; desc: string; connectLabel: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#DC2626] text-white">
+          <i className="fa-solid fa-house-chimney" aria-hidden />
+        </span>
+        <div>
+          <p className="font-semibold">{label}</p>
+          <p className="text-sm text-gray-500">{desc}</p>
+        </div>
+      </div>
+      <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700">
+        {connectLabel}
+      </button>
     </div>
   );
 }

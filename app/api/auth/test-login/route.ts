@@ -39,7 +39,16 @@ export async function POST() {
     out.cookies.set(USER_EMAIL_COOKIE, String(parsed.user.email ?? ""), common);
     out.cookies.set(USER_NAME_COOKIE, String(parsed.user.name ?? ""), common);
     return out;
-  } catch {
-    return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "backend_unreachable";
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "backend_unreachable",
+        message: `Cannot reach API at ${getMyframeApiBase()}. Start it with: cd web/backend && npm run dev`,
+        detail: msg,
+      },
+      { status: 503 },
+    );
   }
 }

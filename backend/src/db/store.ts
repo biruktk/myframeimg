@@ -118,6 +118,8 @@ export type MyframeDb = {
     /** scrypt-derived password (optional until user registers via app). */
     passwordSalt?: string;
     passwordHash?: string;
+    /** Google account `sub` from Sign-In (optional). */
+    googleSub?: string;
   }>;
   familyGroups: Array<{
     id: string;

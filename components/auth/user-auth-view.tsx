@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export function UserAuthView({ locale }: { locale: Locale }) {
   const router = useRouter();
@@ -43,7 +44,12 @@ export function UserAuthView({ locale }: { locale: Locale }) {
       const res = await fetch("/api/auth/test-login", { method: "POST" });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setErr(data?.error ?? "Test login failed");
+        const hint =
+          data?.message ??
+          (data?.error === "backend_unreachable"
+            ? "API server is not running. In another terminal: cd web/backend && npm run dev"
+            : null);
+        setErr(hint ?? data?.error ?? "Test login failed");
         return;
       }
       router.replace(`/${locale}/app/home`);
@@ -109,6 +115,7 @@ export function UserAuthView({ locale }: { locale: Locale }) {
           >
             {busy ? "Please wait…" : mode === "login" ? "Login" : "Create Account"}
           </button>
+          <GoogleSignInButton locale={locale} disabled={busy} />
           <button
             type="button"
             onClick={() => void testLogin()}

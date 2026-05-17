@@ -67,6 +67,11 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
     .sort((a, b) => b.atMs - a.atMs);
   const photosThisMonth = uploadsOnFrames.filter((u) => u.atMs >= msStart).length;
 
+  const lastPhotoAtMsByFrame = new Map<string, number>();
+  for (const u of uploadsOnFrames) {
+    if (!lastPhotoAtMsByFrame.has(u.deviceId)) lastPhotoAtMsByFrame.set(u.deviceId, u.atMs);
+  }
+
   let onlineDevices = 0;
   const deviceRows = frames.map((f) => {
     const online =
@@ -82,6 +87,7 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
       wifiStatus: f.wifiStatus,
       online,
       lastSeenAtMs: f.lastSeenAtMs,
+      lastPhotoAtMs: lastPhotoAtMsByFrame.get(f.id) ?? null,
       firmwareVersion: f.firmwareVersion,
       slideshowIntervalMinutes: slideshow?.intervalMinutes ?? data.settings.preferences.autoRotateMinutes ?? 10,
       slideshowImageCount: slideshow?.imageIds?.length ?? 0,
@@ -104,12 +110,14 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
   const memberRows =
     familyGroup?.members.map((m) => {
       const mu = data.users.find((x) => x.id === m.userId);
-      const roleLabel = m.role === "owner" ? "Owner" : "Member";
+      const roleLabel =
+        m.role === "owner" ? "Owner" : String(m.role).toLowerCase() === "admin" ? "Admin" : "Member";
       return {
         userId: m.userId,
         name: mu?.name ?? m.userId,
         email: mu?.email ?? "",
         role: roleLabel,
+        isSelf: m.userId === user.id,
       };
     }) ?? [];
 
@@ -189,6 +197,7 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
     integrations: data.settings.integrations,
     preferences: data.settings.preferences,
     account: data.settings.account,
+    familyInviteCode: familyGroup?.inviteCode ?? null,
   });
 });
 

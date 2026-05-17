@@ -19,6 +19,19 @@
       "status": "active",
       "createdAtMs": 1778331814791,
       "lastSeenAtMs": 1778331814791
+    },
+    {
+      "id": "usr_test_995fdb0a",
+      "email": "test@myframe.local",
+      "name": "Test User",
+      "orgId": "org_default",
+      "subscriptionTier": "pro",
+      "familyGroupId": null,
+      "status": "active",
+      "createdAtMs": 1779008798560,
+      "lastSeenAtMs": 1779008799668,
+      "passwordSalt": "ee81d1ed0d8b2d540214caf68732d094",
+      "passwordHash": "f380cef31d34962d7423335a135ae282596cb4c4a1ce9c85c7e3348976934cad8ef7907d8ddddfc770cf279b75754c7052322152ef85b4a165257e2850e79753"
     }
   ],
   "familyGroups": [
@@ -117,7 +130,28 @@
       "tier": "pro"
     }
   },
-  "auditLog": [],
+  "auditLog": [
+    {
+      "id": "audit_1779008799669_591a",
+      "actor": "user:usr_test_995fdb0a",
+      "action": "test_login",
+      "target": "usr_test_995fdb0a",
+      "atMs": 1779008799669,
+      "meta": {
+        "email": "test@myframe.local"
+      }
+    },
+    {
+      "id": "audit_1779008799331_1c0d",
+      "actor": "user:usr_test_995fdb0a",
+      "action": "test_login",
+      "target": "usr_test_995fdb0a",
+      "atMs": 1779008799331,
+      "meta": {
+        "email": "test@myframe.local"
+      }
+    }
+  ],
   "slideshowsByBleMac": {},
   "commerceEvents": [],
   "notifySubscribers": [],
@@ -306,31 +340,36 @@
         "label": "Features",
         "url": "#features",
         "target": "_self",
-        "menu_order": 1
+        "menu_order": 1,
+        "id": 1
       },
       {
         "label": "Product",
         "url": "#product",
         "target": "_self",
-        "menu_order": 2
+        "menu_order": 2,
+        "id": 2
       },
       {
         "label": "Pricing",
         "url": "#pricing",
         "target": "_self",
-        "menu_order": 3
+        "menu_order": 3,
+        "id": 3
       },
       {
         "label": "For Families",
         "url": "#family",
         "target": "_self",
-        "menu_order": 4
+        "menu_order": 4,
+        "id": 4
       },
       {
         "label": "Cart",
         "url": "/cart-checkout.html",
         "target": "_self",
-        "menu_order": 5
+        "menu_order": 5,
+        "id": 5
       }
     ],
     "footerLinks": [
@@ -338,106 +377,124 @@
         "group_name": "Product",
         "name": "Features",
         "url": "#features",
-        "link_order": 1
+        "link_order": 1,
+        "id": 1
       },
       {
         "group_name": "Product",
         "name": "Pricing",
         "url": "#pricing",
-        "link_order": 2
+        "link_order": 2,
+        "id": 2
       },
       {
         "group_name": "Product",
         "name": "For Families",
         "url": "#family",
-        "link_order": 3
+        "link_order": 3,
+        "id": 3
       },
       {
         "group_name": "Product",
         "name": "Download the MyFrame App",
         "url": "download-app",
-        "link_order": 4
+        "link_order": 4,
+        "id": 4
       },
       {
         "group_name": "Support",
         "name": "Help Center",
         "url": "help-center",
-        "link_order": 1
+        "link_order": 1,
+        "id": 5
       },
       {
         "group_name": "Support",
         "name": "Contact Us",
         "url": "contact-us",
-        "link_order": 2
+        "link_order": 2,
+        "id": 6
       },
       {
         "group_name": "Support",
         "name": "Privacy Policy",
         "url": "privacy-policy",
-        "link_order": 3
+        "link_order": 3,
+        "id": 7
       },
       {
         "group_name": "Support",
         "name": "Terms of Service",
         "url": "terms-of-service",
-        "link_order": 4
+        "link_order": 4,
+        "id": 8
       },
       {
         "group_name": "Support",
         "name": "Frequently Asked Questions",
         "url": "faq",
-        "link_order": 5
+        "link_order": 5,
+        "id": 9
       },
       {
         "group_name": "Company",
         "name": "About MyFrame",
         "url": "about",
-        "link_order": 1
+        "link_order": 1,
+        "id": 10
       },
       {
         "group_name": "Company",
         "name": "Blog",
         "url": "blog",
-        "link_order": 2
+        "link_order": 2,
+        "id": 11
       },
       {
         "group_name": "Company",
         "name": "Press Kit",
         "url": "press-kit",
-        "link_order": 3
+        "link_order": 3,
+        "id": 12
       },
       {
         "group_name": "Company",
         "name": "Documentation",
         "url": "documentation",
-        "link_order": 4
+        "link_order": 4,
+        "id": 13
       }
     ],
     "socials": [
       {
         "icon": "fab fa-linkedin-in",
         "url": "https://www.linkedin.com/",
-        "link_order": 1
+        "link_order": 1,
+        "id": 1
       },
       {
         "icon": "fab fa-facebook-f",
         "url": "https://www.facebook.com/",
-        "link_order": 2
+        "link_order": 2,
+        "id": 2
       },
       {
         "icon": "fab fa-instagram",
         "url": "https://www.instagram.com/",
-        "link_order": 3
+        "link_order": 3,
+        "id": 3
       },
       {
         "icon": "fab fa-youtube",
         "url": "https://www.youtube.com/",
-        "link_order": 4
+        "link_order": 4,
+        "id": 4
       },
       {
         "icon": "x-social",
         "url": "https://x.com/",
-        "link_order": 5
+        "link_order": 5,
+        "id": 5
       }
     ],
     "features": [
