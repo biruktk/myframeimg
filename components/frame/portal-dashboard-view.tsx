@@ -228,7 +228,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
             <img
               src="/ra/logo.svg"
               alt="MyFrame"
-              className="h-8 w-auto max-w-[180px] brightness-0 invert"
+              className="h-10 w-10 object-contain brightness-0 invert"
             />
           </Link>
           <p className="mt-3 text-xs text-white/70">{t.dashboardPortal}</p>

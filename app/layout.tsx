@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   description:
     "Smart photo frame: AI art, family sharing, live sync. Design aligned with ra/ui references.",
   icons: {
-    icon: "/assets/myframe-logo-final.svg",
-    shortcut: "/assets/myframe-logo-final.svg",
+    icon: [{ url: "/assets/myframe-logo-final.svg", type: "image/svg+xml" }, { url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
     apple: "/assets/myframe-logo-icon.png",
   },
 };
