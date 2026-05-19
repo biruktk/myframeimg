@@ -85,7 +85,14 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "myframe-server" });
+  res.json({
+    ok: true,
+    service: "myframe-server",
+    mobileGoogleSignIn: true,
+    googleAuthConfigured: Boolean(
+      process.env.GOOGLE_OAUTH_CLIENT_IDS?.trim() || process.env.GOOGLE_CLIENT_ID?.trim(),
+    ),
+  });
 });
 
 app.use(mobileGoogleAuthRouter);
