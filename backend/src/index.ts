@@ -17,6 +17,7 @@ import { frameSlideshowRouter } from "./routes/frame_slideshow";
 import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
+import { mobileGoogleAuthRouter } from "./routes/mobile_google_auth";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -86,6 +87,8 @@ app.use(
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "myframe-server" });
 });
+
+app.use(mobileGoogleAuthRouter);
 
 app.get("/", (_req, res) => {
   res.type("html").send(`<!doctype html>
