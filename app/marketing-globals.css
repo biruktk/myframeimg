@@ -6,8 +6,8 @@
             --primary-dark: #b91c1c;
             --primary-soft: #fef2f2;
             --surface: #ffffff;
-            --surface-muted: #fcfaf8;
-            --surface-strong: #f6f1ec;
+            --surface-muted: #ffffff;
+            --surface-strong: #f7f7f7;
             --ink: #151515;
             --ink-soft: #5f5a56;
             --ink-muted: #8f8882;
@@ -34,9 +34,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(220, 38, 38, 0.07), transparent 30%),
-                linear-gradient(180deg, #fffdfa 0%, #ffffff 24%, #fbf8f4 100%);
+            background: #ffffff;
             color: var(--ink);
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -1085,7 +1083,7 @@
         .specs {
             background:
                 radial-gradient(circle at 12% 0%, rgba(220, 38, 38, 0.08), transparent 26%),
-                linear-gradient(180deg, #fff 0%, #fff7f7 100%);
+                linear-gradient(180deg, #fff 0%, #fff 100%);
         }
 
         .specs-grid {
@@ -1210,7 +1208,7 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--ink-muted);
-            background: #fff5f5;
+            background: #ffffff;
         }
 
         .specs-table td {
@@ -1492,7 +1490,7 @@
 
         .footer {
             padding: 72px 0 36px;
-            background: #fbf8f4;
+            background: #fff7f8;
             border-top: 1px solid rgba(28, 24, 20, 0.06);
         }
 
@@ -2129,7 +2127,7 @@
   --primary: #D91E1E;
   --primary-dark: #A81515;
   --primary-soft: #FFE8E8;
-  --site-bg: #fff5f5;
+  --site-bg: #ffffff;
 }
 
 html,
@@ -2149,10 +2147,7 @@ body,
 .product,
 .specs,
 .pricing,
-.family,
-.hero,
-.hero-shell,
-.hero-slide-text {
+.family {
   background: var(--site-bg) !important;
 }
 
@@ -2213,7 +2208,7 @@ body,
 }
 
 .footer {
-  background: #f2dfdf !important;
+  background: #fff7f8 !important;
   border-top: 1px solid rgba(220, 38, 38, 0.12);
   color: var(--ink);
   font-weight: 700;
@@ -2398,7 +2393,7 @@ h4,
 
 /* Match the reference localhost styling for feature cards and footer layout. */
 .family-features {
-  background: #fff5f5 !important;
+  background: #ffffff !important;
 }
 
 .family-feature-grid {
@@ -2439,7 +2434,7 @@ h4,
 
 .footer {
   padding: 96px 0 34px;
-  background: #f2dfdf !important;
+  background: #fff7f8 !important;
   border-top: 1px solid rgba(220, 38, 38, 0.16);
 }
 
@@ -2769,7 +2764,7 @@ h4,
   height: var(--hero-stage-height) !important;
   min-height: var(--hero-stage-height) !important;
   padding-top: var(--nav-height) !important;
-  background: var(--site-bg) !important;
+  background: #fff5f5 !important;
 }
 
 .hero-shell {

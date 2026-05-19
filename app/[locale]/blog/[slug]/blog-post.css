@@ -1,7 +1,7 @@
 .blog-post-page {
   min-height: 100vh;
   color: #1a1a1a;
-  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 28%);
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   line-height: 1.65;
 }

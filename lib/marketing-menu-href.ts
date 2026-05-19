@@ -24,7 +24,7 @@ export function localizeMarketingMenuHref(url: string, locale: Locale): string {
   }
   if (u.startsWith("#")) return marketingHomeWithHash(locale, u);
   if (u.endsWith(".html")) return u.startsWith("/") ? u : `/${u}`;
-  if (u === "blog") return locale === defaultLocale ? `/blog` : `/${locale}/blog`;
+  if (u === "blog") return locale === defaultLocale ? `/${defaultLocale}/blog` : `/${locale}/blog`;
   const clean = u.replace(/^\/+/, "");
-  return locale === defaultLocale ? `/page/${clean}` : `/${locale}/page/${clean}`;
+  return `/${locale === defaultLocale ? defaultLocale : locale}/page/${clean}`;
 }
