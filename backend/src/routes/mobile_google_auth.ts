@@ -1,7 +1,12 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { googleOAuthClientIds, isGoogleAuthConfigured } from "../services/google_id_token";
+import { handleGoogleAuthPost } from "../handlers/google_auth_post";
 
 export const mobileGoogleAuthRouter = Router();
+mobileGoogleAuthRouter.use(express.json({ limit: "256kb" }));
+
+/** Same handler as POST /api/auth/google — colocated with the sign-in page. */
+mobileGoogleAuthRouter.post("/mobile/google-auth", (req, res) => void handleGoogleAuthPost(req, res));
 
 function escapeHtml(s: string): string {
   return s
@@ -50,10 +55,17 @@ mobileGoogleAuthRouter.get("/mobile/google-signin", (_req, res) => {
   </div>
   <script>
     const CLIENT_ID = "${cid}";
+    const API_BASE = window.location.origin.replace(/\\/$/, "");
+    const AUTH_URL = API_BASE + "/mobile/google-auth";
     const errEl = document.getElementById("err");
     function showErr(msg) {
       errEl.hidden = false;
       errEl.textContent = msg;
+    }
+    function formatApiError(status, data) {
+      if (data && data.error) return String(data.error);
+      if (status === 404) return "API route not found. Redeploy backend (npm ci && npm run build && pm2 restart myframe-api).";
+      return "Sign-in failed (" + status + ")";
     }
     function returnToApp(payload) {
       const q = new URLSearchParams({
@@ -76,14 +88,14 @@ mobileGoogleAuthRouter.get("/mobile/google-signin", (_req, res) => {
           if (!credential) return;
           errEl.hidden = true;
           try {
-            const res = await fetch("/api/auth/google", {
+            const res = await fetch(AUTH_URL, {
               method: "POST",
-              headers: { "content-type": "application/json" },
+              headers: { "content-type": "application/json", accept: "application/json" },
               body: JSON.stringify({ idToken: credential }),
             });
             const data = await res.json().catch(() => null);
             if (!res.ok || !data?.ok) {
-              showErr(data?.error || "Sign-in failed (" + res.status + ")");
+              showErr(formatApiError(res.status, data));
               return;
             }
             returnToApp({ token: data.token, user: data.user });

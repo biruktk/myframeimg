@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://myframe.ink"),
   title: "MyFrame — Paper-like photo frame",
   description:
     "Smart photo frame: AI art, family sharing, live sync. Design aligned with ra/ui references.",

@@ -8,6 +8,7 @@ import type { MarketingSiteStored } from "../data/marketing_defaults";
 import { marketingSiteSeed, staticCurrencies, staticLanguages } from "../data/marketing_defaults";
 import { db, marketingCmsSeed, type MarketingCmsState, type MyframeDb } from "../db/store";
 import { getPublicSitePayload } from "../services/marketing_public";
+import { requireSuperAdmin } from "../middleware/rbac";
 
 const uploadRoot = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
 
@@ -721,7 +722,7 @@ export function attachCmsManageRoutes(adminRouter: Router): void {
     res.json({ ok: true, admin: { ...adminOut, id: Number(adminOut.id ?? 1) } });
   });
 
-  adminRouter.post("/admin/admins", (req, res) => {
+  adminRouter.post("/admin/admins", requireSuperAdmin, (req, res) => {
     const body = (req.body ?? {}) as Record<string, string>;
     if (!body.password?.trim()) return res.status(400).json({ ok: false, error: "password_required" });
     let idOut = 0;
@@ -741,7 +742,7 @@ export function attachCmsManageRoutes(adminRouter: Router): void {
     res.status(201).json({ ok: true, id: idOut });
   });
 
-  adminRouter.put("/admin/admins/:id", (req, res) => {
+  adminRouter.put("/admin/admins/:id", requireSuperAdmin, (req, res) => {
     const id = Number(req.params.id);
     const body = (req.body ?? {}) as Record<string, string>;
     let ok = false;
@@ -760,7 +761,7 @@ export function attachCmsManageRoutes(adminRouter: Router): void {
     res.json({ ok: true });
   });
 
-  adminRouter.delete("/admin/admins/:id", (req, res) => {
+  adminRouter.delete("/admin/admins/:id", requireSuperAdmin, (req, res) => {
     const id = Number(req.params.id);
     const data = db.read();
     if (data.marketingCms?.cmsAdmins.length === 1) {

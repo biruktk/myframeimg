@@ -18,3 +18,10 @@ curl -sf "http://127.0.0.1:${PORT:-3001}/health" | head -c 200
 echo ""
 curl -sf -o /dev/null -w "GET /mobile/google-signin -> HTTP %{http_code}\n" \
   "http://127.0.0.1:${PORT:-3001}/mobile/google-signin"
+curl -sf -o /dev/null -w "POST /mobile/google-auth (no token) -> HTTP %{http_code}\n" \
+  -X POST -H "content-type: application/json" \
+  -d '{"idToken":""}' \
+  "http://127.0.0.1:${PORT:-3001}/mobile/google-auth"
+echo "(expect 400 for empty token — 404 means old build still running)"
+echo ""
+echo "Docs: docs/API.md, docs/DATABASE.md, docs/openapi.yaml"

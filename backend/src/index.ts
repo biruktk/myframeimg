@@ -148,6 +148,14 @@ app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
+app.use((_req, res) => {
+  res.status(404).json({
+    ok: false,
+    error: "route_not_found",
+    hint: "MyFrame API — use /health, /mobile/google-signin, POST /mobile/google-auth, POST /api/auth/google",
+  });
+});
+
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
   console.log(`Upload dir: ${uploadDir}`);
