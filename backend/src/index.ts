@@ -18,11 +18,6 @@ import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
-import {
-  handleMobileGoogleAuthPost,
-  handleMobileGoogleSigninGet,
-  mobileGoogleAuthRouter,
-} from "./routes/mobile_google_auth";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -90,23 +85,8 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({
-    ok: true,
-    service: "myframe-server",
-    mobileGoogleSignIn: true,
-    googleAuthConfigured: Boolean(
-      process.env.GOOGLE_OAUTH_CLIENT_IDS?.trim() || process.env.GOOGLE_CLIENT_ID?.trim(),
-    ),
-    wechatConfigured: Boolean(
-      process.env.WECHAT_MINI_APPID?.trim() && process.env.WECHAT_MINI_APPSECRET?.trim(),
-    ),
-  });
+  res.json({ ok: true, service: "myframe-server" });
 });
-
-/** Mobile Google sign-in — register on app root (survives partial deploys / router issues). */
-app.get("/mobile/google-signin", handleMobileGoogleSigninGet);
-app.post("/mobile/google-auth", express.json({ limit: "256kb" }), handleMobileGoogleAuthPost);
-app.use(mobileGoogleAuthRouter);
 
 app.get("/", (_req, res) => {
   res.type("html").send(`<!doctype html>
@@ -133,11 +113,8 @@ app.get("/", (_req, res) => {
         <strong>Quick links</strong>
         <ul>
           <li><a href="/health">/health</a></li>
-          <li><a href="/mobile/google-signin">/mobile/google-signin</a></li>
           <li><code>GET /api/device/status</code></li>
           <li><code>POST /api/photo/upload</code></li>
-          <li><code>POST /api/auth/wechat/login</code></li>
-          <li><code>POST /api/auth/wechat/phone</code></li>
         </ul>
       </div>
     </main>
@@ -163,17 +140,8 @@ app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
-app.use((_req, res) => {
-  res.status(404).json({
-    ok: false,
-    error: "route_not_found",
-    hint: "MyFrame API — /health, /mobile/google-signin, POST /mobile/google-auth, POST /api/auth/google, POST /api/auth/wechat/login",
-  });
-});
-
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
-  console.log(`Mobile Google: GET /mobile/google-signin  POST /mobile/google-auth`);
   console.log(`Upload dir: ${uploadDir}`);
   console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
   if (mediaPublicBaseUrl !== publicBaseUrl) {
