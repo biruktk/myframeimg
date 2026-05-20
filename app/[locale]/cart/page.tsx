@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
-/** Bridges `/[lang]/cart` (from site-runtime) to static `cart-checkout.html` with language cookie. */
-export default function LocaleCartBridge() {
+function CartBridgeInner() {
   const { locale } = useParams<{ locale: string }>();
   const sp = useSearchParams();
 
@@ -23,5 +22,20 @@ export default function LocaleCartBridge() {
     <main className="flex min-h-screen items-center justify-center bg-white p-8 text-gray-600">
       Loading checkout…
     </main>
+  );
+}
+
+/** Bridges `/[lang]/cart` (from site-runtime) to static `cart-checkout.html` with language cookie. */
+export default function LocaleCartPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-white p-8 text-gray-600">
+          Loading checkout…
+        </main>
+      }
+    >
+      <CartBridgeInner />
+    </Suspense>
   );
 }
