@@ -23,5 +23,10 @@ curl -sf -o /dev/null -w "POST /mobile/google-auth (no token) -> HTTP %{http_cod
   -d '{"idToken":""}' \
   "http://127.0.0.1:${PORT:-3001}/mobile/google-auth"
 echo "(expect 400 for empty token — 404 means old build still running)"
+curl -sf -o /dev/null -w "POST /api/auth/wechat/login (no code) -> HTTP %{http_code}\n" \
+  -X POST -H "content-type: application/json" \
+  -d '{"code":""}' \
+  "http://127.0.0.1:${PORT:-3001}/api/auth/wechat/login" || true
+echo "(expect 400 — 404 means wechat routes missing)"
 echo ""
 echo "Docs: docs/API.md, docs/DATABASE.md, docs/openapi.yaml"

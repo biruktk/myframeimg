@@ -17,6 +17,7 @@ import { frameSlideshowRouter } from "./routes/frame_slideshow";
 import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
+import { wechatPhoneRouter } from "./routes/wechat_phone";
 import { mobileGoogleAuthRouter } from "./routes/mobile_google_auth";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
@@ -92,6 +93,9 @@ app.get("/health", (_req, res) => {
     googleAuthConfigured: Boolean(
       process.env.GOOGLE_OAUTH_CLIENT_IDS?.trim() || process.env.GOOGLE_CLIENT_ID?.trim(),
     ),
+    wechatConfigured: Boolean(
+      process.env.WECHAT_MINI_APPID?.trim() && process.env.WECHAT_MINI_APPSECRET?.trim(),
+    ),
   });
 });
 
@@ -122,8 +126,11 @@ app.get("/", (_req, res) => {
         <strong>Quick links</strong>
         <ul>
           <li><a href="/health">/health</a></li>
+          <li><a href="/mobile/google-signin">/mobile/google-signin</a></li>
           <li><code>GET /api/device/status</code></li>
           <li><code>POST /api/photo/upload</code></li>
+          <li><code>POST /api/auth/wechat/login</code></li>
+          <li><code>POST /api/auth/wechat/phone</code></li>
         </ul>
       </div>
     </main>
@@ -135,6 +142,7 @@ app.use("/api", publicSiteRouter);
 
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
+app.use("/api", wechatPhoneRouter);
 app.use("/api", userPortalRouter);
 app.use("/api", familyRouter);
 app.use("/api", frameSlideshowRouter());
@@ -152,7 +160,7 @@ app.use((_req, res) => {
   res.status(404).json({
     ok: false,
     error: "route_not_found",
-    hint: "MyFrame API — use /health, /mobile/google-signin, POST /mobile/google-auth, POST /api/auth/google",
+    hint: "MyFrame API — /health, /mobile/google-signin, POST /mobile/google-auth, POST /api/auth/google, POST /api/auth/wechat/login",
   });
 });
 

@@ -11,6 +11,8 @@ OpenAPI sketch: [`docs/openapi.yaml`](../../../docs/openapi.yaml).
 | POST | `/api/auth/register` | — |
 | POST | `/api/auth/login` | — |
 | POST | `/api/auth/google` | Body `{ idToken }` |
+| POST | `/api/auth/wechat/login` | Body `{ code }` — Mini Program `wx.login` |
+| POST | `/api/auth/wechat/phone` | Body `{ loginCode, phoneCode }` — bind phone |
 | POST | `/api/auth/test-login` | — (test user) |
 | GET | `/api/auth/session` | `Authorization: Bearer <jwt>` |
 | POST | `/mobile/google-auth` | Body `{ idToken }` (mobile browser flow) |

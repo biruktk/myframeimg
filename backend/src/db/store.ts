@@ -120,6 +120,11 @@ export type MyframeDb = {
     passwordHash?: string;
     /** Google account `sub` from Sign-In (optional). */
     googleSub?: string;
+    /** WeChat Mini Program openid (optional). */
+    wechatOpenId?: string;
+    wechatUnionId?: string;
+    /** E.164 or national number from WeChat getPhoneNumber (optional). */
+    phone?: string;
   }>;
   familyGroups: Array<{
     id: string;
