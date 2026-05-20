@@ -1,12 +1,10 @@
+import type { Request, Response } from "express";
 import express, { Router } from "express";
 import { googleOAuthClientIds, isGoogleAuthConfigured } from "../services/google_id_token";
 import { handleGoogleAuthPost } from "../handlers/google_auth_post";
 
 export const mobileGoogleAuthRouter = Router();
 mobileGoogleAuthRouter.use(express.json({ limit: "256kb" }));
-
-/** Same handler as POST /api/auth/google — colocated with the sign-in page. */
-mobileGoogleAuthRouter.post("/mobile/google-auth", (req, res) => void handleGoogleAuthPost(req, res));
 
 function escapeHtml(s: string): string {
   return s
@@ -16,21 +14,9 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** In-app browser Google Sign-In (Android fallback). Add this page origin to Web client “Authorized JavaScript origins”. */
-mobileGoogleAuthRouter.get("/mobile/google-signin", (_req, res) => {
-  if (!isGoogleAuthConfigured()) {
-    res.status(503).type("html").send("<p>Google Sign-In is not configured on the server.</p>");
-    return;
-  }
-
-  const clientId = googleOAuthClientIds()[0] ?? "";
-  if (!clientId) {
-    res.status(503).type("html").send("<p>Google Sign-In is not configured on the server.</p>");
-    return;
-  }
-
+function signinHtml(clientId: string): string {
   const cid = escapeHtml(clientId);
-  res.type("html").send(`<!doctype html>
+  return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -116,5 +102,27 @@ mobileGoogleAuthRouter.get("/mobile/google-signin", (_req, res) => {
     window.addEventListener("load", boot);
   </script>
 </body>
-</html>`);
-});
+</html>`;
+}
+
+/** GET /mobile/google-signin — registered on app and router (belt-and-suspenders). */
+export function handleMobileGoogleSigninGet(_req: Request, res: Response): void {
+  if (!isGoogleAuthConfigured()) {
+    res.status(503).type("html").send("<p>Google Sign-In is not configured on the server.</p>");
+    return;
+  }
+  const clientId = googleOAuthClientIds()[0] ?? "";
+  if (!clientId) {
+    res.status(503).type("html").send("<p>Google Sign-In is not configured on the server.</p>");
+    return;
+  }
+  res.type("html").send(signinHtml(clientId));
+}
+
+/** POST /mobile/google-auth */
+export function handleMobileGoogleAuthPost(req: Request, res: Response): void {
+  void handleGoogleAuthPost(req, res);
+}
+
+mobileGoogleAuthRouter.get("/mobile/google-signin", handleMobileGoogleSigninGet);
+mobileGoogleAuthRouter.post("/mobile/google-auth", handleMobileGoogleAuthPost);

@@ -6,6 +6,10 @@ echo "==> npm ci (installs google-auth-library and all deps)"
 npm ci
 echo "==> npm run build"
 npm run build
+if ! grep -rq "mobile/google-signin" dist/; then
+  echo "ERROR: dist/ missing mobile/google-signin — build did not include mobile auth routes"
+  exit 1
+fi
 echo "==> pm2 restart myframe-api (or start ecosystem.config.cjs)"
 if pm2 describe myframe-api &>/dev/null; then
   pm2 restart myframe-api
@@ -13,11 +17,16 @@ else
   pm2 start ecosystem.config.cjs
 fi
 pm2 save
-echo "==> smoke test"
-curl -sf "http://127.0.0.1:${PORT:-3001}/health" | head -c 200
+echo "==> smoke test (wait for API to bind)"
+sleep 2
+if ! curl -sS --max-time 5 "http://127.0.0.1:${PORT:-3001}/health" | head -c 300; then
+  echo ""
+  echo "ERROR: API not responding on :${PORT:-3001}. Check: pm2 logs myframe-api --lines 40"
+  exit 1
+fi
 echo ""
-curl -sf -o /dev/null -w "GET /mobile/google-signin -> HTTP %{http_code}\n" \
-  "http://127.0.0.1:${PORT:-3001}/mobile/google-signin"
+curl -sS -o /dev/null -w "GET /mobile/google-signin -> HTTP %{http_code}\n" \
+  "http://127.0.0.1:${PORT:-3001}/mobile/google-signin" || echo "GET /mobile/google-signin FAILED"
 curl -sf -o /dev/null -w "POST /mobile/google-auth (no token) -> HTTP %{http_code}\n" \
   -X POST -H "content-type: application/json" \
   -d '{"idToken":""}' \

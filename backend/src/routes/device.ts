@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "../db/store";
-import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { getFrame, isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 
 export const deviceRouter = Router();
 
@@ -44,6 +44,49 @@ deviceRouter.get("/devices/:id/status", (req, res) => {
     storage_used_mb: Math.round(d.usedBytes / 1024 / 1024),
     photo_count: d.photoCount,
   });
+});
+
+deviceRouter.get("/frames/:mac/status", (req, res) => {
+  const data = db.read();
+  const d = data.device;
+  const mqttFrame = getFrame(req.params.mac);
+  const requestedMac = resolveMqttHardwareMac(req.params.mac);
+  const storedMac = resolveMqttHardwareMac(d.id);
+  const mqttOnline = !!mqttFrame && mqttFrame.age < 120000;
+  const storedOnline = !!requestedMac && requestedMac === storedMac && d.connected;
+  res.json({
+    ok: true,
+    device_id: req.params.mac,
+    online: mqttOnline || storedOnline,
+    status: mqttOnline || storedOnline ? "online" : "offline",
+    battery: 100,
+    wifi: d.room,
+    storage_used_mb: Math.round(d.usedBytes / 1024 / 1024),
+    photo_count: d.photoCount,
+    mqtt_connected: isMqttConnected(),
+    last_seen_ms: mqttFrame?.lastSeen ?? d.lastPhotoAtMs,
+  });
+});
+
+deviceRouter.get("/frames/:mac/history", (req, res) => {
+  const requestedMac = resolveMqttHardwareMac(req.params.mac);
+  const base = mediaBaseUrl();
+  const uploads = db
+    .read()
+    .uploads.filter((u) => {
+      if (!requestedMac) return false;
+      return resolveMqttHardwareMac(u.deviceId) === requestedMac;
+    })
+    .slice(0, 50);
+  const images = uploads.map((u) => ({
+    id: u.id,
+    url: `${base}/frame-media/${encodeURIComponent(u.filename)}`,
+    imageUrl: `${base}/frame-media/${encodeURIComponent(u.filename)}`,
+    sentAt: u.atMs,
+    deliveredToFrame: u.deliveredToFrame === true,
+    deliveryMode: u.deliveryMode ?? "unknown",
+  }));
+  res.json({ ok: true, images });
 });
 
 /** POST /api/device/send — push a stored or supplied photo URL to the frame via MQTT. */
