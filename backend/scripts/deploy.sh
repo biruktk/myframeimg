@@ -27,6 +27,9 @@ fi
 echo ""
 curl -sS -o /dev/null -w "GET /mobile/google-signin -> HTTP %{http_code}\n" \
   "http://127.0.0.1:${PORT:-3001}/mobile/google-signin" || echo "GET /mobile/google-signin FAILED"
+curl -sf "http://127.0.0.1:${PORT:-3001}/health" | grep -q '"googleOAuthRedirect":true' && \
+  echo "googleOAuthRedirect: enabled" || \
+  echo "WARN: set GOOGLE_OAUTH_CLIENT_SECRET + PUBLIC_BASE_URL for mobile Google redirect"
 curl -sf -o /dev/null -w "POST /mobile/google-auth (no token) -> HTTP %{http_code}\n" \
   -X POST -H "content-type: application/json" \
   -d '{"idToken":""}' \

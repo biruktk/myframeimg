@@ -20,9 +20,11 @@ import { userPortalRouter } from "./routes/user_portal";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
 import {
   handleMobileGoogleAuthPost,
+  handleMobileGoogleOAuthCallback,
   handleMobileGoogleSigninGet,
   mobileGoogleAuthRouter,
 } from "./routes/mobile_google_auth";
+import { isGoogleOAuthRedirectConfigured } from "./services/google_oauth_mobile";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -50,7 +52,8 @@ app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.setHeader("x-content-type-options", "nosniff");
   res.setHeader("x-frame-options", "DENY");
-  res.setHeader("referrer-policy", "no-referrer");
+  // Google Sign-In (GIS + OAuth) rejects `no-referrer`.
+  res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
   next();
 });
 
@@ -97,6 +100,7 @@ app.get("/health", (_req, res) => {
     googleAuthConfigured: Boolean(
       process.env.GOOGLE_OAUTH_CLIENT_IDS?.trim() || process.env.GOOGLE_CLIENT_ID?.trim(),
     ),
+    googleOAuthRedirect: isGoogleOAuthRedirectConfigured(),
     wechatConfigured: Boolean(
       process.env.WECHAT_MINI_APPID?.trim() && process.env.WECHAT_MINI_APPSECRET?.trim(),
     ),
@@ -105,6 +109,9 @@ app.get("/health", (_req, res) => {
 
 /** Mobile Google sign-in — register on app root (survives partial deploys / router issues). */
 app.get("/mobile/google-signin", handleMobileGoogleSigninGet);
+app.get("/mobile/google-oauth-callback", (req, res) => {
+  void handleMobileGoogleOAuthCallback(req, res);
+});
 app.post("/mobile/google-auth", express.json({ limit: "256kb" }), handleMobileGoogleAuthPost);
 app.use(mobileGoogleAuthRouter);
 
@@ -173,7 +180,9 @@ app.use((_req, res) => {
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
-  console.log(`Mobile Google: GET /mobile/google-signin  POST /mobile/google-auth`);
+  console.log(
+    `Mobile Google: GET /mobile/google-signin  GET /mobile/google-oauth-callback  POST /mobile/google-auth (oauth redirect: ${isGoogleOAuthRedirectConfigured()})`,
+  );
   console.log(`Upload dir: ${uploadDir}`);
   console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
   if (mediaPublicBaseUrl !== publicBaseUrl) {
