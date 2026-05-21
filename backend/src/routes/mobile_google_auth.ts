@@ -6,6 +6,7 @@ import {
   buildGoogleOAuthAuthorizeUrl,
   exchangeGoogleOAuthCode,
   googleConsoleSetupLines,
+  googleOAuthRedirectUri,
   isGoogleOAuthRedirectConfigured,
 } from "../services/google_oauth_mobile";
 
@@ -21,9 +22,9 @@ function escapeHtml(s: string): string {
 }
 
 function setupHtml(req: Request): string {
-  const lines = googleConsoleSetupLines(req)
-    .map((l) => `<li><code>${escapeHtml(l)}</code></li>`)
-    .join("");
+  const redirect = googleOAuthRedirectUri(req);
+  const checklist = googleConsoleSetupLines(req);
+  const linesHtml = checklist.map((l) => `<li><code>${escapeHtml(l)}</code></li>`).join("");
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -32,17 +33,29 @@ function setupHtml(req: Request): string {
   <title>MyFrame — Google setup</title>
   <style>
     body{font-family:system-ui,sans-serif;margin:0;background:#f7f2ed;color:#111;padding:24px}
-    .card{background:#fffbf8;border-radius:16px;padding:24px;max-width:420px;margin:8vh auto}
+    .card{background:#fffbf8;border-radius:16px;padding:24px;max-width:440px;margin:6vh auto}
     h1{font-size:1.2rem}
-    code{font-size:.8rem;word-break:break-all}
-    ul{padding-left:1.2rem;line-height:1.6}
+    .note{background:#fff3cd;border-radius:8px;padding:12px;margin:12px 0;font-size:.9rem}
+    code{font-size:.78rem;word-break:break-all}
+    ol{padding-left:1.2rem;line-height:1.65}
+    ol li{margin:.5rem 0}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Google Sign-In — server setup</h1>
-    <p>Add these in <a href="https://console.cloud.google.com/apis/credentials">Google Cloud Console</a> for the <strong>Web</strong> OAuth client, then set secrets on the VPS:</p>
-    <ul>${lines}</ul>
+    <h1>Google Sign-In — finish server setup</h1>
+    <p class="note"><strong>Why you see this:</strong> the API is missing <code>GOOGLE_OAUTH_CLIENT_SECRET</code> in <code>backend/.env</code>. Complete the steps below, restart the API, then try Google sign-in again in the app.</p>
+    <ol>
+      <li>Open <a href="https://console.cloud.google.com/apis/credentials">Google Cloud Console → Credentials</a> → your <strong>Web application</strong> client.</li>
+      <li>Under <strong>Authorized redirect URIs</strong>, add exactly:<br/><code>${escapeHtml(redirect)}</code></li>
+    <ol start="3">
+      <li>OAuth consent screen → if <strong>Testing</strong>, add your Gmail under <strong>Test users</strong>.</li>
+      <li>Copy the Web client <strong>Client secret</strong> (<code>GOCSPX-…</code>) into VPS <code>backend/.env</code>:</li>
+    </ol>
+    <p><code>GOOGLE_OAUTH_CLIENT_SECRET=GOCSPX-your-secret</code></p>
+    <p>Then: <code>npm run build && pm2 restart myframe-api</code></p>
+    <p>Check: <code>curl -s http://127.0.0.1:3001/health</code> → <code>"googleOAuthRedirect":true</code></p>
+    <details style="margin-top:16px"><summary>Full checklist</summary><ul>${linesHtml}</ul></details>
   </div>
 </body>
 </html>`;

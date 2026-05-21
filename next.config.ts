@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/mobile/google-signin", destination: `${apiUpstream}/mobile/google-signin` },
+      { source: "/mobile/google-oauth-callback", destination: `${apiUpstream}/mobile/google-oauth-callback` },
       { source: "/mobile/google-auth", destination: `${apiUpstream}/mobile/google-auth` },
     ];
   },
