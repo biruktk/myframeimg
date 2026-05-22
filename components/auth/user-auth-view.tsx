@@ -23,7 +23,8 @@ export function UserAuthView({ locale }: { locale: Locale }) {
         mode === "login" ? { email: email.trim(), password } : { name: name.trim(), email: email.trim(), password };
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
@@ -41,7 +42,11 @@ export function UserAuthView({ locale }: { locale: Locale }) {
     setBusy(true);
     setErr("");
     try {
-      const res = await fetch("/api/auth/test-login", { method: "POST" });
+      const res = await fetch("/api/auth/test-login", {
+        method: "POST",
+        headers: { accept: "application/json" },
+        credentials: "include",
+      });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const hint =

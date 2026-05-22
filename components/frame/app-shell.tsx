@@ -73,9 +73,10 @@ export function AppShell({
     }
   };
 
-  const isPortalHome = pathname.endsWith("/app/home");
+  const isPortalLayout =
+    pathname.endsWith("/app/home") || pathname.includes("/app/devices/add");
 
-  if (isPortalHome) {
+  if (isPortalLayout) {
     return <div className="min-h-screen w-full bg-[#FAFAFA]">{children}</div>;
   }
 

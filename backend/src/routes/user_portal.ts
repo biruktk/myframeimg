@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import type { AuthedUser } from "../services/app_user_jwt";
@@ -199,6 +200,131 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
     account: data.settings.account,
     familyInviteCode: familyGroup?.inviteCode ?? null,
   });
+});
+
+/** POST /api/user/devices — link or register a frame to the signed-in user. */
+userPortalRouter.post("/user/devices", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+
+  const deviceId = String(req.body?.deviceId ?? req.body?.id ?? "").trim();
+  const bleMacRaw = String(req.body?.bleMac ?? "").trim();
+  const displayName = String(req.body?.displayName ?? req.body?.name ?? "").trim();
+
+  if (!deviceId || deviceId.length < 3 || deviceId.length > 64) {
+    res.status(400).json({ ok: false, error: "invalid_device_id" });
+    return;
+  }
+
+  const data = db.read();
+  const user = data.users.find((u) => u.id === auth.userId);
+  if (!user) {
+    res.status(404).json({ ok: false, error: "user_not_found" });
+    return;
+  }
+
+  const bleMac =
+    bleMacRaw.length > 0
+      ? bleMacRaw
+      : deviceId.replace(/[^a-fA-F0-9]/g, "").length >= 6
+        ? deviceId
+        : `WEB-${deviceId}`;
+
+  const now = Date.now();
+  let familyGroupId = user.familyGroupId;
+
+  db.mutate((draft) => {
+    const u = draft.users.find((x) => x.id === auth.userId);
+    if (!u) return;
+
+    let frame = draft.frames.find((f) => f.id === deviceId);
+    if (!frame) {
+      frame = {
+        id: deviceId,
+        bleMac,
+        ownerUserId: auth.userId,
+        orgId: u.orgId,
+        wifiSsid: null,
+        wifiStatus: "never_provisioned",
+        firmwareVersion: "1.0.0",
+        lastSeenAtMs: null,
+        uptimeMs: 0,
+        photoQueueDepth: 0,
+        ota: { targetVersion: null, status: "idle" },
+      };
+      draft.frames.push(frame);
+    } else {
+      frame.ownerUserId = auth.userId;
+      if (bleMacRaw.length > 0) frame.bleMac = bleMac;
+    }
+
+    let group = familyGroupId ? draft.familyGroups.find((g) => g.id === familyGroupId) : undefined;
+    if (!group) {
+      familyGroupId = `fam_${now}_${crypto.randomBytes(2).toString("hex")}`;
+      group = {
+        id: familyGroupId,
+        name: `${u.name}'s Family`,
+        inviteCode: `INV-${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
+        members: [{ userId: auth.userId, role: "owner" }],
+        frameIds: [],
+      };
+      draft.familyGroups.push(group);
+      u.familyGroupId = familyGroupId;
+    }
+
+    if (!group.frameIds.includes(deviceId)) {
+      group.frameIds.push(deviceId);
+    }
+
+    if (draft.device.id === deviceId || draft.frames.filter((f) => f.ownerUserId === auth.userId).length === 1) {
+      draft.device.id = deviceId;
+      draft.device.name = displayName || deviceId;
+      draft.device.connected = false;
+    }
+
+    draft.auditLog.unshift({
+      id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
+      actor: `user:${auth.userId}`,
+      action: "add_device",
+      target: deviceId,
+      atMs: now,
+      meta: { bleMac },
+    });
+  });
+
+  res.json({ ok: true, device: { id: deviceId, bleMac, name: displayName || deviceId } });
+});
+
+/** POST /api/user/playlists */
+userPortalRouter.post("/user/playlists", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+
+  const title = String(req.body?.title ?? "New playlist").trim() || "New playlist";
+  const frameIds = visibleFrameIdsForUser(auth.userId);
+  const assignTo = String(req.body?.assignedFrameId ?? "").trim();
+  const assignedFrameIds =
+    assignTo && frameIds.includes(assignTo) ? [assignTo] : frameIds.length ? [frameIds[0]!] : [];
+
+  if (!assignedFrameIds.length) {
+    res.status(400).json({ ok: false, error: "no_device_to_assign" });
+    return;
+  }
+
+  const id = `pl_${Date.now()}_${crypto.randomBytes(2).toString("hex")}`;
+  db.mutate((draft) => {
+    draft.playlists.push({
+      id,
+      title,
+      photoIds: [],
+      scheduleRule: req.body?.scheduleRule != null ? String(req.body.scheduleRule) : "daily",
+      assignedFrameIds,
+      system: false,
+    });
+  });
+
+  const pl = db.read().playlists.find((p) => p.id === id);
+  res.status(201).json({ ok: true, playlist: pl });
 });
 
 /** PATCH /api/user/playlists/:id */

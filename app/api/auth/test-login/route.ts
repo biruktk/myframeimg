@@ -27,10 +27,16 @@ export async function POST() {
       parsed = null;
     }
     if (!res.ok || !parsed?.token || !parsed?.user?.id) {
-      return new NextResponse(text, {
-        status: res.status,
-        headers: { "content-type": res.headers.get("content-type") ?? "application/json" },
-      });
+      let body: Record<string, unknown> = { ok: false, error: "test_login_failed" };
+      try {
+        body = JSON.parse(text) as Record<string, unknown>;
+      } catch {
+        if (text.trim()) body = { ok: false, error: "test_login_failed", message: text.slice(0, 200) };
+      }
+      if (res.status >= 500 || res.status === 503) {
+        body.message ??= `Cannot reach API at ${getMyframeApiBase()}. On the VPS: pm2 restart myframe-api`;
+      }
+      return NextResponse.json(body, { status: res.status >= 400 ? res.status : 502 });
     }
     const out = NextResponse.json({ ok: true, user: parsed.user });
     const common = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 };

@@ -30,12 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Prefer not committing live `.env` elsewhere; these are explicitly tracked for VPS workflow.
+# Never commit live secrets — copy from *.example on each machine / VPS.
 .env*
+!.env.example
 !**/.env.example
 !**/.env*.example
-!backend/.env
-!deploy/vps/.env.prod
+!deploy/vps/.env.prod.example
 
 # vercel
 .vercel

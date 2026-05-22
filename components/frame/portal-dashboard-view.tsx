@@ -71,7 +71,7 @@ const copy = {
     savePlaylist: "Save playlist",
     noPlaylist: "No playlists linked to your devices yet.",
     connectServices: "Connected services",
-    deviceSettingsPlaceholder: "Open device settings from the Classic Send tab for pairing workflows.",
+    deviceSettingsPlaceholder: "Pair frames from Add device, then send photos from Send.",
     loadError: "Could not load your dashboard.",
     settingsSection: "Settings",
     shareAction: "Share",
@@ -115,7 +115,7 @@ const copy = {
     savePlaylist: "保存播放列表",
     noPlaylist: "暂无关联到设备的播放列表。",
     connectServices: "已连接的服务",
-    deviceSettingsPlaceholder: "配对与设备设置请使用经典「发送」页中的流程。",
+    deviceSettingsPlaceholder: "请通过「添加设备」配对，然后在「发送」页传图。",
     loadError: "无法加载仪表盘。",
     settingsSection: "设置",
     shareAction: "分享",
@@ -151,7 +151,11 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
   const load = useCallback(async () => {
     setErr(false);
     try {
-      const res = await fetch("/api/home", { cache: "no-store", credentials: "include" });
+      const res = await fetch("/api/home", {
+        cache: "no-store",
+        credentials: "include",
+        headers: { accept: "application/json" },
+      });
       if (!res.ok) throw new Error("bad");
       const j = (await res.json()) as DashboardPayload;
       setData(j);
@@ -182,6 +186,27 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
     }
   }, []);
 
+  const createPlaylist = async () => {
+    setNotice("");
+    try {
+      const res = await fetch("/api/user/playlists", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: langUi === "zh" ? "新建播放列表" : "New playlist" }),
+      });
+      const j = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !j?.ok) {
+        setNotice(j?.error === "no_device_to_assign" ? (langUi === "zh" ? "请先添加设备。" : "Add a device first.") : "Could not create playlist.");
+        return;
+      }
+      setNotice(langUi === "zh" ? "播放列表已创建。" : "Playlist created.");
+      await load();
+    } catch {
+      setNotice("Could not create playlist.");
+    }
+  };
+
   const savePlaylist = async (playlistId: string) => {
     const ed = playlistEdit[playlistId];
     if (!ed) return;
@@ -190,7 +215,8 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
     try {
       const res = await fetch(`/api/user/playlists/${encodeURIComponent(playlistId)}`, {
         method: "PATCH",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "include",
         body: JSON.stringify({ title: ed.title, scheduleRule: ed.scheduleRule.trim() || null }),
       });
       if (!res.ok) throw new Error("save_failed");
@@ -300,6 +326,9 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
       </aside>
 
       <main className="ml-[260px] flex-1 p-8">
+        {notice ? (
+          <p className="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-800">{notice}</p>
+        ) : null}
         {err && (
           <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">{t.loadError}</p>
         )}
@@ -330,7 +359,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
                   </button>
                 ) : null}
                 <Link
-                  href={`${base}/send`}
+                  href={`${base}/devices/add`}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#DC2626] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(220,38,38,0.22)] hover:bg-[#B91C1C]"
                 >
                   <i className="fa-solid fa-plus" aria-hidden />
@@ -467,7 +496,7 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">
               <h1 className="text-3xl font-bold">{t.devices}</h1>
-              <Link href={`${base}/send`} className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white">
+              <Link href={`${base}/devices/add`} className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white">
                 <i className="fa-solid fa-plus mr-2" />
                 {t.addDevice}
               </Link>
@@ -534,7 +563,14 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
                   {!data?.playlists?.length && <p className="text-xs text-gray-500">images here · active playlist placeholder</p>}
                 </div>
               </aside>
-              {!data?.devices?.length && <p className="text-sm text-gray-500 lg:col-span-3">No devices yet. Pair one from the Send tab.</p>}
+              {!data?.devices?.length && (
+                <p className="text-sm text-gray-500 lg:col-span-3">
+                  No devices yet.{" "}
+                  <Link href={`${base}/devices/add`} className="font-semibold text-[#DC2626] hover:underline">
+                    {t.addDevice}
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -595,7 +631,11 @@ export function PortalDashboardView({ locale }: { locale: Locale }) {
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">
               <h1 className="text-3xl font-bold">{t.playlist}</h1>
-              <button type="button" className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white">
+              <button
+                type="button"
+                className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white"
+                onClick={() => void createPlaylist()}
+              >
                 <i className="fa-solid fa-plus mr-2" /> Create Playlist
               </button>
             </div>
