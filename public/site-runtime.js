@@ -321,7 +321,8 @@
           ? `type="button" data-notify-sku="${esc(p.sku)}" data-notify-name="${esc(p.name)}" onclick="window.openNotifyModal && window.openNotifyModal(this.dataset.notifySku, this.dataset.notifyName)"`
           : `type="button" onclick="window.location.href='${esc(target)}'"`;
         const badge = p.badge && /available/i.test(String(p.badge)) ? `<div class="pricing-badge">${esc(translateBadge(p.badge))}</div>` : '';
-        const period = p.sku === 'YX-6' || p.sku === 'YX-6P' ? '6" E-ink display' : (translatedView.oneTimePurchase || 'One-time purchase');
+        const defaultPeriod = p.sku === 'YX-6' || p.sku === 'YX-6P' ? '6" E-ink display' : 'One-time purchase';
+        const period = translatedView[`product${index + 1}Period`] || (p.sku === 'YX-133P' ? translatedView.oneTimePurchase : '') || defaultPeriod;
         const priceLabel = p.sku === 'YX-6P' ? (translatedView.badgeComingSoon || 'Coming Soon') : formatPrice(Number(p.price), currencyCode, currencies);
         return `<div class="pricing-card ${p.badge && /available/i.test(p.badge) ? 'featured' : ''}">${badge}<h3 class="pricing-name">${esc(p.name)}</h3><p class="pricing-desc">${esc(translatedDesc)}</p><div class="pricing-price">${esc(priceLabel)}</div><p class="pricing-period">${esc(period)}</p><ul class="pricing-features">${translatedFeatures.map((f) => `<li><i class="fas fa-check"></i> ${esc(f)}</li>`).join('')}</ul><button class="pricing-btn ${p.badge && /available/i.test(p.badge) ? 'pricing-btn-primary' : 'pricing-btn-secondary'}" ${action}>${esc(translatedButton)}</button></div>`;
       }).join('');

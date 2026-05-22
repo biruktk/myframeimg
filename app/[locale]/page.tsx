@@ -18,12 +18,15 @@ export default async function LocaleHomePage({ params }: Props) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : defaultLocale;
   const html = loadHomeMarkup();
-  const jsonLd = [organizationJsonLd(), webSiteJsonLd(locale)];
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd(locale)) }}
       />
       <MarketingHomeClient markupHtml={html} />
     </>

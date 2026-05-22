@@ -2659,9 +2659,9 @@ h4,
 
 /* Mobile readability and final spacing */
 .brand-logo {
-  width: clamp(150px, 12vw, 190px);
+  width: clamp(180px, 14vw, 220px);
   max-width: none;
-  max-height: 56px;
+  max-height: 58px;
 }
 
 .features {
@@ -2689,9 +2689,9 @@ h4,
   }
 
   .brand-logo {
-    width: 150px;
-    max-width: 150px;
-    max-height: 44px;
+    width: 180px;
+    max-width: 180px;
+    max-height: 48px;
   }
 
   .hero-shell:not([data-active-slide="0"]) .hero-copy {
@@ -2735,8 +2735,8 @@ h4,
 
 @media (max-width: 380px) {
   .brand-logo {
-    width: 142px;
-    max-width: 142px;
+    width: 154px;
+    max-width: 154px;
   }
 
   .nav-lang {
