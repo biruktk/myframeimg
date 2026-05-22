@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+
+import { setAuthSessionCookies } from "@/lib/auth-session";
 import { getMyframeApiBase } from "@/lib/backend-url";
-import { USER_EMAIL_COOKIE, USER_ID_COOKIE, USER_NAME_COOKIE, USER_TOKEN_COOKIE } from "@/lib/user-auth";
 
 type AuthResponse = {
   token?: unknown;
@@ -34,11 +36,15 @@ export async function POST(req: NextRequest) {
       });
     }
     const out = NextResponse.json({ ok: true, user: parsed.user });
-    const common = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 };
-    out.cookies.set(USER_TOKEN_COOKIE, String(parsed.token), common);
-    out.cookies.set(USER_ID_COOKIE, String(parsed.user.id ?? ""), common);
-    out.cookies.set(USER_EMAIL_COOKIE, String(parsed.user.email ?? ""), common);
-    out.cookies.set(USER_NAME_COOKIE, String(parsed.user.name ?? ""), common);
+    const jar = await cookies();
+    setAuthSessionCookies(jar, {
+      token: String(parsed.token),
+      user: {
+        id: String(parsed.user.id),
+        email: String(parsed.user.email ?? ""),
+        name: String(parsed.user.name ?? "User"),
+      },
+    });
     return out;
   } catch {
     return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });

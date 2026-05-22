@@ -17,6 +17,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: "3000",
+        MYFRAME_API_URL: "http://127.0.0.1:3001",
       },
     },
   ],

@@ -187,6 +187,48 @@ authRouter.post("/auth/test-login", (_req, res) => {
     return;
   }
 
+  // Ensure test user can use the portal (family + demo frame).
+  db.mutate((draft) => {
+    const u = draft.users.find((x) => x.id === user!.id);
+    if (!u) return;
+    let group = u.familyGroupId ? draft.familyGroups.find((g) => g.id === u.familyGroupId) : undefined;
+    if (!group) {
+      const gid = `fam_test_${crypto.randomBytes(2).toString("hex")}`;
+      group = {
+        id: gid,
+        name: "Test Family",
+        inviteCode: `TEST-${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
+        members: [{ userId: u.id, role: "owner" }],
+        frameIds: ["YX-133P-001"],
+      };
+      draft.familyGroups.push(group);
+      u.familyGroupId = gid;
+    }
+    if (!group.frameIds.includes("YX-133P-001")) {
+      group.frameIds.push("YX-133P-001");
+    }
+    let frame = draft.frames.find((f) => f.id === "YX-133P-001");
+    if (!frame) {
+      frame = {
+        id: "YX-133P-001",
+        bleMac: "D0:CF:13:F0:16:1E",
+        ownerUserId: u.id,
+        orgId: u.orgId,
+        wifiSsid: null,
+        wifiStatus: "never_provisioned",
+        firmwareVersion: "1.2.0",
+        lastSeenAtMs: null,
+        uptimeMs: 0,
+        photoQueueDepth: 0,
+        ota: { targetVersion: null, status: "idle" },
+      };
+      draft.frames.push(frame);
+    } else {
+      frame.ownerUserId = u.id;
+    }
+  });
+  user = db.read().users.find((u) => u.id === user!.id) ?? user;
+
   const token = issueToken(user.id, user.email);
   res.json({
     ok: true,
