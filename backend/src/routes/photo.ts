@@ -7,7 +7,7 @@ import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode";
-
+// jsdfjsdfj
 /**
  * POST /api/photo/upload
  * Multipart: field `file` (binary), body fields: filename, device_id, checksum, size
