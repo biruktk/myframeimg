@@ -80,8 +80,14 @@ export function MarketingContentNav({ locale, menus, translated, logoSrc, langua
               </option>
             ))}
           </select>
-          <Link className="nav-cta" href={localizeMarketingMenuHref("/cart-checkout.html?add=YX-133P", locale)}>
-            <i className="fas fa-gift" /> {translated.buyForGift ?? "Buy for Gift"}
+          <Link
+            className="nav-cta"
+            href={localizeMarketingMenuHref("/cart-checkout.html?add=YX-133P", locale)}
+            aria-label={translated.buyForGift ?? "Buy for Gift"}
+            title={translated.buyForGift ?? "Buy for Gift"}
+          >
+            <i className="fas fa-gift" />
+            <span>{translated.buyForGift ?? "Buy for Gift"}</span>
           </Link>
         </div>
       </div>

@@ -383,8 +383,12 @@
       const headers = { ...(options.headers || {}) };
       if (!(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
       if (!['GET','HEAD'].includes(options.method || 'GET')) headers['CSRF-Token'] = csrfToken;
-      const res = await fetch(url, { credentials: 'same-origin', ...options, headers });
-      if (res.status === 403) await refreshCsrf();
+      let res = await fetch(url, { credentials: 'same-origin', ...options, headers });
+      if (res.status === 403 && !['GET','HEAD'].includes(options.method || 'GET')) {
+        await refreshCsrf();
+        headers['CSRF-Token'] = csrfToken;
+        res = await fetch(url, { credentials: 'same-origin', ...options, headers });
+      }
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Request failed');
       return res.json();
     }
@@ -783,6 +787,10 @@
         ${imageInput('familyPhoneImage1', m.familyPhoneImage1, 'Family Phone Image 1')}
         ${imageInput('familyPhoneImage2', m.familyPhoneImage2, 'Family Phone Image 2')}
         ${input('watchVideoUrl', m.watchVideoUrl, 'Watch Video Link')}
+        <h2>Application Download Links</h2>
+        <div class="two">${input('appStoreUrl', m.appStoreUrl, 'iOS App Store URL')}${input('googlePlayUrl', m.googlePlayUrl, 'Google Play URL')}</div>
+        <div class="two">${input('miniAppUrl', m.miniAppUrl, 'Mini App URL')}${input('apkDownloadUrl', m.apkDownloadUrl, 'APK Download URL')}</div>
+        <div class="field"><label>Upload APK</label><div class="actions"><input id="apkPick" type="file" accept=".apk,application/vnd.android.package-archive"><button class="btn soft" type="button" onclick="uploadApk('apkDownloadUrl')"><i class="fas fa-upload"></i> Upload APK</button></div><p class="small">After upload, the APK URL is placed above. Click Update Images to save it.</p></div>
         <button class="btn primary"><i class="fas fa-save"></i> Update Images</button>
       </form>`;
     }
@@ -1037,6 +1045,17 @@
       toast('Image uploaded. Click Update or Save to apply.');
     }
 
+    async function uploadApk(targetName) {
+      const input = $('apkPick');
+      if (!input || !input.files.length) return toast('Choose an APK first.');
+      const fd = new FormData();
+      fd.append('file', input.files[0]);
+      const res = await api('/api/admin/upload/file', { method: 'POST', body: fd, headers: { 'CSRF-Token': csrfToken } });
+      const form = input.closest('form');
+      if (form?.elements[targetName]) form.elements[targetName].value = res.url;
+      toast('APK uploaded. Click Update Images to save.');
+    }
+
     function seo() {
       return `<div class="card"><h2>Update SEO Information</h2><p class="small" style="margin-bottom:12px;">Only real MyFrame frontend pages are listed. Google ranking basics used here: descriptive unique titles/descriptions, crawlable URLs, sitemap and hreflang for languages.</p>${(state.seo || []).map(s => `<form style="border-bottom:1px solid #F3F4F6;padding:12px 0;" onsubmit="saveSeo(event,'${s.page_key}')"><strong>${esc(s.page_name)} Page</strong>${text('meta_title', s.meta_title || s.meta_keywords || '', 'Meta Title / Keywords')}${text('meta_description', s.meta_description, 'Meta Description')}<button class="btn primary"><i class="fas fa-save"></i> Update</button></form>`).join('')}</div>`;
     }
@@ -1235,8 +1254,14 @@
     }
 
     function orders() {
-      const rows = (state.orders || []).map(o => [o.order_number, esc(o.customer_name || ''), esc(o.gateway), money(o.total,o.currency), badge(o.order_status), badge(o.payment_status), `<div class="small">${esc(o.email || '')}<br>${esc(o.phone || '')}<br>${esc(o.city_country || '')}</div><div class="actions"><select id="os_${o.id}"><option ${o.order_status==='pending'?'selected':''}>pending</option><option ${o.order_status==='in_progress'?'selected':''}>in_progress</option><option ${o.order_status==='completed'?'selected':''}>completed</option><option ${o.order_status==='rejected'?'selected':''}>rejected</option></select><select id="ps_${o.id}"><option ${o.payment_status==='pending'?'selected':''}>pending</option><option ${o.payment_status==='paid'?'selected':''}>paid</option><option ${o.payment_status==='failed'?'selected':''}>failed</option><option ${o.payment_status==='refunded'?'selected':''}>refunded</option></select><button class="btn primary" onclick="saveOrder(${JSON.stringify(o.id)})"><i class="fas fa-save"></i></button></div>`]);
-      return `<div class="card"><h2>All Order List</h2>${table(['Order Number','Customer','Gateway','Total','Order Status','Payment Status','Actions'], rows)}</div>`;
+      const rows = (state.orders || []).map(o => [o.order_number, esc(o.customer_name || ''), gatewayLabel(o.gateway), money(o.total,o.currency), badge(o.order_status), badge(o.payment_status), `<div class="small">${esc(o.email || '')}<br>${esc(o.phone || '')}<br>${esc(o.city_country || '')}</div>`, `<div class="actions"><select id="os_${o.id}"><option ${o.order_status==='pending'?'selected':''}>pending</option><option ${o.order_status==='in_progress'?'selected':''}>in_progress</option><option ${o.order_status==='completed'?'selected':''}>completed</option><option ${o.order_status==='rejected'?'selected':''}>rejected</option></select><select id="ps_${o.id}"><option ${o.payment_status==='pending'?'selected':''}>pending</option><option ${o.payment_status==='paid'?'selected':''}>paid</option><option ${o.payment_status==='failed'?'selected':''}>failed</option><option ${o.payment_status==='refunded'?'selected':''}>refunded</option></select><button type="button" class="btn primary" onclick="saveOrder(${JSON.stringify(o.id)})"><i class="fas fa-save"></i></button></div>`]);
+      return `<div class="card"><h2>All Order List</h2>${table(['Order Number','Customer','Gateway','Total','Order Status','Payment Status','Contact','Actions'], rows)}</div>`;
+    }
+    function gatewayLabel(gateway) {
+      const value = String(gateway || '').toLowerCase();
+      if (value.includes('paypal')) return '<i class="fab fa-paypal"></i> PayPal';
+      if (value.includes('stripe')) return '<i class="fab fa-stripe"></i> Stripe';
+      return esc(gateway || '');
     }
     async function saveOrder(id) { await api(`/api/admin/orders/${id}`, { method:'PUT', body: JSON.stringify({ order_status: $(`os_${id}`).value, payment_status: $(`ps_${id}`).value }) }); toast('Order updated'); await loadAll(); }
 

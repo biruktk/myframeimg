@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { getAppStrings } from "@/lib/i18n-app";
 
@@ -19,19 +19,24 @@ export function FamilyView({ locale }: { locale: Locale }) {
   const [data, setData] = useState<FamilyPayload | null>(null);
   const [notice, setNotice] = useState("");
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch("/api/family/members", { cache: "no-store", credentials: "include" });
-      const j = (await res.json()) as FamilyPayload;
-      setData(j);
-    } catch {
-      setData({ ok: false, error: "load_failed" });
-    }
-  }, []);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+
+    async function loadMembers() {
+      try {
+        const res = await fetch("/api/family/members", { cache: "no-store", credentials: "include" });
+        const j = (await res.json()) as FamilyPayload;
+        if (active) setData(j);
+      } catch {
+        if (active) setData({ ok: false, error: "load_failed" });
+      }
+    }
+
+    void loadMembers();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const copyInvite = () => {
     const code = data?.inviteCode;

@@ -42,6 +42,7 @@ export type MarketingCmsState = {
     id: string;
     name: string;
     email: string;
+    subject?: string;
     message: string;
     status: string;
     created_at: string;

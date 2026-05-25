@@ -76,6 +76,46 @@ export default async function MarketingContentPage({ params }: Props) {
           />
         </div>
       </main>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+(() => {
+  const form = document.getElementById("myframeContactForm");
+  if (!form || form.dataset.bound === "1") return;
+  form.dataset.bound = "1";
+  const status = document.getElementById("contactFormStatus");
+  const writeStatus = (message, isError) => {
+    if (!status) return;
+    status.hidden = false;
+    status.textContent = message;
+    status.style.color = isError ? "#b42318" : "#047857";
+  };
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    writeStatus("Sending...", false);
+    try {
+      const payload = Object.fromEntries(new FormData(form).entries());
+      const res = await fetch("/api/public/contact-messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.ok === false) throw new Error(json.error || "send_failed");
+      form.reset();
+      writeStatus("Message sent. We will get back to you soon.", false);
+    } catch {
+      writeStatus("Could not send the message. Please email contact@myframe.ink.", true);
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+})();
+          `,
+        }}
+      />
     </div>
   );
 }

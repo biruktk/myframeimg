@@ -104,7 +104,7 @@ export function attachCmsManageRoutes(adminRouter: Router): void {
       cb(null, `cms_${Date.now()}_${crypto.randomBytes(6).toString("hex")}${ext}`);
     },
   });
-  const upload = multer({ storage, limits: { fileSize: 14 * 1024 * 1024 } });
+  const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } });
 
   adminRouter.get("/admin/manage-state", (_req, res) => {
     const data = db.read();
@@ -787,5 +787,10 @@ export function attachCmsManageRoutes(adminRouter: Router): void {
       c.documentation.pdfUrl = url;
     });
     res.json({ ok: true, url });
+  });
+
+  adminRouter.post("/admin/upload/file", upload.single("file"), (req, res) => {
+    if (!req.file?.filename) return res.status(400).json({ error: "file_required" });
+    res.json({ ok: true, url: `/uploads/${req.file.filename}` });
   });
 }

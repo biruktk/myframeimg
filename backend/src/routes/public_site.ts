@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 
-import { db } from "../db/store";
+import { db, marketingCmsSeed } from "../db/store";
 import { defaultBlogPosts, publishedBlogs } from "../data/blog_defaults";
 import { getPublicSitePayload, priceBySkuFromDb } from "../services/marketing_public";
 
@@ -41,6 +41,73 @@ function nextOrderNumber(): string {
   return `MF-${t}-${r}`;
 }
 
+function languageForCountry(countryCode: string, acceptLanguage = "") {
+  const country = countryCode.toUpperCase();
+  const accept = acceptLanguage.toLowerCase();
+  if (["CN", "HK", "MO", "TW", "SG"].includes(country) || accept.includes("zh")) return "zh";
+  if (["JP"].includes(country) || accept.includes("ja")) return "ja";
+  if (["ES", "MX", "AR", "CL", "CO", "PE", "UY", "VE", "EC", "BO", "PY", "CR", "PA", "DO", "GT", "HN", "NI", "SV"].includes(country) || accept.includes("es")) return "es";
+  if (["FR", "BE", "MC", "LU", "CH", "CA"].includes(country) || accept.includes("fr")) return "fr";
+  if (["DE", "AT"].includes(country) || accept.includes("de")) return "de";
+  return "en";
+}
+
+function currencyForCountry(countryCode: string, language: string) {
+  const country = countryCode.toUpperCase();
+  if (["CN", "HK", "MO"].includes(country) || language === "zh") return "CNY";
+  if (["FR", "DE", "ES", "AT", "BE", "LU", "MC"].includes(country)) return "EUR";
+  return "USD";
+}
+
+function shippingEstimateForCountry(countryCodeRaw: string) {
+  const countryCode = normalizeCountryCode(countryCodeRaw);
+  if (["HK", "MO"].includes(countryCode)) {
+    return { price: 8, currency: "USD", minDays: 1, maxDays: 2, service: "Hong Kong local courier" };
+  }
+  if (["CN", "TW"].includes(countryCode)) {
+    return { price: 12, currency: "USD", minDays: 3, maxDays: 5, service: "Regional express from Hong Kong" };
+  }
+  if (["JP", "KR", "SG", "MY", "TH", "VN", "PH", "ID"].includes(countryCode)) {
+    return { price: 18, currency: "USD", minDays: 4, maxDays: 7, service: "Asia express from Hong Kong" };
+  }
+  if (["US", "CA", "MX"].includes(countryCode)) {
+    return { price: 26, currency: "USD", minDays: 6, maxDays: 10, service: "International express from Hong Kong" };
+  }
+  if (["GB", "FR", "DE", "ES", "IT", "NL", "BE", "SE", "DK", "NO", "FI", "IE", "AT", "CH", "PT", "PL"].includes(countryCode)) {
+    return { price: 28, currency: "USD", minDays: 7, maxDays: 12, service: "International express from Hong Kong" };
+  }
+  return { price: 35, currency: "USD", minDays: 8, maxDays: 15, service: "International tracked shipping from Hong Kong" };
+}
+
+function normalizeCountryCode(value: string) {
+  const raw = value.trim().toUpperCase();
+  const names: Record<string, string> = {
+    "UNITED STATES": "US",
+    USA: "US",
+    "UNITED STATES OF AMERICA": "US",
+    CANADA: "CA",
+    CHINA: "CN",
+    "HONG KONG": "HK",
+    JAPAN: "JP",
+    GERMANY: "DE",
+    FRANCE: "FR",
+    SPAIN: "ES",
+    "UNITED KINGDOM": "GB",
+    UK: "GB",
+    "GREAT BRITAIN": "GB",
+    AUSTRALIA: "AU",
+    SINGAPORE: "SG",
+  };
+  return names[raw] || raw.slice(0, 2);
+}
+
+function getClientIp(req: Request) {
+  const forwarded = String(req.header("x-forwarded-for") ?? "").split(",")[0]?.trim();
+  const realIp = String(req.header("x-real-ip") ?? "").trim();
+  const ip = forwarded || realIp || req.ip || "";
+  return ip.replace(/^::ffff:/, "");
+}
+
 /** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */
 publicSiteRouter.get("/public/site", (_req: Request, res: Response) => {
   res.json(getPublicSitePayload());
@@ -69,22 +136,81 @@ publicSiteRouter.get("/public/blogs/by-slug/:slug", (req: Request, res: Response
   });
 });
 
-/** GET /api/public/location — static geo stub (no upstream IP database). */
-publicSiteRouter.get("/public/location", (req: Request, res: Response) => {
-  const lang = String(req.header("accept-language") ?? "").toLowerCase();
-  let recommendedLanguage = "en";
-  if (lang.includes("zh")) recommendedLanguage = "zh";
-  else if (lang.includes("ja")) recommendedLanguage = "ja";
-  else if (lang.includes("es")) recommendedLanguage = "es";
-  else if (lang.includes("fr")) recommendedLanguage = "fr";
-  else if (lang.includes("de")) recommendedLanguage = "de";
+/** GET /api/public/location — IP geo detection via ipapi.co with Accept-Language fallback. */
+publicSiteRouter.get("/public/location", async (req: Request, res: Response) => {
+  const acceptLanguage = String(req.header("accept-language") ?? "");
+  const ip = getClientIp(req);
+  const isLocalIp = !ip || ip === "::1" || ip === "127.0.0.1" || ip.startsWith("10.") || ip.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
+  let geo: Record<string, unknown> = {};
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1600);
+    const url = isLocalIp ? "https://ipapi.co/json/" : `https://ipapi.co/${encodeURIComponent(ip)}/json/`;
+    const upstream = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
+    clearTimeout(timeout);
+    if (upstream.ok) {
+      const parsed = (await upstream.json()) as Record<string, unknown>;
+      if (parsed.error !== true) geo = parsed;
+    }
+  } catch {
+    geo = {};
+  }
+  if (!Object.keys(geo).length) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1600);
+      const url = isLocalIp ? "https://freeipapi.com/api/json" : `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`;
+      const upstream = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
+      clearTimeout(timeout);
+      if (upstream.ok) {
+        const parsed = (await upstream.json()) as Record<string, unknown>;
+        if (parsed.countryCode || parsed.countryName) {
+          geo = {
+            country_code: parsed.countryCode,
+            country_name: parsed.countryName,
+            region: parsed.regionName,
+            city: parsed.cityName,
+            postal: parsed.zipCode,
+            timezone: Array.isArray(parsed.timeZones) ? parsed.timeZones[0] : "",
+            currency: String(parsed.currency ?? ""),
+            provider: "freeipapi.com",
+          };
+        }
+      }
+    } catch {
+      geo = {};
+    }
+  }
+
+  const countryCode = String(geo.country_code ?? geo.country ?? "").toUpperCase();
+  const recommendedLanguage = languageForCountry(countryCode, acceptLanguage);
+  const geoCurrency = String(geo.currency ?? "").toUpperCase();
+  const recommendedCurrency = ["USD", "EUR", "CNY"].includes(geoCurrency)
+    ? geoCurrency
+    : currencyForCountry(countryCode, recommendedLanguage);
+  const shipping = shippingEstimateForCountry(countryCode || "US");
   res.json({
     ok: true,
+    provider: String(geo.provider ?? (Object.keys(geo).length ? "ipapi.co" : "accept-language-fallback")),
+    ip: ip || undefined,
     recommendedLanguage,
-    recommendedCurrency: recommendedLanguage === "zh" ? "CNY" : "USD",
-    country: "",
-    city: "",
+    recommendedCurrency,
+    countryCode,
+    country: String(geo.country_name ?? ""),
+    region: String(geo.region ?? ""),
+    city: String(geo.city ?? ""),
+    postal: String(geo.postal ?? ""),
+    timezone: String(geo.timezone ?? ""),
+    shipping,
   });
+});
+
+/** GET /api/public/shipping-estimate?country=US — automatic estimate from Hong Kong. */
+publicSiteRouter.get("/public/shipping-estimate", (req: Request, res: Response) => {
+  const country = String(req.query.country ?? req.query.countryCode ?? "").trim().toUpperCase();
+  const fallback = String(req.query.fallbackCountry ?? "").trim().toUpperCase();
+  const estimate = shippingEstimateForCountry(country || fallback || "US");
+  res.json({ ok: true, origin: "HK", countryCode: country || fallback || "US", ...estimate });
 });
 
 /** GET /api/public/customer-profile */
@@ -123,6 +249,33 @@ publicSiteRouter.post("/public/subscribers", (req: Request, res: Response) => {
   res.status(201).json({ ok: true, id });
 });
 
+/** POST /api/public/contact-messages — website contact form inbox. */
+publicSiteRouter.post("/public/contact-messages", (req: Request, res: Response) => {
+  const name = String(req.body?.name ?? "").trim();
+  const email = String(req.body?.email ?? "").trim().toLowerCase();
+  const subject = String(req.body?.subject ?? "").trim();
+  const message = String(req.body?.message ?? "").trim();
+  if (!name || !email || !message || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ ok: false, error: "invalid_contact_message" });
+    return;
+  }
+  const id = `msg_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+  db.mutate((draft) => {
+    if (!draft.marketingCms) draft.marketingCms = marketingCmsSeed();
+    draft.marketingCms.contactMessages.unshift({
+      id,
+      name: name.slice(0, 120),
+      email: email.slice(0, 190),
+      subject: subject.slice(0, 240),
+      message: message.slice(0, 8000),
+      status: "new",
+      created_at: new Date().toISOString(),
+    });
+  });
+  appendAudit("marketing_site", "contact_message_created", id, { email, subject });
+  res.status(201).json({ ok: true, id });
+});
+
 /** POST /api/public/orders */
 publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
   const itemsIn = Array.isArray(req.body?.items) ? req.body.items : [];
@@ -147,7 +300,8 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
     res.status(400).json({ ok: false, error: "buyer_fields_required" });
     return;
   }
-  const gateway = String(req.body?.gateway ?? "cash_on_delivery").trim() || "cash_on_delivery";
+  const gatewayIn = String(req.body?.gateway ?? "stripe").trim().toLowerCase();
+  const gateway = gatewayIn === "paypal" ? "paypal" : "stripe";
   const currency = String(req.body?.currency ?? "USD").trim().toUpperCase();
   const language = String(req.body?.language ?? "").trim() || undefined;
   const note = String(req.body?.note ?? "").trim() || undefined;
@@ -173,7 +327,7 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
     res.status(400).json({ ok: false, error: "no_valid_lines" });
     return;
   }
-  const shipping = 0;
+  const shipping = Math.max(0, Number(req.body?.shipping ?? shippingEstimateForCountry(String(country || "")).price) || 0);
   const total = subtotal + shipping;
   const now = Date.now();
   const orderNumber = nextOrderNumber();
@@ -196,7 +350,7 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
       shipping,
       total,
       status: "pending",
-      paymentStatus: gateway === "cash_on_delivery" ? "pending" : "pending",
+      paymentStatus: "pending",
       language,
       items: lines,
       createdAtMs: now,
@@ -213,7 +367,7 @@ publicSiteRouter.post("/public/orders", (req: Request, res: Response) => {
 });
 
 publicSiteRouter.post("/public/payments/stripe/session", (_req: Request, res: Response) => {
-  res.status(501).json({ ok: false, error: "stripe_not_configured", message: "Use Cash on Delivery or configure Stripe keys on the server." });
+  res.status(501).json({ ok: false, error: "stripe_not_configured", message: "Configure Stripe keys on the server." });
 });
 
 publicSiteRouter.post("/public/payments/paypal/create-order", (_req: Request, res: Response) => {

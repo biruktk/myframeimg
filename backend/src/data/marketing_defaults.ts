@@ -22,7 +22,8 @@ const menus = [
   { label: "Product", url: "#product", target: "_self", menu_order: 2 },
   { label: "Pricing", url: "#pricing", target: "_self", menu_order: 3 },
   { label: "For Families", url: "#family", target: "_self", menu_order: 4 },
-  { label: "Cart", url: "/cart-checkout.html", target: "_self", menu_order: 5 },
+  { label: "Application", url: "download", target: "_self", menu_order: 5 },
+  { label: "Cart", url: "/cart-checkout.html", target: "_self", menu_order: 6 },
 ];
 
 const footerLinks = [
@@ -235,6 +236,10 @@ const media = {
   familyPhoneImage2: "",
   breadcrumbImage: "",
   watchVideoUrl: "https://youtu.be/_8bVyx_Jiv8",
+  appStoreUrl: "https://apps.apple.com/us/search?term=MyFrame",
+  googlePlayUrl: "https://play.google.com/store/search?q=MyFrame&c=apps",
+  miniAppUrl: "#",
+  apkDownloadUrl: "#",
 };
 
 const seo = [
@@ -259,7 +264,6 @@ const seo = [
 const gateways = [
   { code: "stripe", title: "Stripe", config: { publishableKey: "", secretKey: "", webhookSecret: "" } },
   { code: "paypal", title: "Paypal", config: { clientId: "", clientSecret: "", mode: "sandbox" } },
-  { code: "cash_on_delivery", title: "Cash On Delivery", config: {} },
 ];
 
 const translationsZh: Record<string, string> = {

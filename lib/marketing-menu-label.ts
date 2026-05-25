@@ -9,5 +9,8 @@ export function translateMarketingMenuLabel(
   if (item.url === "#product") return translated.menuProduct ?? item.label;
   if (item.url === "#pricing") return translated.menuPricing ?? item.label;
   if (item.url === "#family") return translated.menuFamilies ?? item.label;
+  if (["download", "download-app", "page/download-app", "/page/download-app"].includes(item.url)) {
+    return translated.menuApplication ?? translated.footerDownloadApp ?? item.label;
+  }
   return item.label;
 }
