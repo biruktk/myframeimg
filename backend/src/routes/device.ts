@@ -1,12 +1,6 @@
 import { Router } from "express";
 import { db } from "../db/store";
-import {
-  getFrame,
-  isMqttConnected,
-  publishLoginAck,
-  publishPlayImage,
-  resolveMqttHardwareMac,
-} from "../services/frame_mqtt";
+import { getFrame, isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 
 export const deviceRouter = Router();
 
@@ -63,14 +57,21 @@ deviceRouter.get("/frames/:mac/status", (req, res) => {
   res.json({
     ok: true,
     device_id: req.params.mac,
-    online: mqttOnline || storedOnline,
-    status: mqttOnline || storedOnline ? "online" : "offline",
+    online: mqttOnline,
+    status: mqttOnline ? "online" : "offline",
+    app_paired: storedOnline,
     battery: 100,
     wifi: d.room,
     storage_used_mb: Math.round(d.usedBytes / 1024 / 1024),
     photo_count: d.photoCount,
     mqtt_connected: isMqttConnected(),
-    last_seen_ms: mqttFrame?.lastSeen ?? d.lastPhotoAtMs,
+    last_seen_ms: mqttFrame?.lastSeen ?? null,
+    last_upload_ms: d.lastPhotoAtMs,
+    result: mqttFrame?.lastResult ?? null,
+    lastResult: mqttFrame?.lastResult ?? null,
+    displayCode: mqttFrame?.lastResult ?? null,
+    lastAction: mqttFrame?.lastAction ?? null,
+    displayed: mqttFrame?.displayed === true,
   });
 });
 
@@ -93,32 +94,6 @@ deviceRouter.get("/frames/:mac/history", (req, res) => {
     deliveryMode: u.deliveryMode ?? "unknown",
   }));
   res.json({ ok: true, images });
-});
-
-deviceRouter.post("/frames/:mac/login-ack", async (req, res) => {
-  const mac = String(req.params.mac ?? "").trim();
-  if (!resolveMqttHardwareMac(mac)) {
-    res.status(400).json({ ok: false, error: "invalid_device_id_for_login_ack" });
-    return;
-  }
-  if (!isMqttConnected()) {
-    res.status(503).json({ ok: false, error: "mqtt_disconnected" });
-    return;
-  }
-  try {
-    const msgid = String(req.body?.msgid ?? Date.now()).trim();
-    await publishLoginAck(mac, msgid);
-    res.json({
-      ok: true,
-      stamac: resolveMqttHardwareMac(mac),
-      msgid,
-    });
-  } catch (err) {
-    res.status(502).json({
-      ok: false,
-      error: err instanceof Error ? err.message : "login_ack_publish_failed",
-    });
-  }
 });
 
 /** POST /api/device/send — push a stored or supplied photo URL to the frame via MQTT. */

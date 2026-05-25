@@ -16,25 +16,6 @@ import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode"
 export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   const router = express.Router();
   const base = publicBaseUrl.replace(/\/$/, "");
-
-  function localUploadFilePath(raw: string): string | null {
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    let name = trimmed;
-    try {
-      if (trimmed.includes("://")) {
-        name = decodeURIComponent(path.basename(new URL(trimmed).pathname));
-      } else {
-        name = decodeURIComponent(path.basename(trimmed));
-      }
-    } catch {
-      name = path.basename(trimmed);
-    }
-    if (!name || name === "." || /^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(name)) return null;
-    if (!name.includes(".")) return null;
-    return path.join(uploadDir, name);
-  }
-
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
@@ -46,6 +27,175 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   const upload = multer({
     storage,
     limits: { fileSize: 15 * 1024 * 1024 },
+  });
+
+  router.post("/frames/:mac/upload", requirePairingToken, uploadRateLimit, upload.single("photo"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        res.status(400).json({ ok: false, error: "missing_file" });
+        return;
+      }
+
+      const deviceId = String(req.params.mac ?? req.body.mac ?? req.body.device_id ?? "");
+      const clientChecksum = String(req.body.checksum ?? "");
+      const declaredSize = Number(req.body.size ?? file.size);
+      const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
+      const transport = String(req.body.transport ?? "").trim();
+
+      const buf = fs.readFileSync(file.path);
+      const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
+      const basename = path.basename(file.path);
+      const ext = path.extname(basename).toLowerCase();
+      const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
+      const looksLikeRaster =
+        [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
+
+      let mqttBasename = basename;
+      if (isProbablyMyfmBuffer(buf)) {
+        mqttBasename = basename;
+      } else if (encodeMyfm && looksLikeRaster) {
+        try {
+          mqttBasename = await writeMyfmSidecar(file.path);
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : String(err);
+          console.error("[photo] MYFM encode failed:", detail);
+          res.status(503).json({
+            ok: false,
+            error: "myfm_encode_failed",
+            message: detail,
+            hint:
+              "XT ePaper / ESP32 only renders MYFM .bin. Fix sharp/libvips on the server, ensure FRAME_MYFM_ENCODE=1, and rebuild. JPEG/PNG is never sent to MQTT.",
+          });
+          return;
+        }
+      }
+
+      const imageUrl = `${base}/frame-media/${encodeURIComponent(mqttBasename)}`;
+
+      /** JPEG/PNG raster kept beside `.bin`; MYFM `.bin` is MQTT target; both counted for quota when present. */
+      let persistedDiskBytes = buf.length;
+      let jpegBackupStoredPath: string | null = null;
+      if (
+        mqttBasename !== basename &&
+        mqttBasename.toLowerCase().endsWith(".bin") &&
+        path.extname(basename).toLowerCase() !== ".bin" &&
+        fs.existsSync(file.path)
+      ) {
+        jpegBackupStoredPath = basename;
+        try {
+          const binSz = fs.statSync(path.join(uploadDir, mqttBasename)).size;
+          persistedDiskBytes = buf.length + binSz;
+        } catch {
+          persistedDiskBytes = buf.length;
+        }
+      }
+
+      const playbackMyfmBin = mqttBasename.toLowerCase().endsWith(".bin");
+
+      let deliveredToFrame = false;
+      let deliveryMode = "stored_only";
+      const mqttMac = resolveMqttHardwareMac(deviceId);
+      if (mqttMac) {
+        if (!isMqttConnected()) {
+          deliveryMode = "mqtt_disconnected";
+        } else {
+          let publicHost = "";
+          try {
+            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
+          } catch {
+            /* ignore */
+          }
+          try {
+            await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+            deliveryMode = "mqtt_published_unconfirmed";
+          } catch (err) {
+            console.error("[photo] MQTT play publish failed:", err);
+            deliveryMode = "mqtt_publish_failed";
+          }
+        }
+      }
+
+      const now = Date.now();
+      db.mutate((draft) => {
+        draft.device.transport.wifi = transport === "wifi" || draft.device.transport.wifi;
+        draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
+        draft.device.lastPhotoAtMs = now;
+        draft.device.photoCount += 1;
+        draft.device.usedBytes += persistedDiskBytes;
+        if (deviceId) {
+          draft.device.id = deviceId;
+          draft.device.name = `${deviceId} Connected`;
+        }
+        draft.frames = draft.frames.map((f) => {
+          if (f.id !== (deviceId || draft.device.id)) return f;
+          return {
+            ...f,
+            lastSeenAtMs: now,
+            wifiStatus: transport === "wifi" ? "online" : f.wifiStatus,
+          };
+        });
+        draft.uploads.unshift({
+          id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
+          filename: mqttBasename,
+          bytes: persistedDiskBytes,
+          deviceId: deviceId || draft.device.id,
+          atMs: now,
+          checksumSha256: sha256,
+          deliveredToFrame,
+          deliveryMode,
+          deliveryCheckedAtMs: now,
+        });
+        if (draft.uploads.length > 2000) {
+          draft.uploads = draft.uploads.slice(0, 2000);
+        }
+        draft.auditLog.unshift({
+          id: `audit_${now}_${Math.random().toString(16).slice(2, 8)}`,
+          actor: "api_frame_upload",
+          action: "photo_uploaded",
+          target: deviceId || draft.device.id,
+          atMs: now,
+          meta: {
+            filename: mqttBasename,
+            bytes: persistedDiskBytes,
+            deliveredToFrame,
+            deliveryMode,
+          },
+        });
+      });
+
+      res.json({
+        ok: true,
+        received_bytes: buf.length,
+        declared_size: declaredSize,
+        /** MYFM basename used in MQTT (`image_url`). */
+        stored_path: mqttBasename,
+        frame_play_basename: mqttBasename,
+        /** Original JPEG/PNG kept next to `.bin` for preview/debug (not in MQTT). */
+        preview_stored_path: jpegBackupStoredPath,
+        /** True when playback is MYFM `.bin`. */
+        myfm_sidecar: playbackMyfmBin,
+        /** Expect 960004 for official 1200×1600 XT 13.3E6 `.bin`. */
+        myfm_file_bytes:
+          playbackMyfmBin && fs.existsSync(path.join(uploadDir, mqttBasename))
+            ? fs.statSync(path.join(uploadDir, mqttBasename)).size
+            : null,
+        device_id: deviceId || "unknown",
+        checksum_sha256: sha256,
+        client_checksum: clientChecksum || null,
+        matches_declared_size: declaredSize === buf.length,
+        slideshow_style: slideshowStyle || null,
+        transport: transport || null,
+        delivered_to_frame: deliveredToFrame,
+        delivery_mode: deliveryMode,
+        image_url: imageUrl,
+      });
+    } catch (e) {
+      res.status(500).json({
+        ok: false,
+        error: e instanceof Error ? e.message : "upload_failed",
+      });
+    }
   });
 
   router.post("/photo/upload", requirePairingToken, uploadRateLimit, upload.single("file"), async (req, res) => {
@@ -103,8 +253,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       ) {
         jpegBackupStoredPath = basename;
         try {
-          const mqttPath = localUploadFilePath(mqttBasename);
-          const binSz = mqttPath != null ? fs.statSync(mqttPath).size : 0;
+          const binSz = fs.statSync(path.join(uploadDir, mqttBasename)).size;
           persistedDiskBytes = buf.length + binSz;
         } catch {
           persistedDiskBytes = buf.length;
@@ -128,8 +277,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           }
           try {
             await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
-            deliveredToFrame = true;
-            deliveryMode = "vps_mqtt";
+            deliveryMode = "mqtt_published_unconfirmed";
           } catch (err) {
             console.error("[photo] MQTT play publish failed:", err);
             deliveryMode = "mqtt_publish_failed";
@@ -139,7 +287,6 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
 
       const now = Date.now();
       db.mutate((draft) => {
-        draft.device.connected = true;
         draft.device.transport.wifi = transport === "wifi" || draft.device.transport.wifi;
         draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
         draft.device.lastPhotoAtMs = now;
@@ -198,10 +345,10 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         /** True when playback is MYFM `.bin`. */
         myfm_sidecar: playbackMyfmBin,
         /** Expect 960004 for official 1200×1600 XT 13.3E6 `.bin`. */
-        myfm_file_bytes: (() => {
-          const mqttPath = playbackMyfmBin ? localUploadFilePath(mqttBasename) : null;
-          return mqttPath != null && fs.existsSync(mqttPath) ? fs.statSync(mqttPath).size : null;
-        })(),
+        myfm_file_bytes:
+          playbackMyfmBin && fs.existsSync(path.join(uploadDir, mqttBasename))
+            ? fs.statSync(path.join(uploadDir, mqttBasename)).size
+            : null,
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,
