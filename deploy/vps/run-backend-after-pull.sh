@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# After: git clone … && cd myframe/web/backend   (use repo path as arg or \$PWD)
-# Run as a normal user (not root):  bash ../../deploy/vps/run-backend-after-pull.sh
+# After: git pull … && cd myframe/web/backend   (use repo path as arg or \$PWD)
+# Run as a normal user (not root): bash ../../deploy/vps/run-backend-after-pull.sh
+# This helper never overwrites backend/.env on the VPS.
 set -euo pipefail
 
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../backend" && pwd)"
@@ -20,10 +21,14 @@ command -v node >/dev/null && [[ "$(node -v | sed 's/^v//' | cut -d. -f1)" -ge 2
 }
 
 if [[ ! -f .env ]]; then
-  echo "Copy env: cp .env.example .env   (committed .env may already exist after pull)"
+  echo "ERROR: missing backend/.env on VPS; do not recreate it from .env.example"
+  exit 1
 fi
 
-npm ci
 npm run build
-echo "Starting API on PORT from .env (default 3001). Ctrl+C stops."
-NODE_ENV=production npm start
+if ! pm2 describe myframe-api >/dev/null 2>&1; then
+  echo "ERROR: PM2 app myframe-api is missing. Use initial server setup, not this post-pull helper."
+  exit 1
+fi
+echo "Restarting API via PM2 using the existing .env values."
+pm2 restart myframe-api

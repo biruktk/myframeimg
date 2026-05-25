@@ -22,10 +22,31 @@ function serialFromDeviceId(id: string): string {
 
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
 
+function localUploadFilePath(filename: string): string | null {
+  const trimmed = filename.trim();
+  if (!trimmed) return null;
+  let baseName = trimmed;
+  try {
+    if (trimmed.includes("://")) {
+      baseName = decodeURIComponent(path.basename(new URL(trimmed).pathname));
+    } else {
+      baseName = decodeURIComponent(path.basename(trimmed));
+    }
+  } catch {
+    baseName = path.basename(trimmed);
+  }
+  if (!baseName || baseName === "." || /^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(baseName)) {
+    return null;
+  }
+  if (!baseName.includes(".")) return null;
+  return path.join(uploadDir, baseName);
+}
+
 function effectiveUploadBytes(filename: string, bytes: number): number {
   if (Number.isFinite(bytes) && bytes > 0) return bytes;
   try {
-    const p = path.join(uploadDir, path.basename(filename));
+    const p = localUploadFilePath(filename);
+    if (!p) return 0;
     if (fs.existsSync(p)) return fs.statSync(p).size;
   } catch {
     /* ignore */
@@ -487,7 +508,8 @@ adminRouter.delete("/admin/uploads/:id", (req, res) => {
       meta: { filename: match.filename, deviceId: match.deviceId },
     });
     try {
-      const p = path.join(uploadDir, path.basename(match.filename));
+      const p = localUploadFilePath(match.filename);
+      if (!p) return;
       if (fs.existsSync(p)) fs.unlinkSync(p);
     } catch {
       /* ignore */

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build Express API on the host and run with PM2 (no Docker).
+# Build Express API on the host and restart the existing PM2 app (no Docker).
+# Deploy rule: do not touch backend/.env on the VPS.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,17 +16,20 @@ fi
 
 echo "[myframe] Building API in ${BACKEND_DIR} ..."
 cd "${BACKEND_DIR}"
-npm ci
+if [[ ! -f .env ]]; then
+  echo "ERROR: missing ${BACKEND_DIR}/.env; do not recreate it from .env.example"
+  exit 1
+fi
 npm run build
 
 echo "[myframe] PM2 deploy (app name: myframe-api) ..."
-if pm2 describe myframe-api >/dev/null 2>&1; then
-  pm2 reload ecosystem.config.cjs --update-env
-else
-  pm2 start ecosystem.config.cjs
+if ! pm2 describe myframe-api >/dev/null 2>&1; then
+  echo "ERROR: PM2 app myframe-api is missing. Use initial server setup, not deploy-prod.sh."
+  exit 1
 fi
+pm2 restart myframe-api
 
 echo "[myframe] API deploy finished."
-echo "Ensure ${BACKEND_DIR}/.env matches your production tokens and PUBLIC_BASE_URL."
+echo "Kept ${BACKEND_DIR}/.env unchanged. VPS .env remains the source of truth."
 echo "Optional: NODE_ENV=production pm2 logs myframe-api --lines 80"
 echo "Next.js site (${WEB_ROOT}): npm ci && npm run build && npm start (port 3000), or pm2/ecosystem of your choice."

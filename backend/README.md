@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-`backend/.env` is tracked for your VPS workflow (same values as `.env.example`). For a private fork you can still override locally; use `127.0.0.1` in `MQTT_URL` when Node runs on the same host as Mosquitto.
+On the VPS, `backend/.env` is the source of truth. Do not overwrite it during deploys and do not recreate it from `.env.example`. Normal backend deploys should be: `git pull`, `npm run build`, `pm2 restart myframe-api`.
 
 API listens on `http://127.0.0.1:3001` unless `PORT` is set.
 
@@ -22,7 +22,9 @@ Set in `.env`:
 - `CORS_ORIGINS`: comma-separated allowlist
 - `UPLOADS_PER_MINUTE`: per-IP limit for `/api/photo/upload`
 - `MQTT_URL`: backend connects to your Mosquitto (e.g. `mqtt://device:pass@127.0.0.1:1883`)
-- `PUBLIC_BASE_URL` / `PUBLIC_MEDIA_BASE_URL`: **HTTP** base for frame `GET` (e.g. `http://VPS_IP:3001`). XT/ESP32 typically does not use TLS in `play`; avoid `https`/`443` unless you know your firmware does.
+- `PUBLIC_BASE_URL`: public HTTP base for the API (for this VPS: `http://128.241.231.234`)
+- `PUBLIC_MEDIA_BASE_URL`: public HTTP base for frame downloads (for this VPS: `http://128.241.231.234`, served by Nginx on port `80`)
+- `FRAME_MQTT_PORT=80` / `FRAME_MEDIA_PORT=80`: operational values used for the VPS setup; frames fetch media through Nginx on port `80`, not the API on `3001`
 - `FRAME_MYFM_ENCODE` (default on): raster uploads become **MYFM `.bin`** (960032 B) + **keep** the original JPEG/PNG beside it; **`image_url` / MQTT `play` always use `.bin`**. Encode failure → **`503`** (no JPEG MQTT).
 - `FRAME_PLAY_ALLOW_HTTPS`: set `1` only if `publishPlayImage` must allow `https://` in `PUBLIC_*` URLs (default blocks HTTPS for ESP32 safety).
 - `FRAME_API_SECRET` / `FRAME_JWT_SECRET`: `POST /api/frame-cloud/auth/token` and JWT for frame-cloud routes
@@ -65,7 +67,7 @@ From the **repository root** (directory that contains `web/`):
 bash web/deploy/vps/deploy-prod.sh
 ```
 
-See `web/deploy/vps/GO_LIVE.md`. Ensure `web/backend/.env` is populated (mirror `web/deploy/vps/.env.prod` as needed).
+See `web/deploy/vps/GO_LIVE.md`. Keep the existing `web/backend/.env` intact on the VPS; do not replace it from any example file.
 
 ## Health checks
 
@@ -75,4 +77,5 @@ See `web/deploy/vps/GO_LIVE.md`. Ensure `web/backend/.env` is populated (mirror 
 ## Reverse proxy
 
 - Serve API behind HTTPS (Nginx/Caddy/Traefik).
+- Keep `/etc/nginx/sites-enabled/frame-media` enabled so `/frame-media/` continues to serve `backend/uploads/` on port `80`.
 - Back up `backend/data` and `backend/uploads` on the host.

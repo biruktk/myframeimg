@@ -18,9 +18,12 @@ rm -f backend/src/routes/wechat_phone.ts
 echo "==> Pull from GitHub"
 git pull origin main
 
-echo "==> Build and restart"
+echo "==> Build and restart (keep backend/.env exactly as-is)"
 cd backend
-npm ci
+if [[ ! -f .env ]]; then
+  echo "ERROR: missing backend/.env on VPS; do not recreate it from .env.example"
+  exit 1
+fi
 npm run build
 grep -rq "mobile/google-signin" dist/ || { echo "ERROR: no mobile route in dist"; exit 1; }
 pm2 restart myframe-api

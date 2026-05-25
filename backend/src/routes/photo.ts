@@ -16,6 +16,25 @@ import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode"
 export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   const router = express.Router();
   const base = publicBaseUrl.replace(/\/$/, "");
+
+  function localUploadFilePath(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    let name = trimmed;
+    try {
+      if (trimmed.includes("://")) {
+        name = decodeURIComponent(path.basename(new URL(trimmed).pathname));
+      } else {
+        name = decodeURIComponent(path.basename(trimmed));
+      }
+    } catch {
+      name = path.basename(trimmed);
+    }
+    if (!name || name === "." || /^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(name)) return null;
+    if (!name.includes(".")) return null;
+    return path.join(uploadDir, name);
+  }
+
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
@@ -84,7 +103,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       ) {
         jpegBackupStoredPath = basename;
         try {
-          const binSz = fs.statSync(path.join(uploadDir, mqttBasename)).size;
+          const mqttPath = localUploadFilePath(mqttBasename);
+          const binSz = mqttPath != null ? fs.statSync(mqttPath).size : 0;
           persistedDiskBytes = buf.length + binSz;
         } catch {
           persistedDiskBytes = buf.length;
@@ -178,10 +198,10 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         /** True when playback is MYFM `.bin`. */
         myfm_sidecar: playbackMyfmBin,
         /** Expect 960004 for official 1200×1600 XT 13.3E6 `.bin`. */
-        myfm_file_bytes:
-          playbackMyfmBin && fs.existsSync(path.join(uploadDir, mqttBasename))
-            ? fs.statSync(path.join(uploadDir, mqttBasename)).size
-            : null,
+        myfm_file_bytes: (() => {
+          const mqttPath = playbackMyfmBin ? localUploadFilePath(mqttBasename) : null;
+          return mqttPath != null && fs.existsSync(mqttPath) ? fs.statSync(mqttPath).size : null;
+        })(),
         device_id: deviceId || "unknown",
         checksum_sha256: sha256,
         client_checksum: clientChecksum || null,

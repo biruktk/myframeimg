@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
 # Run on VPS from the backend folder (e.g. /var/www/myframe/backend or web/backend).
+# Deploy rule: keep the existing .env intact, then run build + PM2 restart only.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-echo "==> npm ci (installs google-auth-library and all deps)"
-npm ci
 echo "==> npm run build"
 npm run build
 if ! grep -rq "mobile/google-signin" dist/; then
   echo "ERROR: dist/ missing mobile/google-signin — build did not include mobile auth routes"
   exit 1
 fi
-echo "==> pm2 restart myframe-api (or start ecosystem.config.cjs)"
-if pm2 describe myframe-api &>/dev/null; then
-  pm2 restart myframe-api
-else
-  pm2 start ecosystem.config.cjs
+echo "==> preserving existing .env (source of truth on the VPS)"
+if [[ ! -f .env ]]; then
+  echo "ERROR: missing backend/.env on VPS; do not recreate it from .env.example"
+  exit 1
 fi
-pm2 save
+if ! pm2 describe myframe-api &>/dev/null; then
+  echo "ERROR: PM2 app myframe-api is missing. Use initial server setup, not the deploy helper."
+  exit 1
+fi
+echo "==> pm2 restart myframe-api"
+pm2 restart myframe-api
 echo "==> smoke test (wait for API to bind)"
 sleep 2
 if ! curl -sS --max-time 5 "http://127.0.0.1:${PORT:-3001}/health" | head -c 300; then

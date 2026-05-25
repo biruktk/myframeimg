@@ -12,7 +12,19 @@ export type FrameRecord = {
   config: Record<string, unknown>;
 };
 
+type PendingPlayCommand = {
+  action: "play";
+  msgid: string;
+  stamac: string;
+  data: {
+    host: string;
+    port: number;
+    imgs: Array<{ imgid: string; imgurl: string }>;
+  };
+};
+
 const frames = new Map<string, FrameRecord>();
+const pendingPlayCommands = new Map<string, PendingPlayCommand>();
 let mqttClient: mqtt.MqttClient | null = null;
 
 export function normalizeMac(mac: string): string {
@@ -49,7 +61,41 @@ function mqttDebugTx(topic: string, payloadJson: string) {
   );
 }
 
-function handleMessage(topic: string, raw: Buffer) {
+async function getPendingPlayCommand(macRaw: string): Promise<PendingPlayCommand | null> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return null;
+  return pendingPlayCommands.get(mac) ?? null;
+}
+
+function resolveFrameMediaEndpoint(): { host: string; port: number } {
+  const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
+  if (!mediaBaseRaw) {
+    throw new Error("PUBLIC_MEDIA_BASE_URL_required_for_mqtt_play");
+  }
+  const mediaUrl = new URL(mediaBaseRaw);
+  const frameHost = mediaUrl.hostname;
+  const framePort = Number.parseInt(mediaUrl.port, 10) || 80;
+  if (!frameHost) {
+    throw new Error("PUBLIC_MEDIA_BASE_URL_missing_hostname");
+  }
+  return { host: frameHost, port: framePort };
+}
+
+function resolveFrameMediaPath(imageUrl: string): string {
+  let rawPath = imageUrl.trim();
+  try {
+    rawPath = new URL(imageUrl).pathname;
+  } catch {
+    // Keep path-ish input as-is.
+  }
+  const basename = decodeURIComponent(rawPath.split("/").pop() ?? "").trim();
+  if (!basename || !basename.toLowerCase().endsWith(".bin")) {
+    throw new Error("mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg");
+  }
+  return `/frame-media/${encodeURIComponent(basename)}`;
+}
+
+async function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
   try {
@@ -77,6 +123,11 @@ function handleMessage(topic: string, raw: Buffer) {
     } as FrameRecord);
   rec.lastSeen = Date.now();
   rec.status = "online";
+  const stamac =
+    resolveMqttHardwareMac(
+      typeof data.stamac === "string" && data.stamac.trim() ? data.stamac : clientid,
+    ) ?? mac;
+  const topicOut = `/inkjoyap/${stamac}`;
 
   switch (action) {
     case "login": {
@@ -84,8 +135,47 @@ function handleMessage(topic: string, raw: Buffer) {
       rec.config = {
         firmwareVersion: d?.ver,
         stationType: d?.statype,
-        stamac: data.stamac,
+        stamac,
       };
+
+      const ackPayload = JSON.stringify({
+        action: "login_ack",
+        msgid: String(data.msgid ?? Date.now()),
+        stamac,
+      });
+      mqttDebugTx(topicOut, ackPayload);
+      mqttClient?.publish(topicOut, ackPayload, { qos: 1 }, (err) => {
+        if (err) console.error("[MQTT] login_ack publish failed:", err);
+        else console.log("[MQTT] login_ack sent to", stamac);
+      });
+
+      const pending = await getPendingPlayCommand(stamac);
+      if (pending != null && mqttClient?.connected) {
+        setTimeout(() => {
+          if (!mqttClient?.connected) return;
+          const pendingBody = JSON.stringify(pending);
+          mqttDebugTx(`/inkjoyap/${pending.stamac}`, pendingBody);
+          mqttClient.publish(`/inkjoyap/${pending.stamac}`, pendingBody, { qos: 1 }, (err) => {
+            if (err) console.error("[MQTT] pending play re-send failed:", err);
+            else console.log("[MQTT] Re-sent pending play to", pending.stamac);
+          });
+        }, 1500);
+      }
+      break;
+    }
+    case "heart": {
+      const d = data.data as Record<string, unknown> | undefined;
+      if (d?.ack === 1 || d?.ack === "1") {
+        const heartAck = JSON.stringify({
+          action: "heart_ack",
+          msgid: String(Date.now()),
+          stamac,
+        });
+        mqttDebugTx(topicOut, heartAck);
+        mqttClient?.publish(topicOut, heartAck, { qos: 0 }, (err) => {
+          if (err) console.error("[MQTT] heart_ack publish failed:", err);
+        });
+      }
       break;
     }
     default:
@@ -121,7 +211,9 @@ export function startFrameMqtt(): void {
     });
   });
 
-  mqttClient.on("message", (topic, msg) => handleMessage(topic, msg));
+  mqttClient.on("message", (topic, msg) => {
+    void handleMessage(topic, msg);
+  });
 
   mqttClient.on("error", (err) => console.error("[frame-mqtt]", err));
   mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
@@ -147,6 +239,35 @@ export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: num
   return { mac, ...rec, age: Date.now() - rec.lastSeen };
 }
 
+export function publishLoginAck(macRaw: string, msgidRaw?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!mqttClient?.connected) {
+      reject(new Error("MQTT not connected"));
+      return;
+    }
+    const mac = resolveMqttHardwareMac(macRaw);
+    if (!mac) {
+      reject(new Error("invalid_device_id_for_login_ack"));
+      return;
+    }
+    const payload = {
+      action: "login_ack",
+      msgid: msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString(),
+      stamac: mac,
+    };
+    const topic = `/inkjoyap/${mac}`;
+    const body = JSON.stringify(payload);
+    mqttDebugTx(topic, body);
+    mqttClient.publish(topic, body, { qos: 1 }, (err) => {
+      if (err) reject(err);
+      else {
+        console.log("[MQTT] login_ack sent to", mac);
+        resolve();
+      }
+    });
+  });
+}
+
 /** Publish play image command (same shape as reference Node server). */
 export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -160,70 +281,31 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       return;
     }
     const msgid = Date.now().toString();
-    let host = "";
-    let port = 443;
-    let imgurlForPlay = imageUrl;
     try {
-      const u = new URL(imageUrl);
-      // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
-      // (see files/9_API_DOCUMENTATION.md). Full absolute URLs in `imgurl` can break download.
-      if (String(process.env.MQTT_PLAY_FULL_IMGURL ?? "").trim() !== "1") {
-        imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
-      }
+      const { host, port } = resolveFrameMediaEndpoint();
+      const imgurlForPlay = resolveFrameMediaPath(imageUrl);
+      const payload: PendingPlayCommand = {
+        action: "play",
+        msgid,
+        stamac: mac,
+        data: {
+          host,
+          port,
+          imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
+        },
+      };
+      pendingPlayCommands.set(mac, payload);
 
-      /** Plain-HTTP fetch host for ESP32 (no HTTPS); path still comes from `imageUrl` above. */
-      const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
-      if (mediaBaseRaw) {
-        try {
-          const mu = new URL(mediaBaseRaw);
-          host = mu.hostname;
-          port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
-        } catch {
-          // bad PUBLIC_MEDIA_BASE_URL — fall through to imageUrl host/port
-        }
-      }
-      if (!host) {
-        if (
-          u.protocol === "https:" &&
-          String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
-        ) {
-          reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
-          return;
-        }
-        host = u.hostname;
-        port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
-      }
-    } catch {
-      host = publicHost ?? "";
-    }
-
-    const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());
-    if (!pathProbe.endsWith(".bin")) {
-      reject(
-        new Error(
-          "mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg",
-        ),
-      );
+      const topic = `/inkjoyap/${mac}`;
+      const body = JSON.stringify(payload);
+      mqttDebugTx(topic, body);
+      mqttClient.publish(topic, body, { qos: 1 }, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error(String(err)));
       return;
     }
-
-    const payload = {
-      action: "play",
-      msgid,
-      stamac: mac,
-      data: {
-        host: host || publicHost || "localhost",
-        port,
-        imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
-      },
-    };
-
-    const topic = `/inkjoyap/${mac}`;
-    const body = JSON.stringify(payload);
-    mqttDebugTx(topic, body);
-    mqttClient.publish(topic, body, { qos: 1 }, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
   });
 }
