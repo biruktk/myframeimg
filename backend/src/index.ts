@@ -35,12 +35,31 @@ function envBaseUrl(primary: string | undefined, fallback: string): string {
   return (primary?.trim() || fallback).replace(/\/$/, "");
 }
 
+function isAllowedCorsOrigin(origin: string): boolean {
+  const configured = String(process.env.CORS_ORIGINS ?? "").trim();
+  if (configured === "*") return true;
+
+  const explicit = new Set<string>([
+    "https://myframe.ink",
+    "http://128.241.231.234:3001",
+  ]);
+  for (const item of configured.split(",").map((s) => s.trim()).filter(Boolean)) {
+    explicit.add(item);
+  }
+
+  if (explicit.has(origin)) return true;
+  if (origin === "null") return true;
+  if (/^http:\/\/localhost(?::\d+)?$/i.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1(?::\d+)?$/i.test(origin)) return true;
+  return false;
+}
+
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const uploadDir = path.resolve(packageRoot, process.env.UPLOAD_DIR || "uploads");
 const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
 /** MQTT `play` + `/frame-media/` links; use when `PUBLIC_BASE_URL` is the marketing site (Next) not Express. */
-const mediaPublicBaseUrl = envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);
+const mediaPublicBaseUrl = envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL, publicBaseUrl);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -61,11 +80,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      const allowed = String(process.env.CORS_ORIGINS ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (allowed.includes(origin)) return callback(null, true);
+      if (isAllowedCorsOrigin(origin)) return callback(null, true);
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,

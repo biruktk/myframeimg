@@ -52,6 +52,32 @@ function mqttDebugTx(topic: string, payloadJson: string) {
   );
 }
 
+function resolveFrameMediaEndpoint(): { host: string; port: number } {
+  const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
+  if (!mediaBaseRaw) {
+    throw new Error("PUBLIC_MEDIA_BASE_URL_required_for_mqtt_play");
+  }
+  const mediaUrl = new URL(mediaBaseRaw);
+  return {
+    host: mediaUrl.hostname,
+    port: Number.parseInt(mediaUrl.port, 10) || 80,
+  };
+}
+
+function resolveFrameMediaPath(imageUrl: string): string {
+  let rawPath = imageUrl.trim();
+  try {
+    rawPath = new URL(imageUrl).pathname;
+  } catch {
+    // Accept already-normalized path input.
+  }
+  const basename = decodeURIComponent(rawPath.split("/").pop() ?? "").trim();
+  if (!basename || !basename.toLowerCase().endsWith(".bin")) {
+    throw new Error("mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg");
+  }
+  return `/frame-media/${encodeURIComponent(basename)}`;
+}
+
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
@@ -170,6 +196,7 @@ export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: num
 /** Publish play image command (same shape as reference Node server). */
 export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    void publicHost;
     if (!mqttClient?.connected) {
       reject(new Error("MQTT not connected"));
       return;
@@ -180,70 +207,30 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       return;
     }
     const msgid = Date.now().toString();
-    let host = "";
-    let port = 443;
-    let imgurlForPlay = imageUrl;
     try {
-      const u = new URL(imageUrl);
-      // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
-      // (see files/9_API_DOCUMENTATION.md). Full absolute URLs in `imgurl` can break download.
-      if (String(process.env.MQTT_PLAY_FULL_IMGURL ?? "").trim() !== "1") {
-        imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
-      }
+      const { host, port } = resolveFrameMediaEndpoint();
+      const imgurlForPlay = resolveFrameMediaPath(imageUrl);
+      const payload = {
+        action: "play",
+        msgid,
+        stamac: mac,
+        data: {
+          host,
+          port,
+          imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
+        },
+      };
 
-      /** Plain-HTTP fetch host for ESP32 (no HTTPS); path still comes from `imageUrl` above. */
-      const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
-      if (mediaBaseRaw) {
-        try {
-          const mu = new URL(mediaBaseRaw);
-          host = mu.hostname;
-          port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
-        } catch {
-          // bad PUBLIC_MEDIA_BASE_URL — fall through to imageUrl host/port
-        }
-      }
-      if (!host) {
-        if (
-          u.protocol === "https:" &&
-          String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
-        ) {
-          reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
-          return;
-        }
-        host = u.hostname;
-        port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
-      }
-    } catch {
-      host = publicHost ?? "";
-    }
-
-    const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());
-    if (!pathProbe.endsWith(".bin")) {
-      reject(
-        new Error(
-          "mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg",
-        ),
-      );
+      const topic = `/inkjoyap/${mac}`;
+      const body = JSON.stringify(payload);
+      mqttDebugTx(topic, body);
+      mqttClient.publish(topic, body, { qos: 1 }, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error("mqtt_play_invalid_media_base_or_path"));
       return;
     }
-
-    const payload = {
-      action: "play",
-      msgid,
-      stamac: mac,
-      data: {
-        host: host || publicHost || "localhost",
-        port,
-        imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
-      },
-    };
-
-    const topic = `/inkjoyap/${mac}`;
-    const body = JSON.stringify(payload);
-    mqttDebugTx(topic, body);
-    mqttClient.publish(topic, body, { qos: 1 }, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
   });
 }
