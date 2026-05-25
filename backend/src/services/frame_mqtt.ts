@@ -78,6 +78,30 @@ function resolveFrameMediaPath(imageUrl: string): string {
   return `/frame-media/${encodeURIComponent(basename)}`;
 }
 
+function publishFrameCommand(
+  stamac: string,
+  payload: Record<string, unknown>,
+  qos: 0 | 1,
+  label: string,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!mqttClient?.connected) {
+      reject(new Error("MQTT not connected"));
+      return;
+    }
+    const topic = `/inkjoyap/${stamac}`;
+    const body = JSON.stringify(payload);
+    mqttDebugTx(topic, body);
+    mqttClient.publish(topic, body, { qos }, (err) => {
+      if (err) reject(err);
+      else {
+        console.log(`[MQTT] ${label} sent to`, stamac);
+        resolve();
+      }
+    });
+  });
+}
+
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
@@ -107,6 +131,10 @@ function handleMessage(topic: string, raw: Buffer) {
   rec.lastSeen = Date.now();
   rec.status = "online";
   rec.lastAction = action || rec.lastAction;
+  const stamac =
+    resolveMqttHardwareMac(
+      typeof data.stamac === "string" && data.stamac.trim() ? data.stamac : clientid,
+    ) ?? mac;
 
   const d = data.data as Record<string, unknown> | undefined;
   const result =
@@ -129,8 +157,37 @@ function handleMessage(topic: string, raw: Buffer) {
       rec.config = {
         firmwareVersion: d?.ver,
         stationType: d?.statype,
-        stamac: data.stamac,
+        stamac,
       };
+      void publishFrameCommand(
+        stamac,
+        {
+          action: "login_ack",
+          msgid: String(data.msgid ?? Date.now()),
+          stamac,
+        },
+        1,
+        "login_ack",
+      ).catch((err) => {
+        console.error("[MQTT] login_ack publish failed:", err);
+      });
+      break;
+    }
+    case "heart": {
+      if (d?.ack === 1 || d?.ack === "1") {
+        void publishFrameCommand(
+          stamac,
+          {
+            action: "heart_ack",
+            msgid: String(Date.now()),
+            stamac,
+          },
+          0,
+          "heart_ack",
+        ).catch((err) => {
+          console.error("[MQTT] heart_ack publish failed:", err);
+        });
+      }
       break;
     }
     default:
@@ -191,6 +248,23 @@ export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: num
   const rec = frames.get(mac);
   if (!rec) return null;
   return { mac, ...rec, age: Date.now() - rec.lastSeen };
+}
+
+export function publishLoginAck(macRaw: string, msgidRaw?: string): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) {
+    return Promise.reject(new Error("invalid_device_id_for_login_ack"));
+  }
+  return publishFrameCommand(
+    mac,
+    {
+      action: "login_ack",
+      msgid: msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString(),
+      stamac: mac,
+    },
+    1,
+    "login_ack",
+  );
 }
 
 /** Publish play image command (same shape as reference Node server). */
