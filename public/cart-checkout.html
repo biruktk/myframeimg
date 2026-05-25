@@ -110,11 +110,23 @@
             max-width: 130px;
             border: 1px solid var(--border-strong);
             border-radius: 999px;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.96);
-            font-weight: 600;
+            padding: 0 38px 0 18px;
+            height: 54px;
+            background-color: rgba(255, 255, 255, 0.96);
+            font-weight: 800;
             color: var(--ink);
-            font-size: 14px;
+            font-size: 15px;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, currentColor 50%),
+                linear-gradient(135deg, currentColor 50%, transparent 50%);
+            background-position:
+                calc(100% - 21px) 23px,
+                calc(100% - 15px) 23px;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06);
         }
         .nav-cta {
             background: var(--primary);
@@ -151,9 +163,14 @@
         .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
         .btn { width: 100%; border: none; border-radius: 12px; padding: 13px; font-weight: 700; cursor: pointer; }
+        .btn i { margin-right: 8px; }
         .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(220,38,38,0.24); }
         .btn-primary:hover { background: var(--primary-dark); }
         .btn-secondary { background: #fff; border: 1px solid var(--border); margin-top: 10px; }
+        .payment-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+        .payment-actions .btn { margin-top: 0; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; }
+        .gift-help { margin: -2px 0 12px 28px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+        .delivery-note { margin: -4px 0 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
         .status { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
         .ok { background: #DCFCE7; color: #166534; }
         .bad { background: #FEE2E2; color: #991B1B; }
@@ -229,12 +246,16 @@
                 <label style="display:flex;align-items:center;gap:10px;margin:4px 0 10px;font-size:14px;color:var(--muted);">
                     <input id="isGift" type="checkbox"> This order is a gift
                 </label>
-                <div class="row"><span>Delivery</span><span>Express (3-5 days)</span></div>
+                <p id="giftHelp" class="gift-help"></p>
+                <div class="row"><span id="deliveryLabel">Delivery</span><span id="deliveryEta">Calculating...</span></div>
+                <p id="deliveryNote" class="delivery-note"></p>
+                <div class="row"><span id="shippingLabel">Shipping</span><strong id="shippingTotal">$0</strong></div>
                 <div class="row"><strong>Total</strong><strong id="total">$0</strong></div>
-                <button class="btn btn-primary" id="paypalFallbackButton" type="button" style="display:none;" onclick="showPayPalMissing()">Pay with PayPal</button>
                 <div id="paypal-button-container"></div>
-                <button class="btn btn-secondary" id="stripeButton" onclick="payStripe()">Pay with Stripe</button>
-                <button class="btn btn-secondary" id="cashButton" onclick="payCash()">Place Cash on Delivery Order</button>
+                <div class="payment-actions">
+                    <button class="btn btn-primary" id="paypalFallbackButton" type="button" style="display:none;" onclick="showPayPalMissing()"><i class="fab fa-paypal"></i> Pay with PayPal</button>
+                    <button class="btn btn-secondary" id="stripeButton" onclick="payStripe()"><i class="fas fa-credit-card"></i> Pay with Stripe</button>
+                </div>
                 <div id="ok" class="status ok"><i class="fas fa-check-circle"></i> Payment successful (mock)</div>
                 <div id="bad" class="status bad"><i class="fas fa-times-circle"></i> Payment failed (mock)</div>
             </div>
@@ -246,6 +267,8 @@
         let currentLang = 'en';
         let currentCurrency = localStorage.getItem('myframeCurrency') || 'USD';
         let tr = {};
+        let cartSubtotal = 0;
+        let shippingEstimate = { price: 0, minDays: 3, maxDays: 5, service: 'Express from Hong Kong' };
         const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         const cart = JSON.parse(localStorage.getItem('frampCart') || '{}');
         const profileFields = ['firstName','lastName','emailAddress','phoneNumber','country','stateRegion','city','postalCode','companyName','addressLine','addressLine2','frameMessage'];
@@ -366,8 +389,10 @@
                     item.url === '#features' ? t('menuFeatures','Features') :
                     item.url === '#product' ? t('menuProduct','Product') :
                     item.url === '#pricing' ? t('menuPricing','Pricing') :
-                    item.url === '#family' ? t('menuFamilies','For Families') : item.label;
-                const href = /cart-checkout\.html/.test(item.url) ? currentCartPath() : (item.url.startsWith('#') ? currentHomePath() + item.url : item.url);
+                    item.url === '#family' ? t('menuFamilies','For Families') :
+                    ['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url) ? t('menuApplication','Application') : item.label;
+                const isDownload = ['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url);
+                const href = /cart-checkout\.html/.test(item.url) ? currentCartPath() : (isDownload ? (currentLang === 'en' ? '/download' : `/${currentLang}/download`) : (item.url.startsWith('#') ? currentHomePath() + item.url : item.url));
                 return `<a class="${/cart/i.test(item.label) ? 'nav-cart-link' : ''}" href="${escHtml(href)}">${escHtml(label)}${/cart/i.test(item.label) ? ' <span id="cartNavBadge" class="cart-badge">0</span>' : ''}</a>`;
             }).join('');
         }
@@ -380,11 +405,10 @@
             document.querySelectorAll('.card h2')[1].textContent = t('addressCheckoutTitle', 'Address & Checkout');
             document.querySelector('#subtotal').closest('.row').children[0].textContent = t('subtotalLabel', 'Subtotal');
             document.querySelector('#total').closest('.row').children[0].textContent = t('totalLabel', 'Total');
-            document.querySelectorAll('.row')[0].children[0].textContent = t('deliveryLabel', 'Delivery');
-            document.querySelectorAll('.row')[0].children[1].textContent = t('expressDeliveryLabel', 'Express (3-5 days)');
-            document.getElementById('paypalFallbackButton').textContent = t('paypalButton', 'Pay with PayPal');
-            document.getElementById('stripeButton').textContent = t('stripeButton', 'Pay with Stripe');
-            document.getElementById('cashButton').textContent = t('codButton', 'Place Cash on Delivery Order');
+            document.getElementById('deliveryLabel').textContent = t('deliveryLabel', 'Delivery');
+            document.getElementById('shippingLabel').textContent = t('shippingLabel', 'Shipping');
+            document.getElementById('paypalFallbackButton').innerHTML = `<i class="fab fa-paypal"></i> ${escHtml(t('paypalButton', 'Pay with PayPal'))}`;
+            document.getElementById('stripeButton').innerHTML = `<i class="fas fa-credit-card"></i> ${escHtml(t('stripeButton', 'Pay with Stripe'))}`;
             document.getElementById('firstName').placeholder = t('firstNameLabel', 'First Name');
             document.getElementById('lastName').placeholder = t('lastNameLabel', 'Last Name');
             document.getElementById('emailAddress').placeholder = t('emailLabel', 'Email Address');
@@ -396,8 +420,9 @@
             document.getElementById('companyName').placeholder = t('companyLabel', 'Company (Optional)');
             document.getElementById('addressLine').placeholder = t('addressLabel', 'Street Address');
             document.getElementById('addressLine2').placeholder = t('addressLine2Label', 'Apartment, suite, unit, building (Optional)');
-            document.getElementById('frameMessage').placeholder = t('orderNoteLabel', 'Order note, delivery note, or gift message');
+            document.getElementById('frameMessage').placeholder = t('orderNoteLabel', 'Order note, delivery note, gift message, Wi-Fi name/password, or photos to preload');
             document.querySelector('label').lastChild.textContent = ' ' + t('giftCheckbox', 'This order is a gift');
+            document.getElementById('giftHelp').textContent = t('giftHelpText', 'For gifts, you can provide the recipient Wi-Fi name and password in the order note. If you want photos preloaded before shipping, share them with us or email gift@myframe.ink. We can pair and prepare the frame so elders see photos immediately when they receive it.');
         }
 
         function t(key, fallback) { return tr[key] || fallback; }
@@ -411,12 +436,53 @@
                 const data = await fetch('/api/public/location', { credentials: 'same-origin' }).then(res => res.json());
                 if (data.country && !document.getElementById('country').value) document.getElementById('country').value = data.country;
                 if (data.city && !document.getElementById('city').value) document.getElementById('city').value = data.city;
+                if (data.postal && !document.getElementById('postalCode').value) document.getElementById('postalCode').value = data.postal;
+                if (data.shipping) applyShippingEstimate(data.shipping);
+                await updateShippingEstimate();
             } catch (_) {}
         }
 
         function bindDraftPersistence() {
-            profileFields.forEach(id => document.getElementById(id).addEventListener('input', saveProfileDraft));
+            profileFields.forEach(id => document.getElementById(id).addEventListener('input', () => {
+                saveProfileDraft();
+                if (['country', 'postalCode', 'city'].includes(id)) scheduleShippingEstimate();
+            }));
             document.getElementById('isGift').addEventListener('change', saveProfileDraft);
+        }
+
+        let shippingTimer = 0;
+        function scheduleShippingEstimate() {
+            clearTimeout(shippingTimer);
+            shippingTimer = setTimeout(updateShippingEstimate, 450);
+        }
+
+        async function updateShippingEstimate() {
+            const country = document.getElementById('country').value.trim();
+            if (!country) {
+                applyShippingEstimate({ price: 0, minDays: 3, maxDays: 5, service: 'Enter country for Hong Kong shipping estimate' });
+                return;
+            }
+            try {
+                const res = await fetch(`/api/public/shipping-estimate?country=${encodeURIComponent(country)}`, { credentials: 'same-origin' });
+                const data = await res.json();
+                if (data?.ok !== false) applyShippingEstimate(data);
+            } catch (_) {
+                applyShippingEstimate({ price: 35, minDays: 8, maxDays: 15, service: 'International tracked shipping from Hong Kong' });
+            }
+        }
+
+        function applyShippingEstimate(data) {
+            shippingEstimate = {
+                price: Number(data.price || 0),
+                minDays: Number(data.minDays || 3),
+                maxDays: Number(data.maxDays || 5),
+                service: String(data.service || 'Express from Hong Kong')
+            };
+            const eta = `${shippingEstimate.minDays}-${shippingEstimate.maxDays} ${t('daysLabel', 'days')}`;
+            document.getElementById('deliveryEta').textContent = eta;
+            document.getElementById('deliveryNote').textContent = `${shippingEstimate.service}. ${t('shipsFromLabel', 'Ships from Hong Kong.')}`;
+            document.getElementById('shippingTotal').textContent = formatMoney(shippingEstimate.price);
+            document.getElementById('total').textContent = formatMoney(cartSubtotal + shippingEstimate.price);
         }
 
         function render() {
@@ -437,8 +503,9 @@
                     root.appendChild(row);
                 });
             }
+            cartSubtotal = total;
             document.getElementById('subtotal').textContent = formatMoney(total);
-            document.getElementById('total').textContent = formatMoney(total);
+            applyShippingEstimate(shippingEstimate);
             const navBadge = document.getElementById('cartNavBadge');
             const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
             if (navBadge) {
@@ -456,6 +523,7 @@
                 city: document.getElementById('city').value.trim(),
                 country: document.getElementById('country').value.trim(),
                 currency: currentCurrency,
+                shipping: shippingEstimate.price,
                 items: Object.entries(cart).map(([sku, quantity]) => ({ sku, quantity: Number(quantity) || 0 }))
             };
         }
@@ -482,6 +550,7 @@
                 gateway,
                 language: currentLang,
                 currency: currentCurrency,
+                shipping: shippingEstimate.price,
                 items: Object.entries(cart).map(([sku, quantity]) => ({ sku, quantity }))
             };
         }

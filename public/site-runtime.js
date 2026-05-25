@@ -175,7 +175,10 @@
     }
     if (logo) logo.href = lang === 'en' ? '/' : `/${lang}`;
     if (cta) {
-      cta.innerHTML = `<i class="fas fa-gift"></i> ${esc(view.buyForGift || 'Buy for Gift')}`;
+      const giftLabel = view.buyForGift || 'Buy for Gift';
+      cta.setAttribute('aria-label', giftLabel);
+      cta.setAttribute('title', giftLabel);
+      cta.innerHTML = `<i class="fas fa-gift"></i><span>${esc(giftLabel)}</span>`;
       cta.href = lang === 'en' ? `/cart-checkout.html?add=YX-133P` : `/${lang}/cart?add=YX-133P`;
     }
     if (select) {
@@ -460,6 +463,7 @@
     if (item.url === '#product') return view.menuProduct || item.label;
     if (item.url === '#pricing') return view.menuPricing || item.label;
     if (item.url === '#family') return view.menuFamilies || item.label;
+    if (['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url)) return view.menuApplication || view.footerDownloadApp || item.label;
     return item.label;
   }
 

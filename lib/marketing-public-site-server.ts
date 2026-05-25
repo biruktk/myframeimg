@@ -10,6 +10,12 @@ export type MarketingMenuItem = {
 
 export type MarketingPublicSitePayload = {
   basic?: { headerLogo?: string; siteTitle?: string; themeColor?: string };
+  media?: {
+    appStoreUrl?: string;
+    googlePlayUrl?: string;
+    miniAppUrl?: string;
+    apkDownloadUrl?: string;
+  };
   menus?: MarketingMenuItem[];
   languages?: Array<{ code: string; name?: string; native_name?: string }>;
   translations?: Record<string, Record<string, string>>;

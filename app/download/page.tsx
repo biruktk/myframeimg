@@ -28,6 +28,12 @@ export default async function DownloadPage() {
       translated={translated}
       logoSrc={site?.basic?.headerLogo?.trim() || "/assets/myframe-logo-final.svg"}
       languages={site?.languages ?? []}
+      downloadLinks={{
+        ios: site?.media?.appStoreUrl,
+        android: site?.media?.googlePlayUrl,
+        miniApp: site?.media?.miniAppUrl,
+        apk: site?.media?.apkDownloadUrl,
+      }}
     />
   );
 }
