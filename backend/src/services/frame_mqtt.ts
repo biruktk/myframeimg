@@ -30,6 +30,8 @@ export function resolveMqttHardwareMac(raw: string): string | null {
   if (!s) return null;
   const low = s.toLowerCase();
   if (low.startsWith("ij_") || low.startsWith("ij-")) s = s.slice(3).trim();
+  if (low.startsWith("xt_esp_")) s = s.slice(7).trim();
+  else if (low.startsWith("xt-esp-")) s = s.slice(7).trim();
 
   let h = normalizeMac(s);
   if (!h) return null;
@@ -232,8 +234,19 @@ export function listFrames(): Array<FrameRecord & { mac: string; age: number }> 
   return out.sort((a, b) => a.age - b.age);
 }
 
+export function resolveKnownMqttHardwareMac(raw: string): string | null {
+  const exact = resolveMqttHardwareMac(raw);
+  if (exact) return exact;
+
+  const suffix = normalizeMac(raw).slice(-4);
+  if (suffix.length < 4) return null;
+
+  const matches = Array.from(frames.keys()).filter((mac) => mac.endsWith(suffix));
+  return matches.length === 1 ? matches[0] : null;
+}
+
 export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: number }) | null {
-  const mac = resolveMqttHardwareMac(macRaw);
+  const mac = resolveKnownMqttHardwareMac(macRaw);
   if (!mac) return null;
   const rec = frames.get(mac);
   if (!rec) return null;
@@ -241,7 +254,7 @@ export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: num
 }
 
 export function publishLoginAck(macRaw: string, msgidRaw?: string): Promise<void> {
-  const mac = resolveMqttHardwareMac(macRaw);
+  const mac = resolveKnownMqttHardwareMac(macRaw);
   if (!mac) {
     return Promise.reject(new Error("invalid_device_id_for_login_ack"));
   }
@@ -265,7 +278,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       reject(new Error("MQTT not connected"));
       return;
     }
-    const mac = resolveMqttHardwareMac(macRaw);
+    const mac = resolveKnownMqttHardwareMac(macRaw);
     if (!mac) {
       reject(new Error("invalid_device_id_for_mqtt_play"));
       return;

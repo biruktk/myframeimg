@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
-import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, resolveKnownMqttHardwareMac } from "../services/frame_mqtt";
 import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode";
 /**
  * POST /api/photo/upload
@@ -16,8 +16,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   const router = express.Router();
   const base = publicBaseUrl.replace(/\/$/, "");
 
-  function localUploadFilePath(raw: string): string | null {
-    const trimmed = raw.trim();
+  function safeUploadBasename(raw: string): string | null {
+    const trimmed = String(raw || "").trim();
     if (!trimmed) return null;
     let name = trimmed;
     try {
@@ -29,15 +29,23 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     } catch {
       name = path.basename(trimmed);
     }
-    if (!name || name === "." || /^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(name)) return null;
+    name = path.basename(name).trim();
+    if (!name || name === "." || name === "..") return null;
+    if (/^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(name)) return null;
     if (!name.includes(".")) return null;
-    return path.join(uploadDir, name);
+    return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  }
+
+  function localUploadFilePath(raw: string): string | null {
+    const name = safeUploadBasename(raw);
+    return name ? path.join(uploadDir, name) : null;
   }
   const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
-      const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const name = `${Date.now()}_${safe || "upload.bin"}`;
+      const original = path.basename(String(file.originalname || "")).trim();
+      const safe = original.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const name = `${Date.now()}_${safe || "upload.bin"}`.trim();
       cb(null, name);
     },
   });
@@ -60,9 +68,15 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
 
-      const buf = fs.readFileSync(file.path);
+      const storedName = safeUploadBasename(file.filename || path.basename(file.path));
+      if (!storedName) {
+        res.status(400).json({ ok: false, error: "invalid_uploaded_filename" });
+        return;
+      }
+      const filePath = path.join(uploadDir, storedName);
+      const buf = fs.readFileSync(filePath);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
-      const basename = path.basename(file.path);
+      const basename = storedName;
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
       const looksLikeRaster =
@@ -73,7 +87,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         mqttBasename = basename;
       } else if (encodeMyfm && looksLikeRaster) {
         try {
-          mqttBasename = await writeMyfmSidecar(file.path);
+          mqttBasename = await writeMyfmSidecar(filePath);
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
@@ -97,7 +111,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         mqttBasename !== basename &&
         mqttBasename.toLowerCase().endsWith(".bin") &&
         path.extname(basename).toLowerCase() !== ".bin" &&
-        fs.existsSync(file.path)
+        fs.existsSync(filePath)
       ) {
         jpegBackupStoredPath = basename;
         try {
@@ -113,7 +127,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
 
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
-      const mqttMac = resolveMqttHardwareMac(deviceId);
+      const mqttMac = resolveKnownMqttHardwareMac(deviceId);
       if (mqttMac) {
         if (!isMqttConnected()) {
           deliveryMode = "mqtt_disconnected";
@@ -230,9 +244,15 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
 
-      const buf = fs.readFileSync(file.path);
+      const storedName = safeUploadBasename(file.filename || path.basename(file.path));
+      if (!storedName) {
+        res.status(400).json({ ok: false, error: "invalid_uploaded_filename" });
+        return;
+      }
+      const filePath = path.join(uploadDir, storedName);
+      const buf = fs.readFileSync(filePath);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
-      const basename = path.basename(file.path);
+      const basename = storedName;
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
       const looksLikeRaster =
@@ -243,7 +263,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         mqttBasename = basename;
       } else if (encodeMyfm && looksLikeRaster) {
         try {
-          mqttBasename = await writeMyfmSidecar(file.path);
+          mqttBasename = await writeMyfmSidecar(filePath);
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
@@ -267,7 +287,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         mqttBasename !== basename &&
         mqttBasename.toLowerCase().endsWith(".bin") &&
         path.extname(basename).toLowerCase() !== ".bin" &&
-        fs.existsSync(file.path)
+        fs.existsSync(filePath)
       ) {
         jpegBackupStoredPath = basename;
         try {
@@ -283,7 +303,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
 
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
-      const mqttMac = resolveMqttHardwareMac(deviceId);
+      const mqttMac = resolveKnownMqttHardwareMac(deviceId);
       if (mqttMac) {
         if (!isMqttConnected()) {
           deliveryMode = "mqtt_disconnected";

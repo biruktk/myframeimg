@@ -228,9 +228,11 @@ export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string>
   const stride = ch;
   const out = encodeMyfmFromRgb(new Uint8Array(data), stride, info.width, info.height);
 
-  const stem = path.parse(uploadedAbsPath).name;
-  const binPath = path.join(path.dirname(uploadedAbsPath), `${stem}.bin`);
+  const parsed = path.parse(uploadedAbsPath);
+  const binPath = parsed.ext.toLowerCase() === ".bin"
+    ? uploadedAbsPath
+    : path.join(parsed.dir, `${parsed.name}.bin`);
   await fs.writeFile(binPath, out);
 
-  return `${stem}.bin`;
+  return path.basename(binPath).trim();
 }

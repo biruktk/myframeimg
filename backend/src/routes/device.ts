@@ -6,6 +6,7 @@ import {
   isMqttConnected,
   publishLoginAck,
   publishPlayImage,
+  resolveKnownMqttHardwareMac,
   resolveMqttHardwareMac,
 } from "../services/frame_mqtt";
 
@@ -57,7 +58,7 @@ deviceRouter.get("/frames/:mac/status", (req, res) => {
   const data = db.read();
   const d = data.device;
   const mqttFrame = getFrame(req.params.mac);
-  const requestedMac = resolveMqttHardwareMac(req.params.mac);
+  const requestedMac = resolveKnownMqttHardwareMac(req.params.mac);
   const storedMac = resolveMqttHardwareMac(d.id);
   const mqttOnline = !!mqttFrame && mqttFrame.age < 120000;
   const storedOnline = !!requestedMac && requestedMac === storedMac && d.connected;
@@ -83,7 +84,7 @@ deviceRouter.get("/frames/:mac/status", (req, res) => {
 });
 
 deviceRouter.get("/frames/:mac/history", (req, res) => {
-  const requestedMac = resolveMqttHardwareMac(req.params.mac);
+  const requestedMac = resolveKnownMqttHardwareMac(req.params.mac);
   const base = mediaBaseUrl();
   const uploads = db
     .read()
@@ -156,7 +157,7 @@ deviceRouter.post("/device/send", async (req, res) => {
     res.status(400).json({ ok: false, error: "missing_photo_url" });
     return;
   }
-  if (!resolveMqttHardwareMac(deviceId)) {
+  if (!resolveKnownMqttHardwareMac(deviceId)) {
     res.status(400).json({ ok: false, error: "invalid_device_id_for_mqtt_play" });
     return;
   }
