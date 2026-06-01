@@ -7,7 +7,7 @@
  *   node scripts/cast-to-frame.cjs <IJ_… or MAC> [upload-basename-or-full-http(s)-url]
  *
  * Full-URL argument sets play host/port from that URL — use the host where /frame-media is served
- * (usually http(s)://VPS_IP:3001). A marketing-domain https URL without proxying /frame-media will fail on-device.
+ * (usually http://VPS_IP on port 80 via Nginx /frame-media/). Port 3001 is API-only.
  *
  * Omit the file to use newest image file in UPLOAD_DIR (default uploads/).
  */
@@ -38,12 +38,37 @@ function resolveMqttHardwareMac(raw) {
 }
 
 function mediaOrigin() {
-  const b = (
+  const raw = (
     process.env.PUBLIC_MEDIA_BASE_URL ||
     process.env.PUBLIC_BASE_URL ||
-    "http://127.0.0.1:3001"
-  ).replace(/\/$/, "");
-  return b;
+    "http://127.0.0.1"
+  ).trim();
+  const forced =
+    Number.parseInt(String(process.env.FRAME_MEDIA_PORT || "80").trim(), 10) || 80;
+  let u;
+  try {
+    u = new URL(raw);
+  } catch {
+    return raw.replace(/\/$/, "");
+  }
+  let port = u.port ? Number.parseInt(u.port, 10) : 0;
+  if (!port || port === 3001) port = forced;
+  if (port === 80 && u.protocol === "http:") return `http://${u.hostname}`;
+  if (port === 443 && u.protocol === "https:") return `https://${u.hostname}`;
+  return `${u.protocol}//${u.hostname}:${port}`;
+}
+
+function mediaPlayEndpoint() {
+  const base = mediaOrigin();
+  const u = new URL(`${base}/`);
+  const mqttOverride = Number.parseInt(String(process.env.FRAME_MQTT_PORT || "").trim(), 10);
+  const port =
+    Number.isFinite(mqttOverride) && mqttOverride > 0
+      ? mqttOverride
+      : u.port
+        ? Number.parseInt(u.port, 10)
+        : 80;
+  return { host: u.hostname, port: port || 80 };
 }
 
 /** XT 13.3E6: 4-byte BE WxH header + 960000B payload (4bpp packed halves). */
@@ -154,16 +179,7 @@ async function main() {
     }
   }
 
-  let fbHost = "";
-  let fbPort = 80;
-  try {
-    const o = new URL(origin + "/");
-    fbHost = o.hostname;
-    fbPort = o.port ? Number(o.port) : o.protocol === "https:" ? 443 : 80;
-  } catch {
-    /* noop */
-  }
-
+  const { host: fbHost, port: fbPort } = mediaPlayEndpoint();
   const payload = buildPlayPayload(mac, absoluteUrl, fbHost, fbPort);
   const topic = `/inkjoyap/${mac}`;
   const body = JSON.stringify(payload);

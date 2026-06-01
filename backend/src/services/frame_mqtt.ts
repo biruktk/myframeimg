@@ -6,6 +6,8 @@
 import crypto from "crypto";
 import mqtt from "mqtt";
 
+import { frameMediaPlayEndpoint } from "../config/frame_media";
+
 export type FrameRecord = {
   lastSeen: number;
   status: "online" | "offline";
@@ -50,18 +52,6 @@ function mqttDebugTx(topic: string, payloadJson: string) {
     topic,
     payloadJson.length > 1500 ? `${payloadJson.slice(0, 1500)}…` : payloadJson,
   );
-}
-
-function resolveFrameMediaEndpoint(): { host: string; port: number } {
-  const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
-  if (!mediaBaseRaw) {
-    throw new Error("PUBLIC_MEDIA_BASE_URL_required_for_mqtt_play");
-  }
-  const mediaUrl = new URL(mediaBaseRaw);
-  return {
-    host: mediaUrl.hostname,
-    port: Number.parseInt(mediaUrl.port, 10) || 80,
-  };
 }
 
 function resolveFrameMediaPath(imageUrl: string): string {
@@ -282,7 +272,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     }
     const msgid = Date.now().toString();
     try {
-      const { host, port } = resolveFrameMediaEndpoint();
+      const { host, port } = frameMediaPlayEndpoint();
       const imgurlForPlay = resolveFrameMediaPath(imageUrl);
       const payload = {
         action: "play",

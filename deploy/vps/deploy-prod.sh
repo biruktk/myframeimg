@@ -27,7 +27,7 @@ if ! pm2 describe myframe-api >/dev/null 2>&1; then
   echo "ERROR: PM2 app myframe-api is missing. Use initial server setup, not deploy-prod.sh."
   exit 1
 fi
-pm2 restart myframe-api
+pm2 restart myframe-api --update-env
 
 echo "[myframe] API deploy finished."
 echo "Kept ${BACKEND_DIR}/.env unchanged. VPS .env remains the source of truth."

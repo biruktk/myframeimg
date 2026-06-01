@@ -25,6 +25,11 @@ import {
   mobileGoogleAuthRouter,
 } from "./routes/mobile_google_auth";
 import { isGoogleOAuthRedirectConfigured } from "./services/google_oauth_mobile";
+import {
+  frameMediaPlayEndpoint,
+  normalizedFrameMediaBaseUrl,
+  warnIfMisconfiguredFrameMediaEnv,
+} from "./config/frame_media";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -58,8 +63,9 @@ const app = express();
 const port = Number(process.env.PORT || 3001);
 const uploadDir = path.resolve(packageRoot, process.env.UPLOAD_DIR || "uploads");
 const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
-/** MQTT `play` + `/frame-media/` links; use when `PUBLIC_BASE_URL` is the marketing site (Next) not Express. */
-const mediaPublicBaseUrl = envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL, publicBaseUrl);
+/** MQTT `play` + `/frame-media/` links — always port 80 on VPS (see `config/frame_media.ts`). */
+const mediaPublicBaseUrl =
+  normalizedFrameMediaBaseUrl(publicBaseUrl) || envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL, publicBaseUrl);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -199,15 +205,20 @@ app.listen(port, () => {
     `Mobile Google: GET /mobile/google-signin  GET /mobile/google-oauth-callback  POST /mobile/google-auth (oauth redirect: ${isGoogleOAuthRedirectConfigured()})`,
   );
   console.log(`Upload dir: ${uploadDir}`);
-  console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
-  if (mediaPublicBaseUrl !== publicBaseUrl) {
-    console.log(`PUBLIC_MEDIA_BASE_URL (frame fetch / MQTT): ${mediaPublicBaseUrl}`);
+  console.log(`PUBLIC_BASE_URL (API): ${publicBaseUrl}`);
+  console.log(`Frame media base (HTTP /frame-media): ${mediaPublicBaseUrl}`);
+  warnIfMisconfiguredFrameMediaEnv();
+  try {
+    const play = frameMediaPlayEndpoint();
+    console.log(`MQTT play target: ${play.host}:${play.port}  imgurl=/frame-media/<file>.bin`);
+  } catch (e) {
+    console.warn("[myframe] MQTT play endpoint:", e instanceof Error ? e.message : e);
   }
   try {
     const u = new URL(mediaPublicBaseUrl);
     if (u.protocol === "https:" && String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1") {
       console.warn(
-        "[myframe] MQTT play uses HTTPS in URLs — XT/ESP32 often needs plain HTTP (e.g. http://YOUR_VPS_IP:3001). Set PUBLIC_MEDIA_BASE_URL accordingly or FRAME_PLAY_ALLOW_HTTPS=1.",
+        "[myframe] Frame media URL is HTTPS — XT/ESP32 usually needs plain HTTP on port 80. Set PUBLIC_MEDIA_BASE_URL=http://YOUR_VPS_IP or FRAME_PLAY_ALLOW_HTTPS=1.",
       );
     }
   } catch {

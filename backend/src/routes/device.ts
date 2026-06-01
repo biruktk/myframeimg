@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../db/store";
+import { normalizedFrameMediaBaseUrl } from "../config/frame_media";
 import {
   getFrame,
   isMqttConnected,
@@ -17,7 +18,7 @@ function envBaseUrl(primary: string | undefined, fallback: string): string {
 function mediaBaseUrl(): string {
   const port = Number(process.env.PORT || 3001);
   const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
-  return envBaseUrl(process.env.PUBLIC_MEDIA_BASE_URL || publicBaseUrl, publicBaseUrl);
+  return normalizedFrameMediaBaseUrl(publicBaseUrl) || publicBaseUrl;
 }
 
 /** Matches `ra/api` device status shape used by the app. */
