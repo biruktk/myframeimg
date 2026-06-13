@@ -1,3 +1,114 @@
+/**
+ * Custom language dropdown for static marketing pages (home, checkout).
+ */
+(function (global) {
+  var FLAGS = { en: "🇺🇸", zh: "🇨🇳", es: "🇪🇸", fr: "🇫🇷", de: "🇩🇪", ja: "🇯🇵" };
+
+  function escLang(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function labelFor(lang) {
+    return lang.native_name || lang.name || lang.code;
+  }
+
+  function closeAll(except) {
+    document.querySelectorAll(".lang-switcher.open").forEach(function (node) {
+      if (node !== except) {
+        node.classList.remove("open");
+        var btn = node.querySelector(".lang-switcher-btn");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  function mountLanguageSwitcher(mount, languages, currentCode, onSelect) {
+    if (!mount || !languages.length) return false;
+    var current =
+      languages.find(function (l) {
+        return l.code === currentCode;
+      }) || languages[0];
+
+    mount.className = "lang-switcher";
+    mount.innerHTML =
+      '<button type="button" class="lang-switcher-btn" aria-haspopup="listbox" aria-expanded="false">' +
+      '<span class="lang-switcher-flag">' +
+      escLang(FLAGS[current.code] || "🌐") +
+      "</span>" +
+      '<span class="lang-switcher-label">' +
+      escLang(labelFor(current)) +
+      "</span>" +
+      '<i class="fas fa-chevron-down lang-switcher-chevron" aria-hidden="true"></i>' +
+      "</button>" +
+      '<div class="lang-switcher-panel" role="listbox" aria-label="Language">' +
+      languages
+        .map(function (lang) {
+          var selected = lang.code === current.code;
+          return (
+            '<button type="button" class="lang-switcher-option' +
+            (selected ? " is-selected" : "") +
+            '" role="option" data-code="' +
+            escLang(lang.code) +
+            '" aria-selected="' +
+            (selected ? "true" : "false") +
+            '">' +
+            '<span class="lang-switcher-option-flag">' +
+            escLang(FLAGS[lang.code] || "🌐") +
+            "</span>" +
+            '<span class="lang-switcher-option-text">' +
+            "<strong>" +
+            escLang(labelFor(lang)) +
+            "</strong>" +
+            (lang.name && lang.name !== labelFor(lang)
+              ? "<small>" + escLang(lang.name) + "</small>"
+              : "") +
+            "</span>" +
+            (selected ? '<i class="fas fa-check lang-switcher-check" aria-hidden="true"></i>' : "") +
+            "</button>"
+          );
+        })
+        .join("") +
+      "</div>";
+
+    var btn = mount.querySelector(".lang-switcher-btn");
+    var panel = mount.querySelector(".lang-switcher-panel");
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = mount.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) closeAll(mount);
+    });
+
+    panel.querySelectorAll(".lang-switcher-option").forEach(function (option) {
+      option.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var code = option.getAttribute("data-code");
+        mount.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+        if (code && code !== currentCode && typeof onSelect === "function") onSelect(code);
+      });
+    });
+    return true;
+  }
+
+  if (!global.__myframeLangSwitcherBound) {
+    global.__myframeLangSwitcherBound = true;
+    document.addEventListener("click", function () {
+      closeAll(null);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAll(null);
+    });
+  }
+
+  global.mountLanguageSwitcher = mountLanguageSwitcher;
+})(window);
+
 (async function () {
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   /** 502 payloads can be `{ ok: false }` JSON (truthy) — previously we cleared `.nav-links` with empty menus. */
@@ -23,6 +134,19 @@
         status +
         '). Keeping static homepage nav/footer markup. Tip: run the API from web/backend (`npm run dev`, default http://127.0.0.1:3001) or rely on Next’s bundled fallback if configured.'
     );
+    const pathLang = location.pathname.split('/').filter(Boolean)[0];
+    const saved = (() => { try { return localStorage.getItem('myframeLang'); } catch (_) { return null; } })();
+    const current = ['en', 'zh', 'es', 'fr', 'de', 'ja'].includes(pathLang) ? pathLang : (saved || 'en');
+    ['languageSelect', 'mobileLanguageSelect'].forEach((id) => {
+      const select = document.getElementById(id);
+      if (!select || select.__myframeLangBound) return;
+      select.value = current;
+      select.__myframeLangBound = true;
+      select.addEventListener('change', () => {
+        try { localStorage.setItem('myframeLang', select.value); } catch (_) {}
+        location.href = select.value === 'en' ? '/' : `/${select.value}`;
+      });
+    });
     return;
   }
 
@@ -162,13 +286,56 @@
   localStorage.setItem('myframeCurrency', currentCurrency);
   updateCartBadge();
 
+  function onLanguageChange(code) {
+    try { localStorage.setItem('myframeLang', code); } catch (_) {}
+    try { localStorage.setItem('myframeCurrency', currencyForLanguage(code)); } catch (_) {}
+    try {
+      document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (_) {}
+    location.href = code === 'en' ? '/' : `/${code}`;
+  }
+
+  function wireLanguageSelect(select, activeLanguages, lang, onSelect) {
+    if (!select) return;
+    if (activeLanguages.length) {
+      select.innerHTML = activeLanguages
+        .map((item) => `<option value="${esc(item.code)}" ${item.code === lang ? 'selected' : ''}>${esc(item.native_name || item.name || item.code)}</option>`)
+        .join('');
+    }
+    select.value = lang;
+    if (select.__myframeLangBound) return;
+    select.__myframeLangBound = true;
+    select.addEventListener('change', () => {
+      if (typeof onSelect === 'function') onSelect(select.value);
+    });
+  }
+
+  function mountLanguageControl(mount, select, activeLanguages, lang) {
+    const applySelect = () => wireLanguageSelect(select, activeLanguages, lang, onLanguageChange);
+    if (mount && window.mountLanguageSwitcher && mountLanguageSwitcher(mount, activeLanguages, lang, onLanguageChange)) {
+      return;
+    }
+    applySelect();
+    if (!mount || !window.mountLanguageSwitcher) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (mountLanguageSwitcher(mount, activeLanguages, lang, onLanguageChange) || tries >= 30) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+  }
+
   function renderNav(menus, activeLanguages, lang) {
     const nav = document.querySelector('.nav-links');
+    const mount = document.getElementById('languageSwitcher');
     const select = document.getElementById('languageSelect');
     const cta = document.querySelector('.nav-cta');
     const logo = document.querySelector('.nav-logo');
+    const APPLICATION_URLS = new Set(['download', 'download-app', 'page/download-app', '/page/download-app']);
+    const visibleMenus = menus.filter((item) => !APPLICATION_URLS.has(item.url) && !/application/i.test(item.label));
     if (nav) {
-      nav.innerHTML = menus.map((item) => {
+      nav.innerHTML = visibleMenus.map((item) => {
         const isCart = /cart/i.test(item.label) || /cart-checkout/.test(item.url);
         return `<a href="${esc(localizeMenuUrl(item.url, currentLang))}" target="${esc(item.target || '_self')}" class="${isCart ? 'nav-cart-link' : ''}">${esc(translateMenuLabel(item))}${isCart ? ' <span id="navCartBadge" class="cart-badge">0</span>' : ''}</a>`;
       }).join('');
@@ -181,17 +348,13 @@
       cta.innerHTML = `<i class="fas fa-gift"></i><span>${esc(giftLabel)}</span>`;
       cta.href = lang === 'en' ? `/cart-checkout.html?add=YX-133P` : `/${lang}/cart?add=YX-133P`;
     }
-    if (select) {
-      select.innerHTML = activeLanguages.map((item) => `<option value="${esc(item.code)}" ${item.code === lang ? 'selected' : ''}>${esc(item.native_name || item.name)}</option>`).join('');
-      select.addEventListener('change', () => {
-        try { localStorage.setItem('myframeLang', select.value); } catch (_) {}
-        try { localStorage.setItem('myframeCurrency', currencyForLanguage(select.value)); } catch (_) {}
-        try {
-          document.cookie = `myframe_lang=${select.value}; path=/; max-age=31536000; SameSite=Lax`;
-        } catch (_) {}
-        location.href = select.value === 'en' ? '/' : `/${select.value}`;
-      });
-    }
+    mountLanguageControl(mount, select, activeLanguages, lang);
+    mountLanguageControl(
+      document.getElementById('mobileLanguageSwitcher'),
+      document.getElementById('mobileLanguageSelect'),
+      activeLanguages,
+      lang,
+    );
     updateCartBadge();
   }
 

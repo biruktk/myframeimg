@@ -4,263 +4,302 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex,nofollow">
-    <title>Cart & Checkout</title>
+    <title>MyFrame — Checkout</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            color-scheme: light;
-            --primary: #dc2626;
-            --primary-dark: #b91c1c;
-            --primary-soft: #fef2f2;
-            --ink: #151515;
-            --ink-soft: #5f5a56;
-            --text: #151515;
-            --muted: #5f5a56;
-            --border: rgba(28, 24, 20, 0.08);
-            --border-strong: rgba(28, 24, 20, 0.12);
-            --max-width: 1720px;
-        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
-            background: #ffffff;
-            color: var(--ink);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F7 100%);
+            color: #1D1D1F;
+            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
         .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            height: 104px;
-            background: rgba(255, 255, 255, 0.8);
-            border-bottom: 1px solid rgba(28, 24, 20, 0.06);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-        .nav-shell {
-            width: min(var(--max-width), calc(100% - 40px));
-            margin: 0 auto;
-            height: 100%;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            height: 56px; background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid rgba(0,0,0,0.08);
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
-            gap: 18px;
+            gap: 12px;
+            padding: 0 24px;
+            overflow: visible;
         }
         .nav-logo {
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            min-width: 0;
-            overflow: hidden;
+            font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: #1D1D1F;
+            text-decoration: none; display: inline-flex; align-items: center;
+            justify-self: start; min-width: 0;
         }
-        .brand-logo { height: auto; max-height: 58px; width: auto; max-width: 220px; object-fit: contain; }
-        .nav-links {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 28px;
+        .brand-logo { height: 28px; width: auto; max-width: 160px; object-fit: contain; }
+        .nav-steps {
+            display: flex; gap: 8px; align-items: center; font-size: 13px;
+            color: rgba(0,0,0,0.4); justify-self: center; white-space: nowrap;
         }
-        .nav-links a {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            min-height: 44px;
-            color: var(--ink-soft);
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0;
-            transition: color 0.2s ease;
+        .nav-step { display: flex; align-items: center; gap: 6px; }
+        .nav-step.active { color: #1D1D1F; font-weight: 600; }
+        .nav-step-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,0.15); }
+        .nav-step.active .nav-step-dot { background: #1D1D1F; }
+        .nav-step-sep { width: 16px; height: 1px; background: rgba(0,0,0,0.1); }
+        .nav-right {
+            display: flex; align-items: center; gap: 12px;
+            justify-self: end; flex-shrink: 0; min-width: 0;
         }
-        .nav-links a:hover,
-        .nav-links a:focus-visible { color: var(--ink); }
-        .nav-links a.nav-cart-link {
-            gap: 6px;
-            color: var(--ink-soft);
-            padding-right: 0;
+
+        .lang-switcher { position: relative; z-index: 1100; }
+        .lang-switcher-btn {
+            display: inline-flex; align-items: center; gap: 8px; min-width: 128px; height: 36px;
+            padding: 0 12px; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 10px;
+            background: #fff; color: #1D1D1F; font-size: 13px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .nav-links a.nav-cart-link .cart-badge {
-            position: static;
-            margin-left: 2px;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 6px;
-            border-radius: 999px;
-            background: var(--primary-soft);
-            color: var(--primary-dark);
-            border: 1px solid rgba(220, 38, 38, 0.22);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1;
+        .lang-switcher.open .lang-switcher-btn, .lang-switcher-btn:hover { border-color: rgba(220,38,38,0.25); }
+        .lang-switcher-chevron { font-size: 10px; color: #6E6E73; transition: transform 0.2s ease; }
+        .lang-switcher.open .lang-switcher-chevron { transform: rotate(180deg); }
+        .lang-switcher-panel {
+            position: absolute; top: calc(100% + 6px); right: 0; min-width: 196px; padding: 6px;
+            border: 0.5px solid rgba(0,0,0,0.08); border-radius: 14px; background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px); box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            opacity: 0; visibility: hidden; transform: translateY(-6px); transition: all 0.2s ease; pointer-events: none;
         }
-        .nav-links a.nav-cart-link:hover .cart-badge,
-        .nav-links a.nav-cart-link:focus-visible .cart-badge {
-            background: var(--primary);
-            color: #fff;
-            border-color: transparent;
+        .lang-switcher.open .lang-switcher-panel { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .lang-switcher-option {
+            display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px;
+            border: none; border-radius: 10px; background: transparent; text-align: left; cursor: pointer;
         }
-        .nav-right { display: flex; justify-content: flex-end; align-items: center; gap: 12px; min-width: 0; }
-        .nav-lang {
-            min-width: 102px;
-            max-width: 130px;
-            border: 1px solid var(--border-strong);
-            border-radius: 999px;
-            padding: 0 38px 0 18px;
-            height: 54px;
-            background-color: rgba(255, 255, 255, 0.96);
-            font-weight: 800;
-            color: var(--ink);
-            font-size: 15px;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image:
-                linear-gradient(45deg, transparent 50%, currentColor 50%),
-                linear-gradient(135deg, currentColor 50%, transparent 50%);
-            background-position:
-                calc(100% - 21px) 23px,
-                calc(100% - 15px) 23px;
-            background-size: 6px 6px, 6px 6px;
-            background-repeat: no-repeat;
-            box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06);
-        }
-        .nav-cta {
-            background: var(--primary);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            white-space: nowrap;
-            box-shadow: 0 6px 18px rgba(220, 38, 38, 0.22);
-            transition: background 0.2s ease, box-shadow 0.2s ease;
-        }
-        .nav-cta:hover { background: var(--primary-dark); }
-        .page {
-            width: min(1120px, calc(100% - 40px));
-            margin: 0 auto;
-            padding: 124px 0 72px;
-        }
-        .top { margin-bottom: 20px; }
-        .layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+        .lang-switcher-option:hover { background: #F5F5F7; }
+        .lang-switcher-option.is-selected { background: #FFF2F0; }
+        .lang-switcher-option-text { display: flex; flex-direction: column; flex: 1; }
+        .lang-switcher-option-text strong { font-size: 13px; font-weight: 600; }
+        .lang-switcher-option-text small { font-size: 11px; color: #6E6E73; }
+        .lang-switcher-check { font-size: 11px; color: #DC2626; }
+
+        .page { max-width: 860px; margin: 0 auto; padding: 80px 20px 40px; }
+        .layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+
         .card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 20px;
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            background: #fff; border: 0.5px solid rgba(0,0,0,0.08);
+            border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         }
-        .title { font-size: 24px; line-height:1.15; font-weight: 700; margin-bottom: 14px; overflow-wrap:anywhere; hyphens:auto; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        .qty { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; margin-top: 8px; }
-        .qty button { border: none; background: transparent; cursor: pointer; width: 22px; height: 22px; font-size: 16px; }
-        .field { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        .btn { width: 100%; border: none; border-radius: 12px; padding: 13px; font-weight: 700; cursor: pointer; }
-        .btn i { margin-right: 8px; }
-        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(220,38,38,0.24); }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary { background: #fff; border: 1px solid var(--border); margin-top: 10px; }
-        .payment-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
-        .payment-actions .btn { margin-top: 0; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; }
-        .gift-help { margin: -2px 0 12px 28px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-        .delivery-note { margin: -4px 0 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+        .card + .card { margin-top: 16px; }
+        .card-title {
+            font-size: 15px; font-weight: 600; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-title i { color: #6E6E73; font-size: 14px; }
+        .card-title .badge {
+            font-size: 11px; font-weight: 500; background: #F5F5F7; color: #6E6E73;
+            padding: 2px 8px; border-radius: 10px; margin-left: auto;
+        }
+        .card-title .badge.gift { background: #FFF2F0; color: #DC2626; }
+        .card-title .badge.done { background: #E8F5E9; color: #2E7D32; }
+        .card.gift-active { border-color: rgba(220,38,38,0.2); box-shadow: 0 4px 20px rgba(220,38,38,0.08); }
+
+        .field-group { margin-bottom: 14px; }
+        .field-label { font-size: 13px; font-weight: 500; color: #6E6E73; margin-bottom: 4px; }
+        .field {
+            width: 100%; border: 0.5px solid rgba(0,0,0,0.1);
+            border-radius: 10px; padding: 10px 12px; font-size: 15px;
+            background: #fff; color: #1D1D1F;
+        }
+        .field:focus { outline: none; border-color: rgba(220,38,38,0.4); box-shadow: 0 0 0 3px rgba(220,38,38,0.08); }
+        textarea.field { resize: vertical; min-height: 80px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .gift-toggle {
+            display: flex; align-items: flex-start; gap: 12px; padding: 14px;
+            border: 0.5px solid rgba(0,0,0,0.08); border-radius: 12px;
+            background: #FAFAFA; cursor: pointer; transition: all 0.2s ease;
+        }
+        .gift-toggle:hover { background: #F5F5F7; }
+        .gift-toggle.is-on { background: #FFF2F0; border-color: rgba(220,38,38,0.25); }
+        .gift-toggle input { margin-top: 3px; accent-color: #DC2626; width: 16px; height: 16px; cursor: pointer; }
+        .gift-toggle-text strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .gift-toggle-text span { font-size: 13px; color: #6E6E73; line-height: 1.45; }
+        .gift-help { margin-top: 10px; font-size: 13px; color: #6E6E73; line-height: 1.5; }
+
+        .cart-item {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.06);
+        }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .cart-item p { font-size: 12px; color: #6E6E73; }
+        .qty {
+            display: inline-flex; align-items: center; gap: 8px;
+            border: 0.5px solid rgba(0,0,0,0.1); border-radius: 999px;
+            padding: 2px 8px; margin-top: 8px;
+        }
+        .qty button { border: none; background: transparent; cursor: pointer; width: 22px; height: 22px; font-size: 16px; color: #1D1D1F; }
+        .cart-item-price { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+        .summary-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; font-size: 14px; color: #6E6E73;
+        }
+        .summary-row.total { padding-top: 14px; margin-top: 4px; border-top: 0.5px solid rgba(0,0,0,0.08); color: #1D1D1F; font-weight: 700; font-size: 16px; }
+        .summary-row strong { color: #1D1D1F; font-weight: 600; }
+        .delivery-note { font-size: 12px; color: #6E6E73; line-height: 1.45; margin: -4px 0 8px; }
+
+        .btn {
+            width: 100%; border: none; border-radius: 12px; padding: 13px;
+            font-weight: 600; font-size: 15px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: #DC2626; color: #fff; box-shadow: 0 4px 14px rgba(220,38,38,0.3); }
+        .btn-primary:hover { background: #B91C1C; }
+        .btn-secondary { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); color: #1D1D1F; margin-top: 10px; }
+        .payment-actions { display: grid; gap: 10px; margin-top: 16px; }
+        #paypal-button-container { margin-top: 12px; }
+
         .status { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
         .ok { background: #DCFCE7; color: #166534; }
         .bad { background: #FEE2E2; color: #991B1B; }
-        #paypal-button-container { margin-top: 12px; }
-        @media (max-width: 1024px) { .nav-links { display: none; } .nav-shell { grid-template-columns:1fr auto; gap:14px; } }
-        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
-        @media (max-width: 560px) {
-            .nav-shell { width: calc(100% - 32px); }
-            .brand-logo { max-height: 44px; max-width: 180px; }
-            .nav-right { gap: 8px; }
-            .nav-lang { min-width: 84px; max-width: 98px; padding: 8px 10px; font-size: 13px; }
-            .nav-cta { display: none; }
-            .page { padding: 112px 0 48px; width: calc(100% - 24px); }
-            .card { padding: 18px; border-radius: 16px; }
-            .grid-2 { grid-template-columns: 1fr; gap: 0; }
-            .cart-item { gap: 12px; align-items: flex-start; }
-            .cart-item > strong { flex: 0 0 auto; text-align: right; }
+
+        .empty-cart { text-align: center; padding: 24px 0; }
+        .empty-cart h4 { font-size: 15px; margin-bottom: 6px; }
+        .empty-cart p { font-size: 13px; color: #6E6E73; }
+        .empty-cart a { color: #DC2626; font-weight: 600; text-decoration: none; }
+
+        @media (max-width: 780px) {
+            .layout { grid-template-columns: 1fr; }
+            .nav { padding: 0 16px; grid-template-columns: 1fr auto; }
+            .nav-steps { display: none; }
+            .nav-right { grid-column: 2; }
+            .grid-2 { grid-template-columns: 1fr; }
         }
-        @media (max-width: 380px) {
-            .nav-shell { width: calc(100% - 20px); gap: 8px; }
-            .brand-logo { max-width: 136px; }
-            .nav-lang { min-width: 74px; max-width: 84px; padding-inline: 8px; font-size: 12px; }
-            .title { font-size: 22px; }
+        @media (max-width: 520px) {
+            .lang-switcher-btn { min-width: 108px; padding: 0 10px; }
+            .lang-switcher-label { font-size: 12px; }
         }
     </style>
 </head>
 <body>
     <nav class="nav">
-        <div class="nav-shell">
-            <a class="nav-logo" href="/en"><img class="brand-logo" src="/assets/myframe-logo-final.svg" alt="MyFrame"></a>
-            <div class="nav-links" id="cartNavLinks"></div>
-            <div class="nav-right">
-                <select id="languageSelect" class="nav-lang"></select>
-                <a class="nav-cta" href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
-            </div>
+        <a class="nav-logo" href="/en"><img class="brand-logo" src="/assets/myframe-logo-final.svg" alt="MyFrame"></a>
+        <div class="nav-steps" id="checkoutSteps">
+            <div class="nav-step active"><span class="nav-step-dot"></span><span id="stepCartLabel">Cart</span></div>
+            <div class="nav-step-sep"></div>
+            <div class="nav-step active"><span class="nav-step-dot"></span><span id="stepDetailsLabel">Details</span></div>
+            <div class="nav-step-sep"></div>
+            <div class="nav-step"><span class="nav-step-dot"></span><span id="stepPaymentLabel">Payment</span></div>
+        </div>
+        <div class="nav-right">
+            <div id="languageSwitcher"></div>
         </div>
     </nav>
+
     <div class="page">
-        <div class="top">
-            <h1 class="title">Cart & Checkout</h1>
-        </div>
         <div class="layout">
-            <div class="card">
-                <h2 style="margin-bottom: 10px;">Items in Cart</h2>
-                <div id="cartItems"></div>
-                <div class="row" style="border-bottom: none;">
-                    <strong>Subtotal</strong>
-                    <strong id="subtotal">$0</strong>
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-truck"></i>
+                        <span id="shippingCardTitle">Shipping Details</span>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <div class="field-label" id="firstNameLabel">First Name</div>
+                            <input id="firstName" class="field" autocomplete="given-name">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label" id="lastNameLabel">Last Name</div>
+                            <input id="lastName" class="field" autocomplete="family-name">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <div class="field-label" id="emailLabel">Email</div>
+                            <input id="emailAddress" class="field" type="email" autocomplete="email">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label" id="phoneLabel">Phone</div>
+                            <input id="phoneNumber" class="field" type="tel" autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label" id="addressLabel">Street Address</div>
+                        <input id="addressLine" class="field" autocomplete="address-line1">
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label" id="addressLine2Label">Apartment, suite, unit (optional)</div>
+                        <input id="addressLine2" class="field" autocomplete="address-line2">
+                    </div>
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <div class="field-label" id="cityLabel">City</div>
+                            <input id="city" class="field" autocomplete="address-level2">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label" id="stateLabel">State / Region</div>
+                            <input id="stateRegion" class="field" autocomplete="address-level1">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <div class="field-label" id="postalCodeLabel">Postal Code</div>
+                            <input id="postalCode" class="field" autocomplete="postal-code">
+                        </div>
+                        <div class="field-group">
+                            <div class="field-label" id="countryLabel">Country</div>
+                            <input id="country" class="field" autocomplete="country-name">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label" id="companyLabel">Company (optional)</div>
+                        <input id="companyName" class="field" autocomplete="organization">
+                    </div>
+                </div>
+
+                <div class="card" id="giftCard">
+                    <div class="card-title">
+                        <i class="fas fa-gift"></i>
+                        <span id="giftCardTitle">Gift Order</span>
+                        <span class="badge gift" id="giftBadge" style="display:none;">Gift</span>
+                    </div>
+                    <label class="gift-toggle" id="giftToggle" for="isGift">
+                        <input id="isGift" type="checkbox">
+                        <div class="gift-toggle-text">
+                            <strong id="giftCheckboxLabel">This order is a gift</strong>
+                            <span id="giftCheckboxHint">We'll prepare the frame for the recipient — Wi-Fi setup and photo preload available.</span>
+                        </div>
+                    </label>
+                    <p id="giftHelp" class="gift-help"></p>
+                    <div class="field-group" style="margin-top:14px;margin-bottom:0;">
+                        <div class="field-label" id="orderNoteLabel">Order note or gift message</div>
+                        <textarea id="frameMessage" class="field" rows="3" placeholder=""></textarea>
+                    </div>
                 </div>
             </div>
-            <div class="card">
-                <h2 style="margin-bottom: 10px;">Address & Checkout</h2>
-                <div class="grid-2">
-                    <input id="firstName" class="field" placeholder="First Name">
-                    <input id="lastName" class="field" placeholder="Last Name">
+
+            <div class="sidebar-col">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span id="orderSummaryTitle">Order Summary</span>
+                        <span class="badge" id="itemCountBadge">0 items</span>
+                    </div>
+                    <div id="cartItems"></div>
+                    <div class="summary-row"><span id="subtotalLabel">Subtotal</span><strong id="subtotal">$0</strong></div>
+                    <div class="summary-row"><span id="deliveryLabel">Delivery</span><span id="deliveryEta">Calculating...</span></div>
+                    <p id="deliveryNote" class="delivery-note"></p>
+                    <div class="summary-row"><span id="shippingLabel">Shipping</span><strong id="shippingTotal">$0</strong></div>
+                    <div class="summary-row total"><span id="totalLabel">Total</span><strong id="total">$0</strong></div>
+                    <div id="paypal-button-container"></div>
+                    <div class="payment-actions">
+                        <button class="btn btn-primary" id="paypalFallbackButton" type="button" style="display:none;" onclick="showPayPalMissing()"><i class="fab fa-paypal"></i> <span>Pay with PayPal</span></button>
+                        <button class="btn btn-secondary" id="stripeButton" onclick="payStripe()"><i class="fas fa-credit-card"></i> <span>Pay with Stripe</span></button>
+                    </div>
+                    <div id="ok" class="status ok"><i class="fas fa-check-circle"></i> Payment successful</div>
+                    <div id="bad" class="status bad"><i class="fas fa-times-circle"></i> Payment failed</div>
                 </div>
-                <div class="grid-2">
-                    <input id="emailAddress" class="field" placeholder="Email Address">
-                    <input id="phoneNumber" class="field" placeholder="Phone Number">
-                </div>
-                <div class="grid-2">
-                    <input id="country" class="field" placeholder="Country">
-                    <input id="stateRegion" class="field" placeholder="State / Region">
-                </div>
-                <div class="grid-2">
-                    <input id="city" class="field" placeholder="City">
-                    <input id="postalCode" class="field" placeholder="Postal Code">
-                </div>
-                <input id="companyName" class="field" placeholder="Company (Optional)">
-                <input id="addressLine" class="field" placeholder="Street Address">
-                <input id="addressLine2" class="field" placeholder="Apartment, suite, unit, building (Optional)">
-                <textarea id="frameMessage" class="field" rows="3" placeholder="Order note, delivery note, or gift message"></textarea>
-                <label style="display:flex;align-items:center;gap:10px;margin:4px 0 10px;font-size:14px;color:var(--muted);">
-                    <input id="isGift" type="checkbox"> This order is a gift
-                </label>
-                <p id="giftHelp" class="gift-help"></p>
-                <div class="row"><span id="deliveryLabel">Delivery</span><span id="deliveryEta">Calculating...</span></div>
-                <p id="deliveryNote" class="delivery-note"></p>
-                <div class="row"><span id="shippingLabel">Shipping</span><strong id="shippingTotal">$0</strong></div>
-                <div class="row"><strong>Total</strong><strong id="total">$0</strong></div>
-                <div id="paypal-button-container"></div>
-                <div class="payment-actions">
-                    <button class="btn btn-primary" id="paypalFallbackButton" type="button" style="display:none;" onclick="showPayPalMissing()"><i class="fab fa-paypal"></i> Pay with PayPal</button>
-                    <button class="btn btn-secondary" id="stripeButton" onclick="payStripe()"><i class="fas fa-credit-card"></i> Pay with Stripe</button>
-                </div>
-                <div id="ok" class="status ok"><i class="fas fa-check-circle"></i> Payment successful (mock)</div>
-                <div id="bad" class="status bad"><i class="fas fa-times-circle"></i> Payment failed (mock)</div>
             </div>
         </div>
     </div>
+
+    <script src="/language-switcher.js"></script>
     <script>
         let productCatalog = { 'YX-133P': { price: 360, desc: 'Large format display', name: 'YX-133P', currency: 'USD' }, 'YX-6P': { price: 160, desc: 'Compact elegance', name: 'YX-6P', currency: 'USD' } };
         let siteData = null;
@@ -272,6 +311,11 @@
         const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         const cart = JSON.parse(localStorage.getItem('frampCart') || '{}');
         const profileFields = ['firstName','lastName','emailAddress','phoneNumber','country','stateRegion','city','postalCode','companyName','addressLine','addressLine2','frameMessage'];
+        const APPLICATION_URLS = new Set(['download', 'download-app', 'page/download-app', '/page/download-app']);
+
+        function isApplicationMenuItem(item) {
+            return APPLICATION_URLS.has(item.url) || /application/i.test(item.label);
+        }
 
         function saveCart() { localStorage.setItem('frampCart', JSON.stringify(cart)); }
         function formatMoney(amount) {
@@ -287,6 +331,16 @@
             profileFields.forEach(id => draft[id] = document.getElementById(id).value);
             draft.isGift = document.getElementById('isGift').checked;
             localStorage.setItem('myframeCheckoutProfile', JSON.stringify(draft));
+            updateGiftUI();
+        }
+        function updateGiftUI() {
+            const isGift = document.getElementById('isGift').checked;
+            const toggle = document.getElementById('giftToggle');
+            const card = document.getElementById('giftCard');
+            const badge = document.getElementById('giftBadge');
+            toggle.classList.toggle('is-on', isGift);
+            card.classList.toggle('gift-active', isGift);
+            badge.style.display = isGift ? 'inline' : 'none';
         }
         function applyProfile(data) {
             if (!data) return;
@@ -309,6 +363,7 @@
                 if (field && value && !field.value.trim()) field.value = value;
             });
             if (typeof data.isGift === 'boolean') document.getElementById('isGift').checked = data.isGift;
+            updateGiftUI();
         }
         function currentCartPath(lang = currentLang) { return lang === 'en' ? '/cart-checkout.html' : `/${lang}/cart`; }
         function currentHomePath(lang = currentLang) { return lang === 'en' ? '/en' : `/${lang}`; }
@@ -368,60 +423,50 @@
         }
 
         function renderNav(data) {
-            const navLinks = document.getElementById('cartNavLinks');
-            const select = document.getElementById('languageSelect');
-            const languages = data.languages || [];
-            select.innerHTML = languages.map(l => `<option value="${escHtml(l.code)}" ${l.code===currentLang?'selected':''}>${escHtml(l.native_name || l.name)}</option>`).join('');
-            select.addEventListener('change', () => {
-                setPersistentLanguage(select.value);
-                localStorage.setItem('myframeCurrency', currencyForLanguage(select.value));
-                location.href = currentCartPath(select.value) + location.search;
-            });
             const logo = document.querySelector('.nav-logo');
-            const rightButton = document.querySelector('.nav-cta');
             if (logo) logo.href = currentHomePath();
-            if (rightButton) {
-                rightButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backHomeLabel','Back to Home')}`;
-                rightButton.href = currentHomePath();
+            const languages = data.languages || [];
+            const mount = document.getElementById('languageSwitcher');
+            if (mount && window.mountLanguageSwitcher) {
+                mountLanguageSwitcher(mount, languages, currentLang, (code) => {
+                    setPersistentLanguage(code);
+                    localStorage.setItem('myframeCurrency', currencyForLanguage(code));
+                    location.href = currentCartPath(code) + location.search;
+                });
             }
-            navLinks.innerHTML = (data.menus || []).map(item => {
-                const label = /cart/i.test(item.label) ? t('menuCart','Cart') :
-                    item.url === '#features' ? t('menuFeatures','Features') :
-                    item.url === '#product' ? t('menuProduct','Product') :
-                    item.url === '#pricing' ? t('menuPricing','Pricing') :
-                    item.url === '#family' ? t('menuFamilies','For Families') :
-                    ['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url) ? t('menuApplication','Application') : item.label;
-                const isDownload = ['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url);
-                const href = /cart-checkout\.html/.test(item.url) ? currentCartPath() : (isDownload ? (currentLang === 'en' ? '/download' : `/${currentLang}/download`) : (item.url.startsWith('#') ? currentHomePath() + item.url : item.url));
-                return `<a class="${/cart/i.test(item.label) ? 'nav-cart-link' : ''}" href="${escHtml(href)}">${escHtml(label)}${/cart/i.test(item.label) ? ' <span id="cartNavBadge" class="cart-badge">0</span>' : ''}</a>`;
-            }).join('');
         }
 
         function applyTranslations() {
             document.documentElement.lang = currentLang;
-            document.title = t('cartPageTitle', 'Cart & Checkout');
-            document.querySelector('.title').textContent = t('cartPageTitle', 'Cart & Checkout');
-            document.querySelectorAll('.card h2')[0].textContent = t('itemsInCartTitle', 'Items in Cart');
-            document.querySelectorAll('.card h2')[1].textContent = t('addressCheckoutTitle', 'Address & Checkout');
-            document.querySelector('#subtotal').closest('.row').children[0].textContent = t('subtotalLabel', 'Subtotal');
-            document.querySelector('#total').closest('.row').children[0].textContent = t('totalLabel', 'Total');
+            document.title = t('cartPageTitle', 'MyFrame — Checkout');
+            document.getElementById('stepCartLabel').textContent = t('menuCart', 'Cart');
+            document.getElementById('stepDetailsLabel').textContent = t('addressCheckoutTitle', 'Details');
+            document.getElementById('stepPaymentLabel').textContent = t('paymentStepLabel', 'Payment');
+            document.getElementById('shippingCardTitle').textContent = t('shippingDetailsTitle', 'Shipping Details');
+            document.getElementById('giftCardTitle').textContent = t('giftOrderTitle', 'Gift Order');
+            document.getElementById('orderSummaryTitle').textContent = t('orderSummaryTitle', 'Order Summary');
+            document.getElementById('giftBadge').textContent = t('giftBadgeLabel', 'Gift');
+            document.getElementById('subtotalLabel').textContent = t('subtotalLabel', 'Subtotal');
+            document.getElementById('totalLabel').textContent = t('totalLabel', 'Total');
             document.getElementById('deliveryLabel').textContent = t('deliveryLabel', 'Delivery');
             document.getElementById('shippingLabel').textContent = t('shippingLabel', 'Shipping');
-            document.getElementById('paypalFallbackButton').innerHTML = `<i class="fab fa-paypal"></i> ${escHtml(t('paypalButton', 'Pay with PayPal'))}`;
-            document.getElementById('stripeButton').innerHTML = `<i class="fas fa-credit-card"></i> ${escHtml(t('stripeButton', 'Pay with Stripe'))}`;
-            document.getElementById('firstName').placeholder = t('firstNameLabel', 'First Name');
-            document.getElementById('lastName').placeholder = t('lastNameLabel', 'Last Name');
-            document.getElementById('emailAddress').placeholder = t('emailLabel', 'Email Address');
-            document.getElementById('phoneNumber').placeholder = t('phoneLabel', 'Phone Number');
-            document.getElementById('country').placeholder = t('countryLabel', 'Country');
-            document.getElementById('stateRegion').placeholder = t('stateLabel', 'State / Region');
-            document.getElementById('city').placeholder = t('cityLabel', 'City');
-            document.getElementById('postalCode').placeholder = t('postalCodeLabel', 'Postal Code');
-            document.getElementById('companyName').placeholder = t('companyLabel', 'Company (Optional)');
-            document.getElementById('addressLine').placeholder = t('addressLabel', 'Street Address');
-            document.getElementById('addressLine2').placeholder = t('addressLine2Label', 'Apartment, suite, unit, building (Optional)');
+            document.getElementById('paypalFallbackButton').querySelector('span').textContent = t('paypalButton', 'Pay with PayPal');
+            document.getElementById('stripeButton').querySelector('span').textContent = t('stripeButton', 'Pay with Stripe');
+            document.getElementById('firstNameLabel').textContent = t('firstNameLabel', 'First Name');
+            document.getElementById('lastNameLabel').textContent = t('lastNameLabel', 'Last Name');
+            document.getElementById('emailLabel').textContent = t('emailLabel', 'Email');
+            document.getElementById('phoneLabel').textContent = t('phoneLabel', 'Phone');
+            document.getElementById('countryLabel').textContent = t('countryLabel', 'Country');
+            document.getElementById('stateLabel').textContent = t('stateLabel', 'State / Region');
+            document.getElementById('cityLabel').textContent = t('cityLabel', 'City');
+            document.getElementById('postalCodeLabel').textContent = t('postalCodeLabel', 'Postal Code');
+            document.getElementById('companyLabel').textContent = t('companyLabel', 'Company (optional)');
+            document.getElementById('addressLabel').textContent = t('addressLabel', 'Street Address');
+            document.getElementById('addressLine2Label').textContent = t('addressLine2Label', 'Apartment, suite, unit (optional)');
+            document.getElementById('orderNoteLabel').textContent = t('orderNoteLabel', 'Order note or gift message');
             document.getElementById('frameMessage').placeholder = t('orderNoteLabel', 'Order note, delivery note, gift message, Wi-Fi name/password, or photos to preload');
-            document.querySelector('label').lastChild.textContent = ' ' + t('giftCheckbox', 'This order is a gift');
+            document.getElementById('giftCheckboxLabel').textContent = t('giftCheckbox', 'This order is a gift');
+            document.getElementById('giftCheckboxHint').textContent = t('giftCheckboxHint', "We'll prepare the frame for the recipient — Wi-Fi setup and photo preload available.");
             document.getElementById('giftHelp').textContent = t('giftHelpText', 'For gifts, you can provide the recipient Wi-Fi name and password in the order note. If you want photos preloaded before shipping, share them with us or email gift@myframe.ink. We can pair and prepare the frame so elders see photos immediately when they receive it.');
         }
 
@@ -489,32 +534,29 @@
             const root = document.getElementById('cartItems');
             root.innerHTML = '';
             let total = 0;
+            let itemCount = 0;
             const items = Object.entries(cart);
             if (!items.length) {
-                root.innerHTML = `<div class="cart-item"><div><h4>${t('cartEmptyTitle','Cart is empty')}</h4><p style="color:var(--muted);font-size:13px;">${t('cartEmptyDescription','Add products from store.')}</p></div></div>`;
+                root.innerHTML = `<div class="empty-cart"><h4>${t('cartEmptyTitle','Your cart is empty')}</h4><p>${t('cartEmptyDescription','Add a frame from our store.')}</p><p style="margin-top:12px;"><a href="${escHtml(currentHomePath())}#pricing">${t('shopNowLabel','Shop now')}</a></p></div>`;
             } else {
                 items.forEach(([name, qty]) => {
-                    const info = productCatalog[name];
+                    const info = productCatalog[name] || { price: 0, desc: '', name };
                     const line = info.price * qty;
                     total += line;
+                    itemCount += qty;
                     const row = document.createElement('div');
                     row.className = 'cart-item';
-                    row.innerHTML = `<div><h4>${escHtml(name)}</h4><p style="color:var(--muted);font-size:13px;">${escHtml(info.desc || '')}</p><div class="qty"><button type="button" onclick="updateQty(${JSON.stringify(name)},-1)">-</button><span>${qty}</span><button type="button" onclick="updateQty(${JSON.stringify(name)},1)">+</button></div></div><strong>${formatMoney(line)}</strong>`;
+                    row.innerHTML = `<div><h4>${escHtml(info.name || name)}</h4><p>${escHtml(info.desc || '')}</p><div class="qty"><button type="button" onclick="updateQty(${JSON.stringify(name)},-1)">−</button><span>${qty}</span><button type="button" onclick="updateQty(${JSON.stringify(name)},1)">+</button></div></div><div class="cart-item-price">${formatMoney(line)}</div>`;
                     root.appendChild(row);
                 });
             }
             cartSubtotal = total;
             document.getElementById('subtotal').textContent = formatMoney(total);
+            const badge = document.getElementById('itemCountBadge');
+            badge.textContent = itemCount === 1 ? `1 ${t('itemSingular','item')}` : `${itemCount} ${t('itemsPlural','items')}`;
             applyShippingEstimate(shippingEstimate);
-            const navBadge = document.getElementById('cartNavBadge');
-            const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-            if (navBadge) {
-                navBadge.textContent = count;
-                navBadge.style.display = count > 0 ? 'inline-flex' : 'none';
-            }
         }
 
-        /** Minimal body for POST /api/public/orders (cash checkout). */
         function buildPublicOrderBody() {
             return {
                 customer_name: `${document.getElementById('firstName').value.trim()} ${document.getElementById('lastName').value.trim()}`.trim(),
@@ -528,7 +570,6 @@
             };
         }
 
-        /** Full checkout context for Stripe / PayPal proxy routes (server may ignore extra keys). */
         function collectPayload(gateway) {
             return {
                 first_name: document.getElementById('firstName').value.trim(),
@@ -559,32 +600,9 @@
             const required = ['firstName', 'lastName', 'emailAddress', 'country', 'city', 'postalCode', 'addressLine'];
             const missing = required.some(id => !document.getElementById(id).value.trim());
             const cartCount = Object.keys(cart).length;
-            if (!cartCount) return alert(t('cartEmptyAlert','Cart is empty. Add items first.'));
+            if (!cartCount) return alert(t('cartEmptyAlert','Your cart is empty. Add items first.'));
             if (missing) return alert(t('checkoutIncompleteAlert','Please complete the buyer information and full shipping address.'));
             return true;
-        }
-
-        async function payCash() {
-            if (!validateCheckout()) return;
-            try {
-                const payload = buildPublicOrderBody();
-                const res = await fetch('/api/public/orders', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Order failed');
-                saveProfileDraft();
-                localStorage.removeItem('frampCart');
-                Object.keys(cart).forEach(key => delete cart[key]);
-                location.href = currentLang === 'en' ? `/order-success.html?order=${encodeURIComponent(data.orderNumber)}` : `/${currentLang}/order-success?order=${encodeURIComponent(data.orderNumber)}`;
-            } catch (err) {
-                document.getElementById('bad').textContent = err.message;
-                document.getElementById('bad').style.display = 'block';
-                document.getElementById('ok').style.display = 'none';
-            }
         }
 
         async function payStripe() {
@@ -616,7 +634,7 @@
         function loadPayPalSdk(data) {
             const paypal = (data.gateways || []).find(g => g.code === 'paypal');
             if (!paypal?.config?.clientId) {
-                document.getElementById('paypalFallbackButton').style.display = 'block';
+                document.getElementById('paypalFallbackButton').style.display = 'flex';
                 return;
             }
             const script = document.createElement('script');
@@ -663,7 +681,7 @@
             }).render('#paypal-button-container');
         }
 
-        loadCatalog().then(() => { addFromQuery(); render(); });
+        loadCatalog().then(() => { addFromQuery(); render(); updateGiftUI(); });
     </script>
 </body>
 </html>

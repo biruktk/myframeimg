@@ -22,8 +22,7 @@ const menus = [
   { label: "Product", url: "#product", target: "_self", menu_order: 2 },
   { label: "Pricing", url: "#pricing", target: "_self", menu_order: 3 },
   { label: "For Families", url: "#family", target: "_self", menu_order: 4 },
-  { label: "Application", url: "download", target: "_self", menu_order: 5 },
-  { label: "Cart", url: "/cart-checkout.html", target: "_self", menu_order: 6 },
+  { label: "Cart", url: "/cart-checkout.html", target: "_self", menu_order: 5 },
 ];
 
 const footerLinks = [
