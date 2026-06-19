@@ -302,6 +302,18 @@ export function isFrameMqttOnline(macRaw: string, maxAgeMs = 300_000): boolean {
   return action === "login" || action === "heart" || action === "play_ack";
 }
 
+export function getMqttBrokerStatus(): {
+  connected: boolean;
+  connectedSinceMs: number | null;
+  brokerUrl: string | null;
+} {
+  return {
+    connected: isMqttConnected(),
+    connectedSinceMs: null,
+    brokerUrl: process.env.MQTT_URL?.trim() || null,
+  };
+}
+
 export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
 }
