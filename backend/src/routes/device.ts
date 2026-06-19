@@ -3,8 +3,11 @@ import { db } from "../db/store";
 import { normalizedFrameMediaBaseUrl } from "../config/frame_media";
 import {
   getFrame,
+  isFrameMqttOnline,
+  mqttConnectedForStatus,
   isMqttConnected,
   publishLoginAck,
+  publishMqttBrokerConfig,
   publishPlayImage,
   resolveKnownMqttHardwareMac,
   resolveMqttHardwareMac,
@@ -20,6 +23,12 @@ function mediaBaseUrl(): string {
   const port = Number(process.env.PORT || 3001);
   const publicBaseUrl = envBaseUrl(process.env.PUBLIC_BASE_URL, `http://127.0.0.1:${port}`);
   return normalizedFrameMediaBaseUrl(publicBaseUrl) || publicBaseUrl;
+}
+
+function sameFrame(a: string | undefined, b: string | undefined): boolean {
+  const am = resolveMqttHardwareMac(String(a ?? ""));
+  const bm = resolveMqttHardwareMac(String(b ?? ""));
+  return !!am && !!bm && am === bm;
 }
 
 /** Matches `ra/api` device status shape used by the app. */
@@ -58,22 +67,39 @@ deviceRouter.get("/frames/:mac/status", (req, res) => {
   const data = db.read();
   const d = data.device;
   const mqttFrame = getFrame(req.params.mac);
-  const requestedMac = resolveKnownMqttHardwareMac(req.params.mac);
+  const requestedMac = resolveKnownMqttHardwareMac(req.params.mac) ?? resolveMqttHardwareMac(req.params.mac);
   const storedMac = resolveMqttHardwareMac(d.id);
-  const mqttOnline = !!mqttFrame && mqttFrame.age < 120000;
-  const storedOnline = !!requestedMac && requestedMac === storedMac && d.connected;
+  const onlineGraceMs = Number(process.env.FRAME_ONLINE_GRACE_MS ?? 600000) || 600000;
+  const mqttOnline =
+    !!mqttFrame &&
+    mqttFrame.status === "online" &&
+    mqttFrame.lastAction !== "shutdown" &&
+    mqttFrame.age < onlineGraceMs;
+  const storedFrame = data.frames.find((frame) => sameFrame(frame.id, req.params.mac) || sameFrame(frame.bleMac, req.params.mac));
+  const storedLastSeenMs =
+    typeof storedFrame?.lastSeenAtMs === "number"
+      ? storedFrame.lastSeenAtMs
+      : requestedMac === storedMac && d.connected
+        ? d.lastPhotoAtMs
+        : null;
+  const storedRecent = typeof storedLastSeenMs === "number" && Date.now() - storedLastSeenMs < onlineGraceMs;
+  const storedOnline =
+    (!!requestedMac && requestedMac === storedMac && d.connected) ||
+    storedFrame?.wifiStatus === "online" ||
+    storedRecent;
+  const online = mqttOnline || storedOnline;
   res.json({
     ok: true,
     device_id: req.params.mac,
-    online: mqttOnline,
-    status: mqttOnline ? "online" : "offline",
+    online,
+    status: online ? "online" : "offline",
     app_paired: storedOnline,
     battery: 100,
     wifi: d.room,
     storage_used_mb: Math.round(d.usedBytes / 1024 / 1024),
     photo_count: d.photoCount,
-    mqtt_connected: isMqttConnected(),
-    last_seen_ms: mqttFrame?.lastSeen ?? null,
+    mqtt_connected: mqttConnectedForStatus(req.params.mac),
+    last_seen_ms: mqttFrame?.lastSeen ?? storedLastSeenMs ?? null,
     last_upload_ms: d.lastPhotoAtMs,
     result: mqttFrame?.lastResult ?? null,
     lastResult: mqttFrame?.lastResult ?? null,
@@ -102,6 +128,33 @@ deviceRouter.get("/frames/:mac/history", (req, res) => {
     deliveryMode: u.deliveryMode ?? "unknown",
   }));
   res.json({ ok: true, images });
+});
+
+deviceRouter.post("/frames/:mac/mqtt-config", async (req, res) => {
+  const mac = String(req.params.mac ?? "").trim();
+  if (!resolveMqttHardwareMac(mac)) {
+    res.status(400).json({ ok: false, error: "invalid_device_id_for_mqtt_config" });
+    return;
+  }
+  if (!isMqttConnected()) {
+    res.status(503).json({ ok: false, error: "mqtt_disconnected" });
+    return;
+  }
+  try {
+    const msgid = String(req.body?.msgid ?? Date.now()).trim();
+    await publishMqttBrokerConfig(mac, msgid);
+    res.json({
+      ok: true,
+      stamac: resolveMqttHardwareMac(mac),
+      msgid,
+      delivery_mode: "vps_mqtt_config_retain",
+    });
+  } catch (err) {
+    res.status(502).json({
+      ok: false,
+      error: err instanceof Error ? err.message : "mqtt_config_publish_failed",
+    });
+  }
 });
 
 deviceRouter.post("/frames/:mac/login-ack", async (req, res) => {

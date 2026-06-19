@@ -3,6 +3,7 @@ import express, { Router } from "express";
 import { db } from "../db/store";
 import { signUserJwt, verifyUserJwtBearer } from "../services/app_user_jwt";
 import { handleGoogleAuthPost } from "../handlers/google_auth_post";
+import { handleAppleAuthPost } from "../handlers/apple_auth_post";
 
 export const authRouter = Router();
 const TEST_USER_EMAIL = "test@myframe.local";
@@ -239,6 +240,8 @@ authRouter.post("/auth/test-login", (_req, res) => {
 });
 
 authRouter.post("/auth/google", (req, res) => void handleGoogleAuthPost(req, res));
+
+authRouter.post("/auth/apple", (req, res) => void handleAppleAuthPost(req, res));
 
 authRouter.get("/auth/session", (req, res) => {
   const authed = verifyUserJwtBearer(req);

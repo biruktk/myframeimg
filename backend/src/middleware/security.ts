@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
+import { lookupFrameInviteDeviceId } from "../services/frame_guest_invite";
+
 function secureEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -24,13 +26,19 @@ function tokenFromRequest(req: Request): string {
   ).trim();
 }
 
+function pairingTokenFromRequest(req: Request): string {
+  const explicitPairingToken = String(req.header("x-pairing-token") ?? "").trim();
+  if (explicitPairingToken) return explicitPairingToken;
+  return (readBearerToken(req) ?? String(req.header("x-admin-token") ?? "")).trim();
+}
+
 export function requirePairingToken(req: Request, res: Response, next: NextFunction) {
   const expected = String(process.env.FRAME_PAIRING_TOKEN ?? "").trim();
   if (!expected) {
     next();
     return;
   }
-  const got = tokenFromRequest(req);
+  const got = pairingTokenFromRequest(req);
   if (!got || !secureEqual(got, expected)) {
     res.status(401).json({ ok: false, error: "unauthorized_pairing_token" });
     return;
@@ -95,4 +103,39 @@ export function uploadRateLimit(req: Request, res: Response, next: NextFunction)
     return;
   }
   next();
+}
+
+export function inviteCodeFromRequest(req: Request): string {
+  const params = req.params as { code?: string } | undefined;
+  return String(
+    params?.code ??
+      req.header("x-invite-code") ??
+      req.body?.invite_code ??
+      req.body?.inviteCode ??
+      "",
+  )
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+/** Accept global pairing token OR a valid frame guest invite code (mini program / web guests). */
+export function requirePairingTokenOrInvite(req: Request, res: Response, next: NextFunction) {
+  const preset = (req as Request & { frameInviteDeviceId?: string }).frameInviteDeviceId;
+  if (preset) {
+    next();
+    return;
+  }
+  const code = inviteCodeFromRequest(req);
+  if (code.length === 8) {
+    const deviceId = lookupFrameInviteDeviceId(code);
+    if (!deviceId) {
+      res.status(401).json({ ok: false, error: "invalid_invite_code" });
+      return;
+    }
+    (req as Request & { frameInviteDeviceId?: string }).frameInviteDeviceId = deviceId;
+    next();
+    return;
+  }
+  requirePairingToken(req, res, next);
 }

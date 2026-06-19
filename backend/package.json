@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "mqtt": "^5.10.4",
     "multer": "^1.4.5-lts.2",
+    "qrcode": "^1.5.4",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
@@ -31,6 +32,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.13",
     "@types/node": "^22.15.29",
+    "@types/qrcode": "^1.5.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

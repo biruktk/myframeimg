@@ -74,37 +74,11 @@ function resolveFrameMediaPath(imageUrl: string): string {
   return `/frame-media/${encodeURIComponent(basename)}`;
 }
 
-/** ESP32 BLE MAC is typically Wi‑Fi station MAC + 2 (last octet). */
-function esp32BleMacFromWifiMac(wifiMac: string): string | null {
-  const value = Number.parseInt(wifiMac, 16);
-  if (!Number.isFinite(value)) return null;
-  return (value + 2).toString(16).toUpperCase().padStart(12, "0").slice(-12);
-}
-
-function mqttBrokerPayload(msgid?: string): Record<string, unknown> {
-  const host =
-    process.env.MQTT_BROKER_PUBLIC_HOST?.trim() ||
-    process.env.PUBLIC_BASE_URL?.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim() ||
-    "128.241.231.234";
-  const port = Number(process.env.MQTT_BROKER_PUBLIC_PORT || 1883);
-  return {
-    msgid: msgid || Date.now().toString(),
-    action: "mqtt_config",
-    data: {
-      host,
-      port,
-      usr: process.env.MQTT_USER || "device",
-      pwd: process.env.MQTT_PASSWORD || process.env.MQTT_BROKER_DEVICE_PASS || "framepass2026",
-    },
-  };
-}
-
 function publishFrameCommand(
   stamac: string,
   payload: Record<string, unknown>,
   qos: 0 | 1,
   label: string,
-  retain = false,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!mqttClient?.connected) {
@@ -114,28 +88,14 @@ function publishFrameCommand(
     const topic = `/inkjoyap/${stamac}`;
     const body = JSON.stringify(payload);
     mqttDebugTx(topic, body);
-    mqttClient.publish(topic, body, { qos, retain }, (err) => {
+    mqttClient.publish(topic, body, { qos }, (err) => {
       if (err) reject(err);
       else {
-        console.log(`[MQTT] ${label} sent to`, stamac, retain ? "(retain)" : "");
+        console.log(`[MQTT] ${label} sent to`, stamac);
         resolve();
       }
     });
   });
-}
-
-async function publishToStationAndBleMac(
-  wifiMac: string,
-  payload: Record<string, unknown>,
-  qos: 0 | 1,
-  label: string,
-  retain = false,
-): Promise<void> {
-  await publishFrameCommand(wifiMac, payload, qos, label, retain);
-  const bleMac = esp32BleMacFromWifiMac(wifiMac);
-  if (bleMac && bleMac !== wifiMac) {
-    await publishFrameCommand(bleMac, payload, qos, `${label}_ble`, retain);
-  }
 }
 
 function handleMessage(topic: string, raw: Buffer) {
@@ -204,21 +164,18 @@ function handleMessage(topic: string, raw: Buffer) {
         stamac,
       };
       if (frameAckEnabled()) {
-        const msgid = String(data.msgid ?? Date.now());
-        void (async () => {
-          try {
-            await publishToStationAndBleMac(stamac, mqttBrokerPayload(msgid), 1, "mqtt_config_wakeup", true);
-            await publishToStationAndBleMac(
-              stamac,
-              { action: "login_ack", msgid, stamac },
-              1,
-              "login_ack",
-              true,
-            );
-          } catch (err) {
-            console.error("[MQTT] login wakeup publish failed:", err);
-          }
-        })();
+        void publishFrameCommand(
+          stamac,
+          {
+            action: "login_ack",
+            msgid: String(data.msgid ?? Date.now()),
+            stamac,
+          },
+          1,
+          "login_ack",
+        ).catch((err) => {
+          console.error("[MQTT] login_ack publish failed:", err);
+        });
       }
       break;
     }
@@ -278,30 +235,6 @@ export function startFrameMqtt(): void {
   mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
 }
 
-
-export function mqttConnectedForStatus(macRaw: string): boolean {
-  if (isFrameMqttOnline(macRaw)) return true;
-  const mac = resolveKnownMqttHardwareMac(macRaw);
-  if (!mac) return false;
-  const rec = frames.get(mac);
-  if (!rec || rec.status !== "online") return false;
-  const grace = Number(process.env.FRAME_MQTT_GRACE_MS ?? 300000) || 300000;
-  if (Date.now() - rec.lastSeen > grace) return false;
-  const action = String(rec.lastAction ?? "").toLowerCase();
-  return action === "login" || action === "heart" || action === "play_ack";
-}
-
-export function isFrameMqttOnline(macRaw: string, maxAgeMs = 300_000): boolean {
-  const mac = resolveKnownMqttHardwareMac(macRaw);
-  if (!mac) return false;
-  const rec = frames.get(mac);
-  if (!rec || rec.status !== "online") return false;
-  const age = Date.now() - rec.lastSeen;
-  if (age > maxAgeMs) return false;
-  const action = String(rec.lastAction ?? "");
-  return action === "login" || action === "heart" || action === "play_ack";
-}
-
 export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
 }
@@ -345,29 +278,20 @@ export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: num
   return null;
 }
 
-/** Push broker credentials over MQTT (retained) so frames reconnect after Wi‑Fi/BLE setup. */
-export function publishMqttBrokerConfig(macRaw: string, msgidRaw?: string): Promise<void> {
+export function publishLoginAck(macRaw: string, msgidRaw?: string): Promise<void> {
   const mac = resolveKnownMqttHardwareMac(macRaw);
   if (!mac) {
-    return Promise.reject(new Error("invalid_device_id_for_mqtt_config"));
+    return Promise.reject(new Error("invalid_device_id_for_login_ack"));
   }
-  const msgid = msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString();
-  return publishToStationAndBleMac(mac, mqttBrokerPayload(msgid), 1, "mqtt_config", true);
-}
-
-export async function publishLoginAck(macRaw: string, msgidRaw?: string): Promise<void> {
-  const mac = resolveKnownMqttHardwareMac(macRaw);
-  if (!mac) {
-    throw new Error("invalid_device_id_for_login_ack");
-  }
-  const msgid = msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString();
-  await publishMqttBrokerConfig(mac, msgid);
-  await publishToStationAndBleMac(
+  return publishFrameCommand(
     mac,
-    { action: "login_ack", msgid, stamac: mac },
+    {
+      action: "login_ack",
+      msgid: msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString(),
+      stamac: mac,
+    },
     1,
     "login_ack",
-    true,
   );
 }
 
@@ -406,45 +330,13 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
         },
       };
 
+      const topic = `/inkjoyap/${mac}`;
       const body = JSON.stringify(payload);
-      const publishOne = (targetMac: string, label: string) =>
-        new Promise<void>((res, rej) => {
-          const topic = `/inkjoyap/${targetMac}`;
-          mqttDebugTx(topic, body);
-          mqttClient!.publish(topic, body, { qos: 1, retain: true }, (err) => {
-            if (err) rej(err);
-            else {
-              console.log(`[MQTT] ${label} sent to`, targetMac, "(retain)");
-              res();
-            }
-          });
-        });
-
-      const targets = [mac];
-      const bleMac = esp32BleMacFromWifiMac(mac);
-      if (bleMac && bleMac !== mac) targets.push(bleMac);
-
-      void (async () => {
-        try {
-          for (const target of targets) {
-            await publishOne(target, target === mac ? "play" : "play_ble");
-          }
-          const after: FrameRecord =
-            frames.get(mac) ??
-            ({
-              lastSeen: Date.now(),
-              status: "online",
-              config: {},
-            } as FrameRecord);
-          after.lastAction = "play";
-          after.displayed = false;
-          // Do not refresh lastSeen/status for outbound play; only frame reports prove MQTT liveness.
-          frames.set(mac, after);
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      })();
+      mqttDebugTx(topic, body);
+      mqttClient.publish(topic, body, { qos: 1, retain: true }, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
     } catch (err) {
       reject(err instanceof Error ? err : new Error("mqtt_play_invalid_media_base_or_path"));
       return;

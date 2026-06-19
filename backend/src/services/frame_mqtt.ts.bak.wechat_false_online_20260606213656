@@ -438,7 +438,8 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
             } as FrameRecord);
           after.lastAction = "play";
           after.displayed = false;
-          // Do not refresh lastSeen/status for outbound play; only frame reports prove MQTT liveness.
+          after.lastSeen = Date.now();
+          after.status = "online";
           frames.set(mac, after);
           resolve();
         } catch (err) {

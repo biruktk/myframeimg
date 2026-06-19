@@ -8,15 +8,18 @@ import { deviceRouter } from "./routes/device";
 import { photoRouter } from "./routes/photo";
 import { settingsRouter } from "./routes/settings";
 import { authRouter } from "./routes/auth";
+import { wechatMobileAuthRouter } from "./routes/wechat_mobile_auth";
 import { miniProgramRouter } from "./routes/mini_program";
 import { adminRouter } from "./routes/admin";
 import { faqRouter } from "./routes/faq";
 import { frameCloudRouter } from "./routes/frame_cloud";
 import { familyRouter } from "./routes/family";
 import { frameSlideshowRouter } from "./routes/frame_slideshow";
+import { frameInviteRouter } from "./routes/frame_invite";
 import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
+import { userGalleryRouter } from "./routes/user_gallery";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
 import {
   handleMobileGoogleAuthPost,
@@ -92,6 +95,8 @@ app.use(
       "x-pairing-token",
       "x-admin-token",
       "x-frame-token",
+      "x-invite-code",
+      "x-wechat-mini-secret",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   }),
@@ -180,9 +185,12 @@ app.use("/api", publicSiteRouter);
 
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
+app.use("/api", wechatMobileAuthRouter);
 app.use("/api", wechatPhoneRouter);
 app.use("/api", userPortalRouter);
+app.use("/api", userGalleryRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", familyRouter);
+app.use("/api", frameInviteRouter);
 app.use("/api", frameSlideshowRouter());
 app.use("/api", miniProgramRouter);
 app.use("/api", photoRouter(uploadDir, mediaPublicBaseUrl));

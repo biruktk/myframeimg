@@ -124,6 +124,8 @@ export type MyframeDb = {
     /** WeChat Mini Program openid (optional). */
     wechatOpenId?: string;
     wechatUnionId?: string;
+    /** Apple Sign-In subject (optional). */
+    appleSub?: string;
     /** E.164 or national number from WeChat getPhoneNumber (optional). */
     phone?: string;
   }>;
@@ -178,6 +180,20 @@ export type MyframeDb = {
       wechatConnected: boolean;
     };
   };
+  frameGuestInvites: Array<{
+    code: string;
+    deviceId: string;
+    ownerUserId: string;
+    createdAtMs: number;
+  }>;
+  userGalleryPhotos: Array<{
+    id: string;
+    userId: string;
+    previewFilename: string;
+    atMs: number;
+    deviceId?: string;
+  }>;
+
   uploads: Array<{
     id: string;
     filename: string;
@@ -373,6 +389,8 @@ function createInitialDb(): MyframeDb {
       },
     },
     uploads: [],
+    frameGuestInvites: [],
+    userGalleryPhotos: [],
     playlists: [
       {
         id: "pl_family_moments",
@@ -424,6 +442,12 @@ function readDbRaw(): MyframeDb {
   ensureDbFile();
   const raw = fs.readFileSync(dbPath, "utf8");
   const parsed = JSON.parse(raw) as MyframeDb;
+  if (!Array.isArray((parsed as { frameGuestInvites?: unknown }).frameGuestInvites)) {
+    (parsed as { frameGuestInvites: unknown[] }).frameGuestInvites = [];
+  }
+  if (!Array.isArray((parsed as { userGalleryPhotos?: unknown }).userGalleryPhotos)) {
+    (parsed as { userGalleryPhotos: unknown[] }).userGalleryPhotos = [];
+  }
   if (!Array.isArray(parsed.organizations)) {
     parsed.organizations = [{ id: "org_default", name: "Default Organization", status: "active", createdAtMs: Date.now() }];
   }

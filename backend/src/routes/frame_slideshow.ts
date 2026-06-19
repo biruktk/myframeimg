@@ -1,6 +1,12 @@
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
+import {
+  isFrameMqttOnline,
+  isMqttConnected,
+  publishPlayImage,
+  resolveKnownMqttHardwareMac,
+} from "../services/frame_mqtt";
 
 /** Strip separators from MAC/device id segments for lookup keys */
 function normalizeMacKey(raw: string): string {
@@ -11,12 +17,28 @@ function normalizeMacKey(raw: string): string {
   }
 }
 
+function resolvePlaybackUrl(deviceId: string, imageId: string, publicBase: string): string | null {
+  const base = publicBase.replace(/\/$/, "");
+  const data = db.read();
+  const macKey = normalizeMacKey(deviceId);
+  const candidates = data.uploads.filter(
+    (u) => u.deviceId === deviceId || normalizeMacKey(u.deviceId) === macKey,
+  );
+  let upload =
+    candidates.find((u) => u.filename === imageId || u.id === imageId) ??
+    candidates.find((u) => u.checksumSha256 === imageId);
+  if (!upload) return null;
+  const name = upload.filename.trim();
+  if (!name) return null;
+  return `${base}/frame-media/${encodeURIComponent(name)}`;
+}
+
 export function frameSlideshowRouter(): Router {
   const router = Router();
   router.use(express.json({ limit: "512kb" }));
 
   /** POST /api/frames/:mac/slideshow */
-  router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
+  router.post("/frames/:mac/slideshow", async (req: Request, res: Response) => {
     const u = verifyUserJwtBearer(req);
     if (!u) {
       res.status(401).json({ ok: false, error: "unauthorized" });
@@ -63,7 +85,45 @@ export function frameSlideshowRouter(): Router {
       };
     });
 
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes });
+    const publicBase = String(process.env.PUBLIC_BASE_URL ?? process.env.PUBLIC_MEDIA_BASE_URL ?? "https://myframe.ink").trim();
+    const frame = db.read().frames.find((f) => normalizeMacKey(f.bleMac) === macKey || f.id === macKey);
+    const deviceId = frame?.id ?? macKey;
+    let deliveredToFrame = false;
+    let deliveryMode = "stored_only";
+
+    const mqttMac = resolveKnownMqttHardwareMac(deviceId);
+    const firstId = ids[0]!;
+    const imageUrl = resolvePlaybackUrl(deviceId, firstId, publicBase);
+
+    if (mqttMac && imageUrl && isMqttConnected()) {
+      try {
+        let publicHost = "";
+        try {
+          publicHost = new URL(publicBase).hostname;
+        } catch {
+          /* ignore */
+        }
+        await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+        if (isFrameMqttOnline(deviceId)) {
+          deliveredToFrame = true;
+          deliveryMode = "mqtt_published";
+        } else {
+          deliveryMode = "mqtt_published_unconfirmed";
+        }
+      } catch {
+        deliveryMode = "mqtt_publish_failed";
+      }
+    }
+
+    res.json({
+      ok: true,
+      macKey,
+      imageIds: ids,
+      intervalMinutes,
+      delivered_to_frame: deliveredToFrame,
+      delivery_mode: deliveryMode,
+      first_image_url: imageUrl,
+    });
   });
 
   return router;

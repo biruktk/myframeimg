@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { inviteCodeFromRequest, requirePairingTokenOrInvite, uploadRateLimit } from "../middleware/security";
-import { isFrameMqttOnline, isMqttConnected, publishPlayImage, resolveKnownMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, resolveKnownMqttHardwareMac } from "../services/frame_mqtt";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { registerUserGalleryPhoto } from "../services/user_gallery_service";
 import { lookupFrameInviteDeviceId } from "../services/frame_guest_invite";
@@ -149,12 +149,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           }
           try {
             await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
-            if (isFrameMqttOnline(deviceId)) {
-              deliveredToFrame = true;
-              deliveryMode = "mqtt_published";
-            } else {
-              deliveryMode = "mqtt_published_unconfirmed";
-            }
+            deliveryMode = "mqtt_published_unconfirmed";
           } catch (err) {
             console.error("[photo] MQTT play publish failed:", err);
             deliveryMode = "mqtt_publish_failed";
@@ -372,12 +367,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           }
           try {
             await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
-            if (isFrameMqttOnline(deviceId)) {
-              deliveredToFrame = true;
-              deliveryMode = "mqtt_published";
-            } else {
-              deliveryMode = "mqtt_published_unconfirmed";
-            }
+            deliveryMode = "mqtt_published_unconfirmed";
           } catch (err) {
             console.error("[photo] MQTT play publish failed:", err);
             deliveryMode = "mqtt_publish_failed";
