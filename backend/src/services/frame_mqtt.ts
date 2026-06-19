@@ -7,6 +7,8 @@ import crypto from "crypto";
 import mqtt from "mqtt";
 
 import { frameMediaPlayEndpoint } from "../config/frame_media";
+import { db } from "../db/store";
+import { appendFrameLog } from "./frame_logs";
 
 export type FrameRecord = {
   lastSeen: number;
@@ -19,6 +21,7 @@ export type FrameRecord = {
 
 const frames = new Map<string, FrameRecord>();
 let mqttClient: mqtt.MqttClient | null = null;
+let mqttConnectedAt: number | null = null;
 
 export function normalizeMac(mac: string): string {
   return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
@@ -37,6 +40,33 @@ export function resolveMqttHardwareMac(raw: string): string | null {
   if (h.length > 12) h = h.slice(-12);
   if (h.length !== 12 || !/^[0-9A-F]{12}$/i.test(h)) return null;
   return h.toUpperCase();
+}
+
+function resolveFrameName(mac: string): string | null {
+  const data = db.read();
+  const norm = normalizeMac(mac);
+  const frame = data.frames.find((f) => normalizeMac(f.id) === norm || normalizeMac(f.bleMac) === norm);
+  if (frame) return frame.id;
+  if (normalizeMac(data.device.id) === norm) return data.device.name || data.device.id;
+  return null;
+}
+
+function logFrameTraffic(
+  direction: "rx" | "tx",
+  mac: string,
+  topic: string,
+  payload: Record<string, unknown> | string,
+  action?: string | null,
+) {
+  const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+  appendFrameLog({
+    direction,
+    mac: normalizeMac(mac),
+    frameName: resolveFrameName(mac),
+    topic,
+    action: action ?? (typeof payload === "object" ? String(payload.action ?? "") || null : null),
+    payload: body.length > 4000 ? `${body.slice(0, 4000)}…` : body,
+  });
 }
 
 function mqttDebugRx(topic: string, raw: Buffer) {
@@ -82,6 +112,7 @@ function publishFrameCommand(
     const topic = `/inkjoyap/${stamac}`;
     const body = JSON.stringify(payload);
     mqttDebugTx(topic, body);
+    logFrameTraffic("tx", stamac, topic, payload, String(payload.action ?? label));
     mqttClient.publish(topic, body, { qos }, (err) => {
       if (err) reject(err);
       else {
@@ -111,6 +142,7 @@ function handleMessage(topic: string, raw: Buffer) {
   if (!mac) return;
 
   const action = String(data.action ?? "");
+  logFrameTraffic("rx", mac, topic, data, action || null);
   const rec: FrameRecord =
     frames.get(mac) ??
     ({
@@ -207,6 +239,7 @@ export function startFrameMqtt(): void {
   });
 
   mqttClient.on("connect", () => {
+    mqttConnectedAt = Date.now();
     console.log("[frame-mqtt] connected");
     mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
@@ -216,11 +249,26 @@ export function startFrameMqtt(): void {
   mqttClient.on("message", (topic, msg) => handleMessage(topic, msg));
 
   mqttClient.on("error", (err) => console.error("[frame-mqtt]", err));
-  mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
+  mqttClient.on("close", () => {
+    mqttConnectedAt = null;
+    console.log("[frame-mqtt] connection closed");
+  });
 }
 
 export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
+}
+
+export function getMqttBrokerStatus(): {
+  connected: boolean;
+  connectedSinceMs: number | null;
+  brokerUrl: string | null;
+} {
+  return {
+    connected: isMqttConnected(),
+    connectedSinceMs: mqttConnectedAt,
+    brokerUrl: process.env.MQTT_URL?.trim() || null,
+  };
 }
 
 export function listFrames(): Array<FrameRecord & { mac: string; age: number }> {
@@ -288,6 +336,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       const topic = `/inkjoyap/${mac}`;
       const body = JSON.stringify(payload);
       mqttDebugTx(topic, body);
+      logFrameTraffic("tx", mac, topic, payload, "play");
       mqttClient.publish(topic, body, { qos: 1 }, (err) => {
         if (err) reject(err);
         else resolve();

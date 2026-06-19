@@ -15,6 +15,7 @@ import { frameCloudRouter } from "./routes/frame_cloud";
 import { familyRouter } from "./routes/family";
 import { frameSlideshowRouter } from "./routes/frame_slideshow";
 import { enterpriseRouter } from "./routes/enterprise";
+import { devsRouter } from "./routes/devs";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
@@ -31,6 +32,8 @@ import {
   warnIfMisconfiguredFrameMediaEnv,
 } from "./config/frame_media";
 import { startFrameMqtt } from "./services/frame_mqtt";
+import { seedFrameLogsFromAudit } from "./services/frame_logs";
+import { db } from "./db/store";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
 const packageRoot = path.resolve(__dirname, "..");
@@ -189,6 +192,7 @@ app.use("/api", settingsRouter);
 app.use("/api", faqRouter);
 app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
+app.use("/api", devsRouter);
 app.use("/api", adminRouter);
 
 app.use((_req, res) => {
@@ -225,4 +229,10 @@ app.listen(port, () => {
     /* ignore */
   }
   startFrameMqtt();
+  try {
+    const audit = db.read().auditLog;
+    seedFrameLogsFromAudit(audit);
+  } catch {
+    /* ignore */
+  }
 });

@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyFrame — Device Management Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="/mdm/style.css" rel="stylesheet">
+</head>
+<body class="mdm-app-locked">
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar" class="sb" role="navigation" aria-label="Main navigation">
+  <div class="sb-logo">
+    <div class="sb-mark">M</div>
+    <span class="sb-name">MyFrame</span>
+    <span class="sb-ver">v2.1</span>
+  </div>
+  <div class="sb-nav">
+    <button class="sb-item active" data-page="dashboard" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+
+    <div class="sb-sec">Devices</div>
+    <button class="sb-item" data-page="devices" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+      All Frames
+      <span class="sb-badge">24</span>
+    </button>
+    <button class="sb-item" data-page="groups" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="6" height="10" rx="1"/><rect x="9" y="4" width="6" height="16" rx="1"/><rect x="16" y="7" width="6" height="10" rx="1"/></svg>
+      Device Groups
+      <span class="sb-badge">5</span>
+    </button>
+    <button class="sb-item" data-page="map" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+      Device Map
+    </button>
+    <button class="sb-item" data-page="mqtt" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      MQTT Monitor
+      <span class="sb-badge" style="background:rgba(39,177,106,.2);color:#5EDB9A;">Live</span>
+    </button>
+
+    <div class="sb-sec">Content</div>
+    <button class="sb-item" data-page="media" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Media Library
+    </button>
+    <button class="sb-item" data-page="push" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      Push Content
+    </button>
+    <button class="sb-item" data-page="schedule" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Scheduler
+    </button>
+
+    <div class="sb-sec">Business</div>
+    <button class="sb-item" data-page="billboard" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>
+      Billboard 广告牌
+    </button>
+    <button class="sb-item" data-page="analytics" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
+    </button>
+    <button class="sb-item" data-page="family" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Family Groups
+    </button>
+
+    <div class="sb-sec">System</div>
+    <button class="sb-item" data-page="alerts" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Alerts
+      <span class="sb-badge danger">3</span>
+    </button>
+    <button class="sb-item" data-page="ota" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      OTA Updates
+    </button>
+    <button class="sb-item" data-page="users" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Users & Access
+    </button>
+    <button class="sb-item" data-page="settings" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </div>
+  <div class="sb-foot">
+    <div class="av">JL</div>
+    <div><div class="av-name">Jenny Liu</div><div class="av-role">Admin</div></div>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <header class="topbar" id="topbar">
+    <div class="tb-crumb" id="crumb">
+      <span>MyFrame</span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      <b>Dashboard</b>
+    </div>
+    <div class="tb-right">
+      <button class="btn btn-g" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </button>
+      <button class="nbell" data-page="alerts" aria-label="Notifications" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="ndot"></div>
+      </button>
+      <button class="btn btn-p" id="topActionBtn" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span id="topActionLabel">Add Device</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main-content">
+
+  <!-- ============================================================
+       PAGE: DASHBOARD
+  ============================================================ -->
+  <div class="page active" id="page-dashboard">
+    <div class="pg-title">Dashboard</div>
+    <div class="pg-sub">Fleet overview — live via MQTT heartbeat</div>
+
+    <div class="grid4 section-gap">
+      <div class="stat">
+        <div class="stat-ico" style="background:var(--accent2)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/></svg></div>
+        <div class="stat-lbl">Total Devices</div>
+        <div class="stat-val">24</div>
+        <div class="stat-foot"><span class="pill pill-b">+2 this week</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:var(--green-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="stat-lbl">Online Now</div>
+        <div class="stat-val" style="color:var(--green)">21</div>
+        <div class="stat-foot"><span class="pill pill-g">87.5% uptime</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:var(--red-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="stat-lbl">Offline / Error</div>
+        <div class="stat-val" style="color:var(--red)">3</div>
+        <div class="stat-foot"><span class="pill pill-r">2 need action</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:#EEF6F3"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F9B8E" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <div class="stat-lbl">Photos Today</div>
+        <div class="stat-val">147</div>
+        <div class="stat-foot"><span class="pill pill-t">↑ 23 vs yesterday</span></div>
+      </div>
+    </div>
+
+    <!-- Fleet Health -->
+    <div class="section-gap">
+      <div class="flex items-center gap12 mb12">
+        <div><div class="pg-sub" style="font-weight:500;color:var(--ink3);margin-bottom:0">Fleet Health</div><div style="font-size:11px;color:var(--ink4)">Real-time fleet averages · click for breakdown</div></div>
+      </div>
+      <div class="grid4" id="fleet-health-dashboard">
+        <!-- populated by renderDashboard() -->
+      </div>
+    </div>
+
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <!-- Recent devices -->
+        <div class="card">
+          <div class="ch"><div><div class="ch-title">Device Fleet</div><div class="ch-sub">Live MQTT status</div></div><button class="btn btn-g ch-right" data-page="devices" type="button">View all →</button></div>
+          <div class="cb">
+          </div>
+        </div>
+        <!-- MQTT mini -->
+        <div class="term">
+          <div class="term-hd">
+            <div class="tdot" style="background:#FF5F56"></div><div class="tdot" style="background:#FFBD2E"></div><div class="tdot" style="background:#27C93F"></div>
+            <span class="term-ttl"><span class="tlive"></span>MQTT — broker.myframe.ink:8883</span>
+          </div>
+          <div class="term-body" id="dash-mqtt">
+            <div class="mqtt-line"><span class="tts">14:02:31 </span><span class="ttopic">myframe/d4f29a/status </span><span class="tpay">{"state":"online","rssi":-52,"model":"YX-133P"}</span></div>
+            <div class="mqtt-line"><span class="tts">14:02:29 </span><span class="ttopic">myframe/b3e11c/cmd </span><span class="ttype">DISPLAY </span><span class="tpay">{"url":"cdn/photo_221.jpg","brightness":80}</span></div>
+            <div class="mqtt-line"><span class="tts">14:02:28 </span><span class="ttopic">myframe/b3e11c/ack </span><span class="tpay">{"status":"displayed","refresh_ms":20400}</span></div>
+            <div class="mqtt-line"><span class="tts">14:02:15 </span><span class="ttopic">myframe/group/cbd/cmd </span><span class="ttype">PLAYLIST </span><span class="tpay">{"campaign":"nike_summer","slot":3}</span></div>
+            <div class="mqtt-line"><span class="tts">14:01:44 </span><span class="ttopic">myframe/7f2b19/status </span><span class="terr">OFFLINE (Last Will triggered)</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- right col -->
+      <div class="flex-col gap16">
+        <!-- alerts -->
+        <div class="card">
+          <div class="ch"><div class="ch-title">Active Alerts</div><button class="btn btn-g ch-right" data-page="alerts" type="button">Manage →</button></div>
+          <div class="row-item" data-page="alerts" role="button" tabindex="0">
+            <div style="width:28px;height:28px;border-radius:7px;background:var(--red-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🔴</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:500">Café Billboard #1 offline</div><div style="font-size:11px;color:var(--ink4)">MQTT LWT · No heartbeat for 2h</div></div>
+            <span class="pill pill-r">Critical</span>
+          </div>
+          <div class="row-item" data-page="alerts" role="button" tabindex="0">
+            <div style="width:28px;height:28px;border-radius:7px;background:var(--amber-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">⚠️</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:500">Office Entrance — weak WiFi</div><div style="font-size:11px;color:var(--ink4)">Signal −74 dBm</div></div>
+            <span class="pill pill-a">Warning</span>
+          </div>
+          <div class="row-item" data-page="alerts" role="button" tabindex="0">
+            <div style="width:28px;height:28px;border-radius:7px;background:var(--amber-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">💾</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:500">Grandma's Bedroom SD full</div><div style="font-size:11px;color:var(--ink4)">14.2 GB / 16 GB used</div></div>
+            <span class="pill pill-a">Warning</span>
+          </div>
+        </div>
+        <!-- activity -->
+        <div class="card">
+          <div class="ch"><div class="ch-title">Activity Log</div></div>
+          <div class="row-item"><div style="font-size:18px;margin-right:2px">📸</div><div><div style="font-size:12px"><b>Jenny</b> pushed photo → Living Room Frame</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Today 14:02</div></div></div>
+          <div class="row-item"><div style="font-size:18px;margin-right:2px">📡</div><div><div style="font-size:12px"><b>Café Billboard #1</b> went offline — LWT alert fired</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Today 12:01</div></div></div>
+          <div class="row-item"><div style="font-size:18px;margin-right:2px">⚙️</div><div><div style="font-size:12px">OTA <b>v1.4.3</b> pushed to Shanghai group (8 devices)</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Today 10:30</div></div></div>
+          <div class="row-item"><div style="font-size:18px;margin-right:2px">👪</div><div><div style="font-size:12px"><b>David Chen</b> joined Liu Family via QR code</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Yesterday 18:44</div></div></div>
+        </div>
+        <!-- Network Health -->
+        <div class="card" id="network-health-card">
+          <div class="ch"><div class="ch-title">Network Health</div></div>
+          <div class="cb" id="network-health-content">
+            <!-- populated by renderDashboard() -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: ALL DEVICES
+  ============================================================ -->
+  <div class="page" id="page-devices">
+    <div class="flex items-center gap12 mb16">
+      <div><div class="pg-title">All Frames</div><div class="pg-sub">56 devices across all groups</div></div>
+      <div class="ml-auto flex gap8">
+        <select style="width:130px;"><option>All Models</option><option>YX-6</option><option>YX-6P</option><option>YX-133P</option></select>
+        <select style="width:120px;"><option>All Status</option><option>Online</option><option>Offline</option><option>Sleeping</option></select>
+        <button class="btn btn-p" data-action="add-device" type="button">+ Add Device</button>
+        <button class="btn btn-g" data-action="import-csv" type="button">📄 Import CSV</button>
+        <button class="btn btn-g" data-action="wizard-add" type="button">✨ Wizard</button>
+      </div>
+    </div>
+    <div class="card" id="device-table-container">
+      <table>
+        <thead><tr>
+          <th scope="col">Device</th><th scope="col">Model</th><th scope="col">Status</th><th scope="col">WiFi</th><th scope="col">Storage</th><th scope="col">Last Photo</th><th scope="col">Group</th><th scope="col">Actions</th>
+        </tr></thead>
+        <tbody>
+          <!-- Rows rendered dynamically by renderDevices() -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: DEVICE GROUPS
+  ============================================================ -->
+  <div class="page" id="page-groups">
+    <div class="flex items-center gap12 mb16">
+      <div><div class="pg-title">Device Groups</div><div class="pg-sub">Manage and broadcast to device clusters</div></div>
+      <button class="btn btn-p ml-auto" type="button" data-action="add-group">+ New Group</button>
+    </div>
+    <div class="grid3 section-gap">
+      ${groupCard('🏠','Liu Family Frames','4 devices','pill-b','Liu Family','YX-133P ×2, YX-6 ×2','4 / 4 online','sdot-g','Push photos to family')}
+      ${groupCard('🏢','Shanghai Office','8 devices','pill-g','Office','YX-133P ×8','7 / 8 online','sdot-a','Broadcast content')}
+      ${groupCard('📢','CBD Zone 广告牌','12 devices','pill-t','Billboard','YX-133P ×12','11 / 12 online','sdot-g','Manage ad slots')}
+      ${groupCard('🏥','Hospital Lobby','5 devices','pill-p','Medical','YX-133P ×5','5 / 5 online','sdot-g','Push notices')}
+      ${groupCard('🛒','Mall Atrium','3 devices','pill-a','Retail','YX-133P ×3','2 / 3 online','sdot-a','Schedule ads')}
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ch-title">Bulk Actions</div><div class="ch-sub">Apply to selected group</div></div>
+      <div class="cb">
+        <div class="grid3 gap12">
+          <div class="form-row"><label>Select Group</label><select><option>Liu Family Frames</option><option>Shanghai Office</option><option>CBD Zone 广告牌</option></select></div>
+          <div class="form-row"><label>Action</label><select><option>Push Content</option><option>Reboot All</option><option>Update Firmware</option><option>Set Sleep Schedule</option><option>Adjust Brightness</option></select></div>
+          <div style="display:flex;align-items:flex-end;"><button class="btn btn-p w-full" type="button" data-action="bulk-action">Run Bulk Action</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: DEVICE MAP
+  ============================================================ -->
+  <div class="page" id="page-map">
+    <div class="pg-title">Device Map</div>
+    <div class="pg-sub" id="map-subtitle">Geographic location of all registered frames</div>
+    <!-- Filter bar -->
+    <div class="flex items-center gap12 mb16">
+      <div class="flex gap4" style="background:var(--bg);border-radius:var(--rs);padding:2px;border:1px solid var(--border)" id="map-status-filters">
+        <span class="tab active" data-action="map-filter" data-filter="status" data-value="all" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">All</span>
+        <span class="tab" data-action="map-filter" data-filter="status" data-value="online" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">🟢 Online</span>
+        <span class="tab" data-action="map-filter" data-filter="status" data-value="sleeping" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">🟡 Sleeping</span>
+        <span class="tab" data-action="map-filter" data-filter="status" data-value="offline" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">🔴 Offline</span>
+      </div>
+      <div class="flex gap4" style="background:var(--bg);border-radius:var(--rs);padding:2px;border:1px solid var(--border)" id="map-type-filters">
+        <span class="tab active" data-action="map-filter" data-filter="type" data-value="all" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">All Types</span>
+        <span class="tab" data-action="map-filter" data-filter="type" data-value="frame" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">📱 Frame</span>
+        <span class="tab" data-action="map-filter" data-filter="type" data-value="wall" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">🧱 Wall</span>
+        <span class="tab" data-action="map-filter" data-filter="type" data-value="billboard" style="padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:var(--ink4)">📺 Billboard</span>
+      </div>
+    </div>
+    <div class="two-col-layout section-gap">
+      <div class="map-ph" style="height:420px;">
+        <!-- simple SVG map mockup -->
+        <svg viewBox="0 0 600 380" style="width:100%;height:100%;position:absolute;top:0;left:0;" role="img" aria-label="Map of device locations">
+          <rect width="600" height="380" fill="#DDE8F0"/>
+          <!-- streets -->
+          <line x1="0" y1="190" x2="600" y2="190" stroke="#C5D4E0" stroke-width="8"/>
+          <line x1="300" y1="0" x2="300" y2="380" stroke="#C5D4E0" stroke-width="8"/>
+          <line x1="0" y1="100" x2="600" y2="100" stroke="#C5D4E0" stroke-width="4"/>
+          <line x1="0" y1="280" x2="600" y2="280" stroke="#C5D4E0" stroke-width="4"/>
+          <line x1="150" y1="0" x2="150" y2="380" stroke="#C5D4E0" stroke-width="4"/>
+          <line x1="450" y1="0" x2="450" y2="380" stroke="#C5D4E0" stroke-width="4"/>
+          <!-- blocks -->
+          <rect x="10" y="110" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="160" y="110" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="310" y="110" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="460" y="110" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="10" y="200" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="160" y="200" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="310" y="200" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+          <rect x="460" y="200" width="130" height="70" rx="4" fill="#C8D9E6" opacity=".6"/>
+        </svg>
+        <!-- Dynamic pins container -->
+        <div id="map-pins-container"></div>
+        <!-- Legend -->
+        <div style="position:absolute;bottom:12px;right:14px;background:rgba(255,255,255,.9);border-radius:6px;padding:7px 10px;font-size:11px;display:flex;flex-direction:column;gap:4px;">
+          <div class="flex items-center gap8">🟢 <span class="map-legend-online">Online (0)</span></div>
+          <div class="flex items-center gap8">🟡 <span class="map-legend-sleeping">Sleeping (0)</span></div>
+          <div class="flex items-center gap8">🔴 <span class="map-legend-offline">Offline (0)</span></div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Location List</div><span class="ch-sub" id="map-list-count" style="margin-left:auto">0 devices</span></div>
+          <div id="map-location-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: MQTT MONITOR
+  ============================================================ -->
+  <div class="page" id="page-mqtt">
+    <div class="pg-title">MQTT Live Monitor</div>
+    <div class="pg-sub" id="mqtt-subtitle">Real-time frame traffic from the MyFrame API</div>
+    <div class="grid4 section-gap">
+      <div class="stat"><div class="stat-lbl">Messages / min</div><div class="stat-val" style="color:var(--accent)" id="mqtt-stat-msgs">0</div></div>
+      <div class="stat"><div class="stat-lbl">Connected Clients</div><div class="stat-val" style="color:var(--green)" id="mqtt-stat-clients">0</div></div>
+      <div class="stat"><div class="stat-lbl">Subscriptions</div><div class="stat-val" id="mqtt-stat-subs">0</div></div>
+      <div class="stat"><div class="stat-lbl">Broker Uptime</div><div class="stat-val" id="mqtt-stat-uptime">0m</div></div>
+    </div>
+    <div class="two-col-layout section-gap">
+      <div>
+        <div class="term" style="height:360px;">
+          <div class="term-hd">
+            <div class="tdot" style="background:#FF5F56"></div><div class="tdot" style="background:#FFBD2E"></div><div class="tdot" style="background:#27C93F"></div>
+            <span class="term-ttl"><span class="tlive"></span>Live stream</span>
+            <button class="btn btn-g ml-auto" style="font-size:10px;padding:3px 8px;" type="button" data-action="mqtt-pause">Pause</button>
+            <button class="btn btn-g" style="font-size:10px;padding:3px 8px;" type="button" data-action="mqtt-clear">Clear</button>
+          </div>
+          <div class="term-body" style="max-height:310px" id="mqtt-terminal">
+            <div class="tmuted" style="color:rgba(255,255,255,.35);font-family:var(--mono);font-size:11px">Waiting for live frame logs…</div>
+          </div>
+        </div>
+        <!-- manual publish -->
+        <div class="card" style="margin-top:14px;">
+          <div class="ch"><div class="ch-title">Publish Message</div><div class="ch-sub">Send a command manually</div></div>
+          <div class="cb">
+            <div class="grid2 gap12 mb12">
+              <div class="form-row"><label for="pub-topic">Topic</label><input type="text" id="pub-topic" value="myframe/d4f29a/cmd"/></div>
+              <div class="form-row"><label for="pub-qos">QoS</label><select id="pub-qos"><option>0 — At most once</option><option>1 — At least once</option><option>2 — Exactly once</option></select></div>
+            </div>
+            <div class="form-row"><label for="pub-payload">Payload (JSON)</label><textarea id="pub-payload" rows="2">{"cmd":"display","url":"cdn/photo_001.jpg","brightness":80}</textarea></div>
+            <div class="flex gap8" style="margin-top:10px;"><button class="btn btn-p" type="button" data-action="mqtt-publish">Publish</button><button class="btn btn-g" type="button" data-action="mqtt-pub-clear">Clear</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Topic Structure</div></div>
+          <div class="cb" style="font-family:var(--mono);font-size:11px;line-height:2.2;">
+            <div style="color:var(--accent)">myframe/{id}/status</div><div style="color:var(--ink4);font-size:10px;margin-bottom:6px;font-family:var(--font)">→ heartbeat & online/offline state</div>
+            <div style="color:var(--accent)">myframe/{id}/cmd</div><div style="color:var(--ink4);font-size:10px;margin-bottom:6px;font-family:var(--font)">→ platform sends display/reboot/OTA commands</div>
+            <div style="color:var(--accent)">myframe/{id}/ack</div><div style="color:var(--ink4);font-size:10px;margin-bottom:6px;font-family:var(--font)">→ device confirms command execution</div>
+            <div style="color:var(--accent)">myframe/{id}/telemetry</div><div style="color:var(--ink4);font-size:10px;margin-bottom:6px;font-family:var(--font)">→ storage, WiFi, temperature metrics</div>
+            <div style="color:var(--teal)">myframe/group/{group}/cmd</div><div style="color:var(--ink4);font-size:10px;font-family:var(--font)">→ broadcast to all devices in group</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Filter by Device</div></div>
+          <div class="cb flex-col gap8">
+            <select id="mqtt-filter-device"><option value="all">All devices</option></select>
+            <select id="mqtt-filter-topic"><option value="all">All topics</option><option value="status">status</option><option value="cmd">cmd</option><option value="ack">ack</option><option value="telemetry">telemetry</option></select>
+            <button class="btn btn-g w-full" type="button" data-action="mqtt-apply-filter">Apply Filter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: MEDIA LIBRARY
+  ============================================================ -->
+  <div class="page" id="page-media">
+    <div class="flex items-center gap12 mb16">
+      <div><div class="pg-title">Media Library</div><div class="pg-sub" id="media-sub">0 files · 0 GB used</div></div>
+      <div class="ml-auto flex gap8">
+        <div class="tab-bar" id="media-filters">
+          <span class="tab active" data-action="filter-media" data-value="all">All</span>
+          <span class="tab" data-action="filter-media" data-value="photo">Photos</span>
+
+          <span class="tab" data-action="filter-media" data-value="template">Templates</span>
+          <span class="tab" data-action="filter-media" data-value="livefeed">Live Feeds</span>
+        </div>
+        <button class="btn btn-p" type="button" data-action="upload-media">+ Upload</button>
+        <button class="btn btn-g" type="button" data-action="new-playlist">Playlist</button>
+      </div>
+    </div>
+    <div class="grid-auto section-gap" id="media-grid"></div>
+    <div class="mt24"><div class="ch-title" style="margin-bottom:12px">📋 Playlists</div><div id="playlists-container"></div></div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: PUSH CONTENT
+  ============================================================ -->
+  <div class="page" id="page-push">
+    <div class="pg-title">Push Content</div>
+    <div class="pg-sub">Send photos or playlists to frames immediately via HTTP + MQTT</div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">1 · Select Content</div></div>
+          <div class="cb">
+            <div class="flex gap8 mb12">
+              <button class="btn btn-p" type="button" data-action="upload-media">Upload New Photo</button>
+              <button class="btn btn-g" type="button" data-action="choose-library">Choose from Library</button>
+            </div>
+            <div style="border:2px dashed var(--border);border-radius:var(--r);padding:28px;text-align:center;color:var(--ink4);font-size:12px;">
+              Drag & drop image here<br><span style="font-size:10px">PNG, JPG, GIF — max 10 MB — will upload via HTTP → MQTT notify</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">2 · Select Target</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="push-target">Push to</label>
+              <select id="push-target"><option>Single device</option><option>Device group</option><option>All devices</option></select>
+            </div>
+            <div class="form-row"><label for="push-device">Device / Group</label>
+              <select id="push-device"><option>Living Room Frame (YX-133P)</option><option>Grandma's Bedroom (YX-6)</option><option>Liu Family Frames (group, 4 devices)</option><option>CBD Zone 广告牌 (group, 12 devices)</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">3 · Display Options</div></div>
+          <div class="cb">
+            <div class="grid2 gap12">
+              <div class="form-row"><label for="brightness">Brightness</label><input type="text" id="brightness" value="80%"/></div>
+              <div class="form-row"><label for="duration">Display duration</label><select id="duration"><option>Until next push</option><option>30 minutes</option><option>2 hours</option><option>Custom</option></select></div>
+            </div>
+            <div class="flex items-center gap12" style="margin-top:10px;">
+              <span style="font-size:12px;color:var(--ink3)">Add to playlist after push</span>
+              <button class="toggle on" aria-pressed="true" type="button"></button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-p" style="padding:10px 24px;font-size:13px;" type="button" data-action="push-now">Push Now via HTTP + MQTT →</button>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card" id="recent-pushes-card">
+          <div class="ch"><div class="ch-title">Recent Pushes</div><div class="ch-sub">Delivery status</div></div>
+          ${pushRow('📸','Family Picnic','Living Room Frame','Delivered','pill-g','2m ago')}
+          ${pushRow('🌅','Morning Sunrise','Liu Family (4)','Delivered','pill-g','14m ago')}
+          ${pushRow('🎨','Abstract Art #7','Art Gallery group','Delivered','pill-g','1h ago')}
+          ${pushRow('🏙️','Nike Summer Ad','CBD Zone (12)','Queued (1 offline)','pill-a','2h ago')}
+          ${pushRow('📋','Welcome Template','Office Entrance','Failed','pill-r','3h ago')}
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Push Flow</div><div class="ch-sub">HTTP upload → MQTT command → ACK</div></div>
+          <div class="cb" style="font-size:12px;color:var(--ink3);line-height:1.8;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">1</span>Image uploaded to CDN via <b>HTTP POST</b></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">2</span><b>MQTT DISPLAY</b> command sent to device topic</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">3</span>Device fetches image URL and refreshes E-ink</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">4</span>Device publishes <b>ACK</b> with refresh_ms back to platform</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: SCHEDULER
+  ============================================================ -->
+  <div class="page" id="page-schedule">
+    <div class="pg-title">Scheduler</div>
+    <div class="pg-sub">Automate content delivery — Memory Flashback, birthdays, ad slots</div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Active Schedules</div><button class="btn btn-p ch-right" type="button" data-action="new-schedule">+ New Schedule</button></div>
+          <table>
+            <thead><tr><th scope="col">Name</th><th scope="col">Trigger</th><th scope="col">Target</th><th scope="col">Status</th><th scope="col"></th></tr></thead>
+            <tbody>
+              <tr><td><b>Morning Moments</b></td><td>Daily 07:00–10:00</td><td>Liu Family (4)</td><td><span class="pill pill-g">Running</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><b>Memory Flashback</b></td><td>Daily 08:00 — same date last year</td><td>All family frames</td><td><span class="pill pill-g">Running</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><b>Birthday — David Chen</b></td><td>Jun 12 · all day</td><td>Liu Family (4)</td><td><span class="pill pill-a">Upcoming</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><b>Nike Summer Ad</b></td><td>Mon–Fri 08:00–20:00</td><td>CBD Zone (12)</td><td><span class="pill pill-g">Running</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><b>Sleep Mode</b></td><td>Daily 23:00–07:00</td><td>All devices</td><td><span class="pill pill-g">Running</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><b>Art Gallery Weekend</b></td><td>Sat–Sun all day</td><td>Office Entrance</td><td><span class="pill pill-b">Paused</span></td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- weekly calendar -->
+        <div class="card">
+          <div class="ch"><div class="ch-title">Weekly Calendar View</div></div>
+          <div class="cb" style="overflow-x:auto;">
+            <div style="display:grid;grid-template-columns:60px repeat(7,1fr);gap:4px;font-size:10px;min-width:500px;">
+              <div></div>
+              ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div style="text-align:center;font-weight:500;color:var(--ink4);padding:4px">${d}</div>`).join('')}
+              ${['08:00','10:00','12:00','14:00','16:00','18:00','20:00'].map(t=>`
+                <div style="color:var(--ink4);padding:4px 0;font-family:var(--mono)">${t}</div>
+                ${[0,1,2,3,4,5,6].map(d=>`<div style="height:22px;border-radius:3px;background:${d<5&&t<'20:00'?'var(--accent2)':'var(--border2)'};border:1px solid var(--border2)"></div>`).join('')}
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">New Schedule</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="schedule-name">Name</label><input type="text" id="schedule-name" placeholder="e.g. Birthday Flashback"/></div>
+            <div class="form-row"><label for="schedule-trigger">Trigger Type</label>
+              <select id="schedule-trigger">
+                <option>Time window (daily)</option>
+                <option>Specific date</option>
+                <option>Memory Flashback (same day last year)</option>
+                <option>Event-based (weather / holiday)</option>
+              </select>
+            </div>
+            <div class="grid2 gap8">
+              <div class="form-row"><label for="schedule-start">Start time</label><input type="text" id="schedule-start" value="07:00"/></div>
+              <div class="form-row"><label for="schedule-end">End time</label><input type="text" id="schedule-end" value="10:00"/></div>
+            </div>
+            <div class="form-row"><label for="schedule-content">Content</label><select id="schedule-content"><option>Morning Moments playlist</option><option>Art Gallery playlist</option><option>Custom upload</option></select></div>
+            <div class="form-row"><label for="schedule-target">Target</label><select id="schedule-target"><option>Liu Family Frames</option><option>All devices</option><option>CBD Zone</option></select></div>
+            <button class="btn btn-p w-full" style="margin-top:4px;" type="button" data-action="save-schedule">Save Schedule</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: BILLBOARD
+  ============================================================ -->
+  <div class="page" id="page-billboard">
+    <div class="pg-title">Billboard / 广告牌 Management</div>
+    <div class="pg-sub">CBD Zone · 12 screens · Commercial signage mode</div>
+    <div class="grid4 section-gap">
+      <div class="stat"><div class="stat-lbl">Active Campaigns</div><div class="stat-val">3</div></div>
+      <div class="stat"><div class="stat-lbl">Total Impressions</div><div class="stat-val" style="color:var(--accent)">24.5K</div><div class="stat-foot"><span class="pill pill-b">Today</span></div></div>
+      <div class="stat"><div class="stat-lbl">Screens Online</div><div class="stat-val" style="color:var(--green)">11/12</div></div>
+      <div class="stat"><div class="stat-lbl">Revenue (MTD)</div><div class="stat-val" style="color:var(--teal)">¥8,240</div></div>
+    </div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Ad Campaigns</div><button class="btn btn-p ch-right" type="button" data-action="new-campaign">+ New Campaign</button></div>
+          <table>
+            <thead><tr><th scope="col">Campaign</th><th scope="col">Client</th><th scope="col">Slots</th><th scope="col">Schedule</th><th scope="col">Impressions</th><th scope="col">Status</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px;"><span>☕</span><b>Starbucks Summer</b></div></td>
+                <td>Starbucks CN</td><td>1–3</td><td>Mon–Fri 08–20</td>
+                <td style="font-family:var(--mono);font-weight:500">12,440</td>
+                <td><span class="pill pill-g">Active</span></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px;"><span>👟</span><b>Nike Summer Drop</b></div></td>
+                <td>Nike China</td><td>4</td><td>All day · All screens</td>
+                <td style="font-family:var(--mono);font-weight:500">8,820</td>
+                <td><span class="pill pill-g">Active</span></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px;"><span>🏥</span><b>Ping An Health PSA</b></div></td>
+                <td>Ping An</td><td>5</td><td>Weekends</td>
+                <td style="font-family:var(--mono);font-weight:500">3,210</td>
+                <td><span class="pill pill-a">Weekend only</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- slot grid -->
+        <div class="card">
+          <div class="ch"><div class="ch-title">Slot Inventory — CBD Zone</div><div class="ch-sub">5 slots per screen · 12 screens</div></div>
+          <div class="cb">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px;">
+              ${['Slot 1\nStarbucks','Slot 2\nStarbucks','Slot 3\nStarbucks','Slot 4\nNike','Slot 5\nPing An'].map((s,i)=>`<div style="background:${['var(--amber-bg)','var(--amber-bg)','var(--amber-bg)','var(--accent2)','var(--green-bg)'][i]};border-radius:6px;padding:8px 6px;text-align:center;font-size:10px;line-height:1.6;font-weight:500;color:var(--ink2)">${s}</div>`).join('')}
+            </div>
+            <div style="display:flex;gap:10px;font-size:11px;color:var(--ink4);">
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--amber-bg);display:inline-block"></span>Starbucks</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--accent2);display:inline-block"></span>Nike</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green-bg);display:inline-block"></span>Ping An</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--border);display:inline-block"></span>Available</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Proof-of-Play Report</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="pop-campaign">Campaign</label><select id="pop-campaign"><option>Starbucks Summer</option><option>Nike Summer Drop</option></select></div>
+            <div class="grid2 gap8 mb12">
+              <div class="form-row"><label for="pop-from">From</label><input type="text" id="pop-from" value="Jun 1, 2026"/></div>
+              <div class="form-row"><label for="pop-to">To</label><input type="text" id="pop-to" value="Jun 10, 2026"/></div>
+            </div>
+            <div style="background:var(--bg);border-radius:var(--rs);padding:12px;margin-bottom:12px;">
+              <div class="kv"><span class="kv-k">Total plays</span><span class="kv-v">12,440</span></div>
+              <div class="kv"><span class="kv-k">Avg per screen</span><span class="kv-v">1,131 / day</span></div>
+              <div class="kv"><span class="kv-k">Peak hour</span><span class="kv-v">08:00–09:00</span></div>
+              <div class="kv"><span class="kv-k">Delivery rate</span><span class="kv-v">98.4%</span></div>
+            </div>
+            <button class="btn btn-g w-full" type="button" data-action="export-pdf">Export PDF Report</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Impressions by Hour</div></div>
+          <div class="cb">
+            <div class="spark" style="height:60px;gap:4px;">
+              <div class="sp-b " style="height:20%;flex:1;min-width:6px" title="20"></div><div class="sp-b " style="height:35%;flex:1;min-width:6px" title="35"></div><div class="sp-b " style="height:60%;flex:1;min-width:6px" title="60"></div><div class="sp-b hi" style="height:85%;flex:1;min-width:6px" title="85"></div><div class="sp-b hi" style="height:100%;flex:1;min-width:6px" title="100"></div><div class="sp-b hi" style="height:95%;flex:1;min-width:6px" title="95"></div><div class="sp-b hi" style="height:80%;flex:1;min-width:6px" title="80"></div><div class="sp-b " style="height:70%;flex:1;min-width:6px" title="70"></div><div class="sp-b " style="height:65%;flex:1;min-width:6px" title="65"></div><div class="sp-b " style="height:55%;flex:1;min-width:6px" title="55"></div><div class="sp-b " style="height:45%;flex:1;min-width:6px" title="45"></div><div class="sp-b " style="height:40%;flex:1;min-width:6px" title="40"></div><div class="sp-b " style="height:38%;flex:1;min-width:6px" title="38"></div><div class="sp-b " style="height:42%;flex:1;min-width:6px" title="42"></div><div class="sp-b " style="height:58%;flex:1;min-width:6px" title="58"></div><div class="sp-b hi" style="height:75%;flex:1;min-width:6px" title="75"></div><div class="sp-b hi" style="height:88%;flex:1;min-width:6px" title="88"></div><div class="sp-b hi" style="height:95%;flex:1;min-width:6px" title="95"></div><div class="sp-b " style="height:70%;flex:1;min-width:6px" title="70"></div><div class="sp-b " style="height:50%;flex:1;min-width:6px" title="50"></div><div class="sp-b " style="height:35%;flex:1;min-width:6px" title="35"></div><div class="sp-b " style="height:22%;flex:1;min-width:6px" title="22"></div><div class="sp-b " style="height:15%;flex:1;min-width:6px" title="15"></div><div class="sp-b " style="height:10%;flex:1;min-width:6px" title="10"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:5px;font-family:var(--mono)">
+              <span>00</span><span>06</span><span>12</span><span>18</span><span>23</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: ANALYTICS
+  ============================================================ -->
+  <div class="page" id="page-analytics">
+    <div class="pg-title">Analytics</div>
+    <div class="pg-sub">Fleet health, engagement, and content performance</div>
+    <div class="grid4 section-gap">
+      <div class="stat"><div class="stat-lbl">Fleet Uptime (30d)</div><div class="stat-val" style="color:var(--green)">94.2%</div></div>
+      <div class="stat"><div class="stat-lbl">Avg Photos / Device</div><div class="stat-val">6.1</div><div class="stat-foot">per day</div></div>
+      <div class="stat"><div class="stat-lbl">Avg Display Time</div><div class="stat-val">4.2h</div><div class="stat-foot">per device / day</div></div>
+      <div class="stat"><div class="stat-lbl">OTA Success Rate</div><div class="stat-val" style="color:var(--teal)">99.1%</div></div>
+    </div>
+    <div class="grid2 section-gap">
+      <div class="card">
+        <div class="ch"><div class="ch-title">Photos Pushed — Last 14 Days</div></div>
+        <div class="cb">
+          <div class="spark" style="height:80px;gap:5px;">
+            <div class="sp-b " style="height:60%;flex:1;min-width:10px" title="90 photos"></div><div class="sp-b " style="height:73%;flex:1;min-width:10px" title="110 photos"></div><div class="sp-b " style="height:87%;flex:1;min-width:10px" title="130 photos"></div><div class="sp-b " style="height:63%;flex:1;min-width:10px" title="95 photos"></div><div class="sp-b " style="height:93%;flex:1;min-width:10px" title="140 photos"></div><div class="sp-b " style="height:83%;flex:1;min-width:10px" title="125 photos"></div><div class="sp-b " style="height:67%;flex:1;min-width:10px" title="100 photos"></div><div class="sp-b " style="height:98%;flex:1;min-width:10px" title="147 photos"></div><div class="sp-b " style="height:80%;flex:1;min-width:10px" title="120 photos"></div><div class="sp-b " style="height:90%;flex:1;min-width:10px" title="135 photos"></div><div class="sp-b " style="height:100%;flex:1;min-width:10px" title="150 photos"></div><div class="sp-b " style="height:97%;flex:1;min-width:10px" title="145 photos"></div><div class="sp-b " style="height:87%;flex:1;min-width:10px" title="130 photos"></div><div class="sp-b hi" style="height:98%;flex:1;min-width:10px" title="147 photos"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:6px;font-family:var(--mono)">
+            <span>May 28</span><span>Jun 3</span><span>Jun 10</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ch-title">Device Uptime — Last 7 Days</div></div>
+        <div class="cb">
+          <div class="spark" style="height:80px;gap:5px;">
+            <div class="sp-b hi" style="height:95%;flex:1;min-width:16px" title="95%"></div><div class="sp-b hi" style="height:98%;flex:1;min-width:16px" title="98%"></div><div class="sp-b hi" style="height:96%;flex:1;min-width:16px" title="96%"></div><div class="sp-b hi" style="height:94%;flex:1;min-width:16px" title="94%"></div><div class="sp-b hi" style="height:97%;flex:1;min-width:16px" title="97%"></div><div class="sp-b hi" style="height:92%;flex:1;min-width:16px" title="92%"></div><div class="sp-b hi" style="height:94%;flex:1;min-width:16px" title="94%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:6px;font-family:var(--mono)">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid3 section-gap">
+      <div class="card">
+        <div class="ch"><div class="ch-title">Top Devices by Activity</div></div>
+        <div class="row-item"><div style="flex:1"><div style="font-size:12px;font-weight:500">Living Room Frame</div><div class="prog" style="margin-top:4px"><div class="prog-f" style="width:95%;background:var(--accent)"></div></div></div><span style="font-size:11px;font-family:var(--mono);margin-left:10px">38 photos</span></div>
+        <div class="row-item"><div style="flex:1"><div style="font-size:12px;font-weight:500">Grandma's Bedroom</div><div class="prog" style="margin-top:4px"><div class="prog-f" style="width:78%;background:var(--accent)"></div></div></div><span style="font-size:11px;font-family:var(--mono);margin-left:10px">31 photos</span></div>
+        <div class="row-item"><div style="flex:1"><div style="font-size:12px;font-weight:500">CBD Corner #4</div><div class="prog" style="margin-top:4px"><div class="prog-f" style="width:55%;background:var(--teal)"></div></div></div><span style="font-size:11px;font-family:var(--mono);margin-left:10px">22 plays</span></div>
+        <div class="row-item"><div style="flex:1"><div style="font-size:12px;font-weight:500">Hospital Lobby</div><div class="prog" style="margin-top:4px"><div class="prog-f" style="width:40%;background:var(--purple)"></div></div></div><span style="font-size:11px;font-family:var(--mono);margin-left:10px">16 photos</span></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ch-title">E-ink Refresh Health</div></div>
+        <div class="cb" style="font-size:12px;">
+          <div class="kv"><span class="kv-k">Avg refresh time</span><span class="kv-v">20.1 s</span></div>
+          <div class="kv"><span class="kv-k">Failed refreshes</span><span class="kv-v">0.6%</span></div>
+          <div class="kv"><span class="kv-k">YX-133P avg</span><span class="kv-v">19.8 s</span></div>
+          <div class="kv"><span class="kv-k">YX-6 avg</span><span class="kv-v">20.4 s</span></div>
+          <div class="kv"><span class="kv-k">Most refresh cycles</span><span class="kv-v">Living Room (14d)</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ch-title">Network Quality</div></div>
+        <div class="cb" style="font-size:12px;">
+          <div class="kv"><span class="kv-k">Avg WiFi RSSI</span><span class="kv-v">−58 dBm</span></div>
+          <div class="kv"><span class="kv-k">Excellent signal</span><span class="kv-v">15 devices</span></div>
+          <div class="kv"><span class="kv-k">Weak signal</span><span class="kv-v">3 devices</span></div>
+          <div class="kv"><span class="kv-k">MQTT latency avg</span><span class="kv-v">42 ms</span></div>
+          <div class="kv"><span class="kv-k">Delivery fail rate</span><span class="kv-v">1.6%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Uptime Report -->
+    <div class="card section-gap">
+      <div class="ch">
+        <div><div class="ch-title">Uptime Report (24h)</div><div class="ch-sub">Device availability across the fleet</div></div>
+        <div class="ml-auto flex gap8" style="align-items:center">
+          <span style="font-size:11px;color:var(--ink4)">From</span>
+          <input type="text" id="uptime-filter-from" placeholder="YYYY-MM-DD" value="" style="width:110px;font-size:11px" data-action="filter-uptime">
+          <span style="font-size:11px;color:var(--ink4)">To</span>
+          <input type="text" id="uptime-filter-to" placeholder="YYYY-MM-DD" value="" style="width:110px;font-size:11px" data-action="filter-uptime">
+        </div>
+      </div>
+      <div id="uptime-report-table">
+        <!-- populated by renderAnalytics() -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       PAGE: FAMILY GROUPS
+  ============================================================ -->
+  <div class="page" id="page-family">
+    <div class="pg-title">Family Groups</div>
+    <div class="pg-sub">Manage who can send photos to which frame</div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div id="family-group-cards"></div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Invite via QR Code</div></div>
+          <div class="cb flex items-center gap16">
+            <div style="width:90px;height:90px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:36px;">⬛</div>
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Liu Family QR</div>
+              <div style="font-size:11px;color:var(--ink4);margin-bottom:10px;">Scan to join via WeChat or camera</div>
+              <div class="flex gap8">
+                <button class="btn btn-p" type="button" data-action="share-link">Share link</button>
+                <button class="btn btn-g" type="button" data-action="download-qr">Download QR</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Permissions</div></div>
+          <div class="cb" id="family-permissions" style="font-size:12px;"></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">All Groups</div></div>
+          <div id="family-all-groups"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: ALERTS
+  ============================================================ -->
+  <div class="page" id="page-alerts">
+    <div class="pg-title">Alerts</div>
+    <div class="pg-sub">3 active · 12 resolved in last 7 days</div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Active Alerts</div><div class="ch-sub">Requires attention</div></div>
+          ${alertRow('a-001','🔴','Critical','Café Billboard #1 offline','MQTT Last Will triggered — no heartbeat for 2h 14m. Device at Nanjing Rd, Huangpu.','2h ago',true)}
+          ${alertRow('a-002','⚠️','Warning','Office Entrance — weak WiFi','Signal strength −74 dBm. Photo delivery delays detected.','45m ago',false)}
+          ${alertRow('a-003','💾','Warning','Grandma\'s Bedroom SD card','14.2 GB used of 16 GB (89%). Clear old photos to prevent delivery failure.','1h ago',false)}
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Resolved (last 7 days)</div></div>
+          ${alertRow('a-004','✅','Info','Living Room Frame back online','Was offline for 4 minutes — auto-reconnected.','Yesterday 09:14',false)}
+          ${alertRow('a-005','✅','Info','OTA v1.4.3 completed — all 8 devices','Shanghai Office group firmware update successful.','Jun 8 10:35',false)}
+          ${alertRow('a-006','✅','Info','CBD Corner #3 storage cleared','SD card freed after auto-cleanup. 8.1 GB recovered.','Jun 7 14:00',false)}
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Alert Rules</div><button class="btn btn-g ch-right" type="button" data-action="new-alert-rule">+ New Rule</button></div>
+          <div class="cb flex-col gap12">
+            ${ruleRow('r-001','Device offline','MQTT LWT','Email + Push','on')}
+            ${ruleRow('r-002','Storage > 85%','Telemetry check','Email','on')}
+            ${ruleRow('r-003','WiFi < −70 dBm','Telemetry check','Push','on')}
+            ${ruleRow('r-004','OTA failed','OTA ack timeout','Email + Webhook','on')}
+            ${ruleRow('r-005','Photo delivery failed','ACK timeout','Push','off')}
+            ${ruleRow('r-006','Firmware out of date','Version check','Email','off')}
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Notification Channels</div></div>
+          <div class="cb flex-col gap12">
+            ${channelRow('email','📧','Email','jenny@example.com','on')}
+            ${channelRow('push','📱','Mobile Push','iOS + Android app','on')}
+            ${channelRow('webhook','🔗','Webhook','https://hooks.example.com','off')}
+            ${channelRow('wechat','💬','WeChat','Linked account','off')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: OTA UPDATES
+  ============================================================ -->
+  <div class="page" id="page-ota">
+    <div class="pg-title">OTA Firmware Updates</div>
+    <div class="pg-sub">Push firmware over the air via MQTT command → HTTP fetch</div>
+    <div class="grid4 section-gap">
+      <div class="stat"><div class="stat-lbl">Latest Firmware</div><div class="stat-val" style="color:var(--green)">v1.4.3</div><div class="stat-foot"><span class="pill pill-g">Released Jun 9</span></div></div>
+      <div class="stat"><div class="stat-lbl">Up to Date</div><div class="stat-val" style="color:var(--green)">20</div></div>
+      <div class="stat"><div class="stat-lbl">Needs Update</div><div class="stat-val" style="color:var(--amber)">4</div></div>
+      <div class="stat"><div class="stat-lbl">Last Update Success</div><div class="stat-val">99%</div></div>
+    </div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Device Firmware Status</div></div>
+          <table>
+            <thead><tr><th scope="col">Device</th><th scope="col">Current</th><th scope="col">Latest</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+            <tbody>
+              <tr><td>Living Room Frame</td><td><span class="tag">v1.4.3</span></td><td><span class="tag">v1.4.3</span></td><td><span class="pill pill-g">Up to date</span></td><td>—</td></tr>
+              <tr><td>Grandma's Bedroom</td><td><span class="tag">v1.4.2</span></td><td><span class="tag">v1.4.3</span></td><td><span class="pill pill-a">Update available</span></td><td><button class="btn btn-p" style="font-size:11px;padding:3px 8px;" type="button">Update</button></td></tr>
+              <tr><td>Office Entrance</td><td><span class="tag">v1.4.3</span></td><td><span class="tag">v1.4.3</span></td><td><span class="pill pill-g">Up to date</span></td><td>—</td></tr>
+              <tr><td>Café Billboard #1</td><td><span class="tag">v1.3.8</span></td><td><span class="tag">v1.4.3</span></td><td><span class="pill pill-r">Outdated · Offline</span></td><td><button class="btn btn-g" style="font-size:11px;padding:3px 8px;" type="button">Queued</button></td></tr>
+              <tr><td>CBD Corner #4</td><td><span class="tag">v1.4.2</span></td><td><span class="tag">v1.4.3</span></td><td><span class="pill pill-a">Update available</span></td><td><button class="btn btn-p" style="font-size:11px;padding:3px 8px;" type="button">Update</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">OTA Flow</div></div>
+          <div class="cb" style="font-size:12px;line-height:2;color:var(--ink3)">
+            <div><b>1.</b> Platform publishes MQTT cmd to <code style="font-family:var(--mono);background:var(--bg);padding:1px 5px;border-radius:3px">myframe/{id}/cmd</code> → <code style="font-family:var(--mono);background:var(--bg);padding:1px 5px;border-radius:3px">{"cmd":"ota","url":"...","version":"v1.4.3"}</code></div>
+            <div><b>2.</b> Device downloads firmware binary via <b>HTTP GET</b> from CDN</div>
+            <div><b>3.</b> Device flashes, reboots, reconnects to MQTT</div>
+            <div><b>4.</b> Device publishes ACK with new version string — update confirmed ✓</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Release Notes — v1.4.3</div></div>
+          <div class="cb" style="font-size:12px;line-height:1.8;color:var(--ink2)">
+            <div>✅ Faster E-ink refresh (−8% avg time)</div>
+            <div>✅ MQTT reconnect stability fix</div>
+            <div>✅ SD card auto-cleanup when &gt;90% full</div>
+            <div>✅ WeChat QR invite support</div>
+            <div>✅ Improved sleep / wake schedule accuracy</div>
+            <div style="color:var(--ink4);font-size:11px;margin-top:10px">Released Jun 9, 2026 · 2.4 MB binary</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Bulk Update</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="ota-target">Target</label><select id="ota-target"><option>All outdated devices (4)</option><option>Shanghai Office group</option><option>CBD Zone group</option></select></div>
+            <div class="form-row"><label for="ota-strategy">Rollout strategy</label><select id="ota-strategy"><option>All at once</option><option>Rolling — 25% at a time</option><option>Canary — 1 device first</option></select></div>
+            <div class="form-row"><label for="ota-schedule">Schedule</label><select id="ota-schedule"><option>Now</option><option>Tonight at 02:00</option><option>Custom time</option></select></div>
+            <button class="btn btn-p w-full" type="button" data-action="start-ota-rollout">Start OTA Rollout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: USERS & ACCESS
+  ============================================================ -->
+  <div class="page" id="page-users">
+    <div class="pg-title">Users & Access Control</div>
+    <div class="pg-sub">Roles, permissions, and audit log</div>
+    <div class="two-col-layout section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Platform Users</div><button class="btn btn-p ch-right" type="button" data-action="invite-user">+ Invite User</button></div>
+          <table>
+            <thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col">Access scope</th><th scope="col">Last login</th><th scope="col"></th></tr></thead>
+            <tbody>
+              <tr><td><div class="flex items-center gap8"><div class="av" style="width:24px;height:24px;font-size:9px">JL</div><div><div style="font-size:12px;font-weight:500">Jenny Liu</div><div style="font-size:10px;color:var(--ink4)">jenny@myframe.ink</div></div></div></td><td><span class="pill pill-b">Admin</span></td><td>All devices</td><td style="font-size:11px;font-family:var(--mono)">Today 14:02</td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><div class="flex items-center gap8"><div class="av" style="width:24px;height:24px;font-size:9px;background:var(--green)">DC</div><div><div style="font-size:12px;font-weight:500">David Chen</div><div style="font-size:10px;color:var(--ink4)">david@myframe.ink</div></div></div></td><td><span class="pill pill-g">Operator</span></td><td>Shanghai Office</td><td style="font-size:11px;font-family:var(--mono)">Today 10:15</td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><div class="flex items-center gap8"><div class="av" style="width:24px;height:24px;font-size:9px;background:var(--teal)">AW</div><div><div style="font-size:12px;font-weight:500">Ad Manager Wang</div><div style="font-size:10px;color:var(--ink4)">wang@agency.com</div></div></div></td><td><span class="pill pill-t">Ad Manager</span></td><td>CBD Zone only</td><td style="font-size:11px;font-family:var(--mono)">Yesterday</td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+              <tr><td><div class="flex items-center gap8"><div class="av" style="width:24px;height:24px;font-size:9px;background:var(--purple)">VL</div><div><div style="font-size:12px;font-weight:500">Viewer Lee</div><div style="font-size:10px;color:var(--ink4)">lee@example.com</div></div></div></td><td><span class="pill pill-p">Viewer</span></td><td>Read-only</td><td style="font-size:11px;font-family:var(--mono)">Jun 8</td><td><button class="icon-btn" type="button">⚙️</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Audit Log</div></div>
+          <div class="row-item"><span style="font-size:16px;margin-right:4px">🔐</span><div><div style="font-size:12px"><b>Jenny Liu</b> changed permission for David Chen</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Today 13:40</div></div></div>
+          <div class="row-item"><span style="font-size:16px;margin-right:4px">📤</span><div><div style="font-size:12px"><b>David Chen</b> pushed photo to Shanghai Office group</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Today 10:15</div></div></div>
+          <div class="row-item"><span style="font-size:16px;margin-right:4px">➕</span><div><div style="font-size:12px"><b>Jenny Liu</b> added device Café Billboard #2</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Jun 8 09:00</div></div></div>
+          <div class="row-item"><span style="font-size:16px;margin-right:4px">🗑️</span><div><div style="font-size:12px"><b>David Chen</b> deleted media file old_ad.jpg</div><div style="font-size:10px;color:var(--ink4);font-family:var(--mono)">Jun 7 16:22</div></div></div>
+        </div>
+      </div>
+      <div class="flex-col gap12">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Role Permissions</div></div>
+          <div class="cb" style="font-size:11px;">
+            <div style="display:grid;grid-template-columns:1fr 60px 60px 60px 60px;gap:6px;align-items:center;font-size:10px;margin-bottom:8px;">
+              <div style="color:var(--ink4)">Permission</div>
+              <div style="text-align:center;color:var(--accent)">Admin</div>
+              <div style="text-align:center;color:var(--green)">Oper.</div>
+              <div style="text-align:center;color:var(--teal)">Ad Mgr</div>
+              <div style="text-align:center;color:var(--purple)">Viewer</div>
+            </div>
+            <div id="perm-matrix-rows"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAGE: SETTINGS
+  ============================================================ -->
+  <div class="page" id="page-settings">
+    <div class="pg-title">Settings</div>
+    <div class="pg-sub">Platform configuration, security, and integrations</div>
+    <div class="grid2 section-gap">
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">MQTT Broker</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="broker-host">Broker host</label><input type="text" id="broker-host" value="broker.myframe.ink"/></div>
+            <div class="grid2 gap8">
+              <div class="form-row"><label for="broker-port">Port (TLS)</label><input type="text" id="broker-port" value="8883"/></div>
+              <div class="form-row"><label for="broker-qos">QoS default</label><select id="broker-qos"><option>1 — At least once</option><option>0</option><option>2</option></select></div>
+            </div>
+            <div class="flex items-center gap12 mb12">
+              <span style="font-size:12px;color:var(--ink3)">TLS / SSL encryption</span><button class="toggle on ml-auto" aria-pressed="true" type="button"></button>
+            </div>
+            <div class="flex items-center gap12">
+              <span style="font-size:12px;color:var(--ink3)">Enable Last Will (auto-offline)</span><button class="toggle on ml-auto" aria-pressed="true" type="button"></button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">HTTP / API</div></div>
+          <div class="cb">
+            <div class="form-row"><label for="api-url">API Base URL</label><input type="text" id="api-url" value="https://api.myframe.ink/v2"/></div>
+            <div class="form-row"><label for="cdn-endpoint">CDN Endpoint</label><input type="text" id="cdn-endpoint" value="https://cdn.myframe.ink"/></div>
+            <div class="form-row"><label for="api-key">API Key</label><input type="password" id="api-key" value="mf_live_sk_xxxxxxxxxxxxx"/></div>
+            <button class="btn btn-g" type="button" data-action="regenerate-api-key">Regenerate API Key</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Security</div></div>
+          <div class="cb flex-col gap12">
+            ${settingToggle('Two-factor authentication (2FA)','on')}
+            ${settingToggle('Device certificate rotation (30d)','on')}
+            ${settingToggle('Remote wipe on account delete','off')}
+            ${settingToggle('Content source allowlist','off')}
+          </div>
+        </div>
+      </div>
+      <div class="flex-col gap16">
+        <div class="card">
+          <div class="ch"><div class="ch-title">Integrations</div></div>
+          <div class="cb flex-col gap12">
+            ${integRow('🔗','Webhook','Push device events to your server','Connected')}
+            ${integRow('💬','WeChat Official','Family invite via WeChat','Connected')}
+            ${integRow('🌤️','Weather API','Trigger content by weather','Not set up')}
+            ${integRow('📅','Holiday Calendar','Auto content on holidays','Enabled')}
+            ${integRow('📊','Grafana','Export metrics to dashboard','Not set up')}
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Default Device Settings</div></div>
+          <div class="cb">
+            <div class="grid2 gap8">
+              <div class="form-row"><label for="def-brightness">Default brightness</label><input type="text" id="def-brightness" value="75%"/></div>
+              <div class="form-row"><label for="def-refresh">Refresh interval</label><select id="def-refresh"><option>30 min</option><option>1 hour</option><option>2 hours</option></select></div>
+            </div>
+            <div class="grid2 gap8">
+              <div class="form-row"><label for="sleep-start">Sleep start</label><input type="text" id="sleep-start" value="23:00"/></div>
+              <div class="form-row"><label for="wake-time">Wake time</label><input type="text" id="wake-time" value="07:00"/></div>
+            </div>
+            <div class="flex items-center gap12">
+              <span style="font-size:12px;color:var(--ink3)">Auto timezone from location</span><button class="toggle on ml-auto" aria-pressed="true" type="button"></button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ch-title">Platform Info</div></div>
+          <div class="cb" style="font-size:12px;">
+            <div class="kv"><span class="kv-k">Version</span><span class="kv-v">v2.1.0</span></div>
+            <div class="kv"><span class="kv-k">Last deploy</span><span class="kv-v">Jun 9, 2026</span></div>
+            <div class="kv"><span class="kv-k">Region</span><span class="kv-v">ap-shanghai</span></div>
+            <div class="kv"><span class="kv-k">MQTT broker</span><span class="kv-v" style="color:var(--green)">● Healthy</span></div>
+            <div class="kv"><span class="kv-k">API status</span><span class="kv-v" style="color:var(--green)">● Healthy</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </main><!-- /main-content -->
+</div><!-- /main -->
+
+<script src="/mdm/bridge.js"></script>
+<script src="/mdm/app.js"></script>
+</body>
+</html>
