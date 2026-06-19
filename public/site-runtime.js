@@ -294,6 +294,7 @@
   setText('#specs .section-label', view.specsLabel);
   setText('#specs .section-title', view.specsTitle);
   setText('#specs .section-desc', view.specsDescription);
+  setText('#pricing .section-label', view.pricingLabel);
   setText('#pricing .section-title', view.pricingTitle);
   setText('#pricing .section-desc', view.pricingDescription);
   setSpecsAside(view);
@@ -307,8 +308,11 @@
   renderFeatures(json.features || [], translatedFeatures);
   renderProducts(json.products || [], translated, currentCurrency, json.currencies || []);
   renderSpecs(translated);
-  renderFooter({ ...footer, footerText: translated.footerText || footer.footerText }, json.footerLinks || [], json.socials || [], currentLang, localizedPages, translated);
+  renderFooter({ ...footer, footerText: translated.footerText || footer.footerText, copyrightText: translated.copyrightText || footer.copyrightText }, json.footerLinks || [], json.socials || [], currentLang, localizedPages, translated);
   applyFooterLoginAnchors(currentLang, translated);
+  applyNotifyModalCopy(view);
+  applyProductPlaceholder(view);
+  applyAccessibilityLabels(view);
   window.myframeCatalog = Object.fromEntries((json.products || []).map((p) => [p.sku, { id: p.id, price: Number(p.price), desc: p.description, name: p.name, currency: p.currency }]));
   localStorage.setItem('myframeCurrency', currentCurrency);
   updateCartBadge();
@@ -384,7 +388,60 @@
       activeLanguages,
       lang,
     );
+    syncMobileMenuLinks(visibleMenus, lang);
     updateCartBadge();
+  }
+
+  function syncMobileMenuLinks(visibleMenus, lang) {
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (!mobileMenu) return;
+    visibleMenus.forEach((item) => {
+      const href = localizeMenuUrl(item.url, lang);
+      mobileMenu.querySelectorAll(`a[href="${item.url}"], a[href="${href}"]`).forEach((anchor) => {
+        anchor.setAttribute('href', href);
+        const isCart = /cart/i.test(item.label) || /cart-checkout/.test(item.url);
+        if (isCart) {
+          anchor.innerHTML = `${esc(translateMenuLabel(item))} <span id="mobileNavCartBadge" class="cart-badge">0</span>`;
+        } else {
+          anchor.textContent = translateMenuLabel(item);
+        }
+      });
+    });
+  }
+
+  function applyNotifyModalCopy(data) {
+    const modal = document.getElementById('notifyModal');
+    if (!modal) return;
+    const title = modal.querySelector('h3');
+    const intro = modal.querySelector('p');
+    const nameInput = modal.querySelector('input[name="name"]');
+    const emailInput = modal.querySelector('input[name="email"]');
+    const submitBtn = modal.querySelector('button[type="submit"]');
+    if (title && data.notifyModalTitle) title.textContent = data.notifyModalTitle;
+    if (intro && data.notifyModalIntro) {
+      intro.innerHTML = `${esc(data.notifyModalIntro)} <strong id="notifyProductTitle">${esc(intro.querySelector('#notifyProductTitle')?.textContent || 'this product')}</strong>${data.notifyModalIntroSuffix ? esc(data.notifyModalIntroSuffix) : '.'}`;
+    }
+    if (nameInput && data.notifyNamePlaceholder) nameInput.setAttribute('placeholder', data.notifyNamePlaceholder);
+    if (emailInput && data.notifyEmailPlaceholder) emailInput.setAttribute('placeholder', data.notifyEmailPlaceholder);
+    if (submitBtn && data.notifySubmitButton) submitBtn.textContent = data.notifySubmitButton;
+  }
+
+  function applyProductPlaceholder(data) {
+    const placeholder = document.querySelector('#productShowcaseMedia .product-placeholder');
+    if (!placeholder) return;
+    const brand = placeholder.querySelector('strong');
+    const label = placeholder.querySelector('span');
+    if (brand && data.productBrandName) brand.textContent = data.productBrandName;
+    if (label && data.productLabel) label.textContent = data.productLabel;
+  }
+
+  function applyAccessibilityLabels(data) {
+    const prev = document.querySelector('[data-hero-prev]');
+    const next = document.querySelector('[data-hero-next]');
+    const menuToggle = document.getElementById('mobileMenuToggle');
+    if (prev && data.heroPrevAria) prev.setAttribute('aria-label', data.heroPrevAria);
+    if (next && data.heroNextAria) next.setAttribute('aria-label', data.heroNextAria);
+    if (menuToggle && data.openMenuAria) menuToggle.setAttribute('aria-label', data.openMenuAria);
   }
 
   function setFamilySteps(data) {
@@ -747,7 +804,12 @@
     if (!notifyModal || !notifyForm) return;
     notifyState.sku = sku || '';
     notifyState.productName = productName || '';
-    if (notifyTitle) notifyTitle.textContent = productName || 'this product';
+    const intro = notifyModal.querySelector('p');
+    if (intro && view.notifyModalIntro) {
+      intro.innerHTML = `${esc(view.notifyModalIntro)} <strong id="notifyProductTitle">${esc(productName || 'this product')}</strong>${view.notifyModalIntroSuffix ? esc(view.notifyModalIntroSuffix) : '.'}`;
+    } else if (notifyTitle) {
+      notifyTitle.textContent = productName || 'this product';
+    }
     notifyForm.reset();
     if (notifySuccess) notifySuccess.style.display = 'none';
     if (notifyError) notifyError.style.display = 'none';
