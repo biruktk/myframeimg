@@ -136,6 +136,7 @@ adminRouter.get("/admin/overview", (_req, res) => {
     lastPhotoAtMs: data.device.lastPhotoAtMs,
     connected: data.device.connected,
     deviceId: data.device.id,
+    deviceName: data.device.id,
     deviceSn: serialFromDeviceId(data.device.id),
     usedBytes: data.device.usedBytes,
     capacityBytes: data.device.capacityBytes,

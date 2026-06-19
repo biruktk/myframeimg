@@ -7,6 +7,11 @@
   var TEST_USER = 'admin';
   var TEST_PASS = 'admin';
 
+  function isLocalDevHost() {
+    var host = location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
+  }
+
   function normalizeMac(mac) {
     return String(mac || '').replace(/[^a-fA-F0-9]/gi, '').toUpperCase();
   }
@@ -126,9 +131,13 @@
           '<p id="mdm-login-error" class="mdm-login-error" aria-live="polite"></p>' +
           '<div class="mdm-login-actions">' +
             '<button type="submit" class="btn btn-p">Sign in</button>' +
-            '<button type="button" class="btn btn-g" id="mdm-test-login">Quick test login</button>' +
+            (isLocalDevHost()
+              ? '<button type="button" class="btn btn-g" id="mdm-test-login">Quick test login</button>'
+              : '') +
           '</div>' +
-          '<p class="mdm-login-hint">Test login uses admin / admin (local dev defaults)</p>' +
+          (isLocalDevHost()
+            ? '<p class="mdm-login-hint">Test login uses admin / admin (local dev defaults)</p>'
+            : '<p class="mdm-login-hint">Use the ADMIN_USER and ADMIN_PASS configured on the server.</p>') +
         '</form>' +
       '</div>';
     document.body.appendChild(overlay);
