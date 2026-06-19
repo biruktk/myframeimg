@@ -157,7 +157,7 @@
   const watchVideoUrl = String(media.watchVideoUrl || '').trim() || 'https://youtu.be/_8bVyx_Jiv8';
   const languages = json.languages || [];
   const locRes = await fetch('/api/public/location', { credentials: 'same-origin' }).catch(() => null);
-  let geo = { recommendedLanguage: 'en', recommendedCurrency: 'USD' };
+  let geo = { recommendedLanguage: 'en', recommendedCurrency: 'USD', forceLocale: false };
   if (locRes && locRes.ok) {
     try {
       const parsed = await locRes.json();
@@ -172,20 +172,47 @@
   const pathFirstSegment = location.pathname.split('/').filter(Boolean)[0];
   const explicitPathLang = langCodes.includes(pathFirstSegment) ? pathFirstSegment : '';
   const savedLangPref = (() => { try { return localStorage.getItem('myframeLang'); } catch (_) { return null; } })();
+  const manualLangPref = (() => {
+    try {
+      if (localStorage.getItem('myframeLangManual') === '1') return true;
+      return document.cookie.split(';').some((part) => part.trim().startsWith('myframe_lang_manual=1'));
+    } catch (_) {
+      return false;
+    }
+  })();
 
-  function persistLang(code) {
+  function persistLang(code, manual) {
     if (!langCodes.includes(code)) return;
     try { localStorage.setItem('myframeLang', code); } catch (_) {}
+    if (manual) {
+      try { localStorage.setItem('myframeLangManual', '1'); } catch (_) {}
+    }
     try {
       document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      if (manual) {
+        document.cookie = 'myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax';
+      }
     } catch (_) {}
+  }
+
+  // IP-forced locale (Chinese / Spanish-default countries including Ethiopia) —
+  // redirect even when the URL already has a locale prefix like /en.
+  if (
+    !manualLangPref &&
+    geo.forceLocale &&
+    langCodes.includes(currentLang) &&
+    explicitPathLang !== currentLang
+  ) {
+    persistLang(currentLang, false);
+    location.replace(`/${currentLang}${location.search || ''}${location.hash || ''}`);
+    return;
   }
 
   // First-time visitor on the homepage with an IP-detected non-English language —
   // auto-redirect to /{lang} so the URL matches the content. The dropdown still lets
   // them switch back; manual choices are respected on the next visit.
   if (!explicitPathLang && !savedLangPref && currentLang !== 'en' && langCodes.includes(currentLang)) {
-    persistLang(currentLang);
+    persistLang(currentLang, false);
     location.replace(`/${currentLang}${location.search || ''}${location.hash || ''}`);
     return;
   }
@@ -194,7 +221,7 @@
   // the English fallback — otherwise a saved 'en' would block future IP-based
   // detection if the user later browses through a different country (e.g. via VPN).
   if (explicitPathLang) {
-    persistLang(explicitPathLang);
+    persistLang(explicitPathLang, manualLangPref);
   }
   const currentCurrency = resolveCurrency(json.currencies || [], geo.recommendedCurrency, currentLang);
   const translated = currentLang === 'en' ? {} : (json.translations || {})[currentLang] || {};
@@ -288,9 +315,11 @@
 
   function onLanguageChange(code) {
     try { localStorage.setItem('myframeLang', code); } catch (_) {}
+    try { localStorage.setItem('myframeLangManual', '1'); } catch (_) {}
     try { localStorage.setItem('myframeCurrency', currencyForLanguage(code)); } catch (_) {}
     try {
       document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = 'myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax';
     } catch (_) {}
     location.href = code === 'en' ? '/' : `/${code}`;
   }
@@ -582,10 +611,20 @@
   function resolveLanguage(activeLanguages, recommended) {
     const pathLang = location.pathname.split('/').filter(Boolean)[0];
     const codes = activeLanguages.map((lang) => lang.code);
-    if (codes.includes(pathLang)) return pathLang;
+    const manual = (() => {
+      try {
+        if (localStorage.getItem('myframeLangManual') === '1') return true;
+        return document.cookie.split(';').some((part) => part.trim().startsWith('myframe_lang_manual=1'));
+      } catch (_) {
+        return false;
+      }
+    })();
+    if (codes.includes(pathLang) && manual) return pathLang;
     const saved = localStorage.getItem('myframeLang');
-    if (codes.includes(saved)) return saved;
+    if (manual && codes.includes(saved)) return saved;
     if (codes.includes(recommended)) return recommended;
+    if (codes.includes(pathLang)) return pathLang;
+    if (codes.includes(saved)) return saved;
     return 'en';
   }
 

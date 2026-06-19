@@ -367,7 +367,12 @@
         }
         function currentCartPath(lang = currentLang) { return lang === 'en' ? '/cart-checkout.html' : `/${lang}/cart`; }
         function currentHomePath(lang = currentLang) { return lang === 'en' ? '/en' : `/${lang}`; }
-        function setPersistentLanguage(lang) { localStorage.setItem('myframeLang', lang); }
+        function setPersistentLanguage(lang, manual) {
+            localStorage.setItem('myframeLang', lang);
+            if (manual) localStorage.setItem('myframeLangManual', '1');
+            document.cookie = `myframe_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
+            if (manual) document.cookie = 'myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax';
+        }
         function currencyForLanguage(lang) {
             if (lang === 'zh') return 'CNY';
             if (['fr', 'de', 'es'].includes(lang)) return 'EUR';
@@ -376,10 +381,14 @@
         function resolveLanguage(data, geo) {
             const codes = (data.languages || []).map(l => l.code);
             const pathLang = location.pathname.split('/').filter(Boolean)[0];
+            const manual = localStorage.getItem('myframeLangManual') === '1'
+                || document.cookie.split(';').some((part) => part.trim().startsWith('myframe_lang_manual=1'));
             const saved = localStorage.getItem('myframeLang');
+            if (manual && codes.includes(pathLang)) return pathLang;
+            if (manual && codes.includes(saved)) return saved;
+            if (codes.includes(geo.recommendedLanguage)) return geo.recommendedLanguage;
             if (codes.includes(pathLang)) return pathLang;
             if (codes.includes(saved)) return saved;
-            if (codes.includes(geo.recommendedLanguage)) return geo.recommendedLanguage;
             return 'en';
         }
 
@@ -404,13 +413,20 @@
             try {
                 const data = await fetch('/api/public/site', { credentials: 'same-origin' }).then(res => res.json());
                 siteData = data;
-                const geo = await fetch('/api/public/location', { credentials: 'same-origin' }).then(res => res.json()).catch(() => ({ recommendedLanguage: 'en' }));
+                const geo = await fetch('/api/public/location', { credentials: 'same-origin' }).then(res => res.json()).catch(() => ({ recommendedLanguage: 'en', forceLocale: false }));
                 currentLang = resolveLanguage(data, geo);
+                const manual = localStorage.getItem('myframeLangManual') === '1';
+                const pathLang = location.pathname.split('/').filter(Boolean)[0];
+                if (!manual && geo.forceLocale && currentLang !== pathLang) {
+                    setPersistentLanguage(currentLang, false);
+                    location.replace(currentCartPath(currentLang) + location.search);
+                    return;
+                }
                 const currencyCodes = (data.currencies || []).map(c => String(c.name || '').toUpperCase());
                 const languageCurrency = currencyForLanguage(currentLang);
                 currentCurrency = currencyCodes.includes(languageCurrency) ? languageCurrency : (currencyCodes.includes(String(geo.recommendedCurrency || '').toUpperCase()) ? String(geo.recommendedCurrency).toUpperCase() : (currencyCodes.includes(localStorage.getItem('myframeCurrency')) ? localStorage.getItem('myframeCurrency') : 'USD'));
                 localStorage.setItem('myframeCurrency', currentCurrency);
-                setPersistentLanguage(currentLang);
+                setPersistentLanguage(currentLang, manual);
                 tr = currentLang === 'en' ? {} : ((data.translations || {})[currentLang] || {});
                 if (data.basic?.headerLogo) document.querySelectorAll('.brand-logo').forEach(img => img.src = data.basic.headerLogo);
                 renderNav(data);
@@ -429,7 +445,7 @@
             const mount = document.getElementById('languageSwitcher');
             if (mount && window.mountLanguageSwitcher) {
                 mountLanguageSwitcher(mount, languages, currentLang, (code) => {
-                    setPersistentLanguage(code);
+                    setPersistentLanguage(code, true);
                     localStorage.setItem('myframeCurrency', currencyForLanguage(code));
                     location.href = currentCartPath(code) + location.search;
                 });

@@ -8,7 +8,7 @@
 }
 
 .download-page .nav {
-  height: 104px;
+  height: var(--nav-height, 84px);
   background: #ffffff;
   border-bottom: 1px solid rgba(28, 24, 20, 0.06);
   backdrop-filter: none;
@@ -234,7 +234,7 @@
 
 .download-hero {
   position: relative;
-  padding: 126px 20px 48px;
+  padding: 108px 20px 40px;
   background: #ffffff;
 }
 
@@ -292,7 +292,7 @@
 .download-features {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: clamp(78px, 10vw, 140px) 0;
+  padding: clamp(64px, 8.5vw, 112px) 0;
   display: grid;
   grid-template-columns: minmax(260px, 430px) minmax(0, 1fr);
   gap: clamp(42px, 7vw, 96px);
@@ -355,7 +355,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(260px, 430px);
   gap: clamp(32px, 7vw, 100px);
   align-items: center;
-  padding: clamp(54px, 8vw, 86px) max(24px, calc((100vw - 1180px) / 2));
+  padding: clamp(44px, 7vw, 72px) max(20px, calc((100vw - 1180px) / 2));
   background: #141414;
 }
 

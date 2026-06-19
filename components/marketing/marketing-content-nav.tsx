@@ -72,6 +72,14 @@ export function MarketingContentNav({ locale, menus, translated, logoSrc, langua
             locale={locale}
             languages={langOptions}
             onChange={(code) => {
+              try {
+                localStorage.setItem("myframeLang", code);
+                localStorage.setItem("myframeLangManual", "1");
+                document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+                document.cookie = "myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax";
+              } catch {
+                /* ignore */
+              }
               window.location.href = hrefForLocale(code);
             }}
           />
