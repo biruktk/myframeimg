@@ -53,7 +53,7 @@ function getClientIp(req: Request) {
   return ip.replace(/^::ffff:/, "");
 }
 
-/** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */
+function shippingEstimateForCountry(countryCodeRaw: string) {
   const countryCode = normalizeCountryCode(countryCodeRaw);
   if (["HK", "MO"].includes(countryCode)) {
     return { price: 8, currency: "USD", minDays: 1, maxDays: 2, service: "Hong Kong local courier" };
@@ -73,7 +73,7 @@ function getClientIp(req: Request) {
   return { price: 35, currency: "USD", minDays: 8, maxDays: 15, service: "International tracked shipping from Hong Kong" };
 }
 
-function shippingEstimateForCountry(countryCodeRaw: string) {
+/** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */
 publicSiteRouter.get("/public/site", (_req: Request, res: Response) => {
   res.json(getPublicSitePayload());
 });

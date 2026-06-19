@@ -13,7 +13,8 @@ export function getClientIpFromRequest(request: NextRequest): string {
 export async function lookupGeoFromRequest(request: NextRequest): Promise<GeoLocationResult & { recommendedLanguage: Locale }> {
   const ip = getClientIpFromRequest(request);
   const acceptLanguage = request.headers.get("accept-language") ?? "";
-  return lookupGeoByIp(ip, acceptLanguage) as GeoLocationResult & { recommendedLanguage: Locale };
+  const geo = await lookupGeoByIp(ip, acceptLanguage);
+  return geo as GeoLocationResult & { recommendedLanguage: Locale };
 }
 
 export { geoLocationFallback, getClientIpFromHeaders, lookupGeoByIp };

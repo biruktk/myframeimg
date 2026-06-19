@@ -164,10 +164,7 @@
       if (parsed && typeof parsed === 'object' && parsed.ok !== false) geo = parsed;
     } catch (_) {}
   }
-  const currentLang = resolveLanguage(languages, geo.recommendedLanguage);
 
-  // Persist language preference (path / IP / saved) so future visits skip the lookup
-  // and the server can serve the right language directly via the myframe_lang cookie.
   const langCodes = languages.map((item) => item.code);
   const pathFirstSegment = location.pathname.split('/').filter(Boolean)[0];
   const explicitPathLang = langCodes.includes(pathFirstSegment) ? pathFirstSegment : '';
@@ -195,18 +192,21 @@
     } catch (_) {}
   }
 
-  // IP-forced locale (Chinese / Spanish-default countries including Ethiopia) —
+  // IP-forced locale (Spanish-default countries including Ethiopia) —
   // redirect even when the URL already has a locale prefix like /en.
+  // Ignores savedLangPref so VPN / travel still updates language unless user manually picked one.
   if (
     !manualLangPref &&
     geo.forceLocale &&
-    langCodes.includes(currentLang) &&
-    explicitPathLang !== currentLang
+    langCodes.includes(geo.recommendedLanguage) &&
+    explicitPathLang !== geo.recommendedLanguage
   ) {
-    persistLang(currentLang, false);
-    location.replace(`/${currentLang}${location.search || ''}${location.hash || ''}`);
+    persistLang(geo.recommendedLanguage, false);
+    location.replace(`/${geo.recommendedLanguage}${location.search || ''}${location.hash || ''}`);
     return;
   }
+
+  const currentLang = resolveLanguage(languages, geo.recommendedLanguage);
 
   // First-time visitor on the homepage with an IP-detected non-English language —
   // auto-redirect to /{lang} so the URL matches the content. The dropdown still lets

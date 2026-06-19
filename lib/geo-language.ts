@@ -3,8 +3,6 @@ export type GeoLocale = "en" | "zh" | "es" | "fr" | "de" | "ja";
 /** Mainland + diaspora / Chinese-primary regions — always default to 中文. */
 export const CHINESE_SPEAKING_COUNTRIES = new Set([
   "CN",
-  "HK",
-  "MO",
   "TW",
   "SG",
   "MY",
@@ -80,6 +78,8 @@ export function isForceLocaleCountry(countryCode: string): boolean {
  */
 export function languageForCountry(countryCode: string, acceptLanguage = ""): GeoLocale {
   const country = normalizeCountryCode(countryCode);
+  // Hong Kong / Macau — English site default (not 中文), even via VPN.
+  if (country === "HK" || country === "MO") return "en";
   if (CHINESE_SPEAKING_COUNTRIES.has(country)) return "zh";
   if (SPANISH_DEFAULT_COUNTRIES.has(country)) return "es";
   if (country === "JP") return "ja";
