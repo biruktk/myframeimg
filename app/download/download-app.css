@@ -8,11 +8,11 @@
 }
 
 .download-page .nav {
-  height: 104px;
-  background: rgba(255, 255, 255, 0.8);
+  height: var(--nav-height, 84px);
+  background: #ffffff;
   border-bottom: 1px solid rgba(28, 24, 20, 0.06);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .download-page .nav-shell {
@@ -73,7 +73,7 @@
 }
 
 .download-page main {
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 .download-page img {
@@ -234,70 +234,65 @@
 
 .download-hero {
   position: relative;
-  padding: 126px 20px 0;
+  padding: 108px 20px 40px;
   background: #ffffff;
 }
 
+.download-hero .download-copy {
+  position: relative;
+  z-index: 2;
+}
+
 .download-hero::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 46%;
-  background: #ffffff;
+  content: none;
 }
 
 .hero-phone-row {
   position: relative;
   z-index: 1;
-  width: min(880px, 100%);
-  margin: 34px auto 0;
+  width: min(920px, 100%);
+  margin: 40px auto 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(12px, 2vw, 24px);
+  gap: clamp(16px, 2.5vw, 28px);
   align-items: end;
 }
 
+/* Screenshots already include the device UI — no extra bezel/notch frame */
 .phone-shot {
   position: relative;
   width: 100%;
-  max-width: 232px;
+  max-width: 240px;
   margin: 0 auto;
-  padding: 9px;
-  border-radius: 40px;
-  background: #111111;
-  box-shadow: 0 24px 54px rgba(17, 24, 39, 0.22);
+  padding: 0;
+  border-radius: 28px;
+  background: transparent;
+  box-shadow:
+    0 24px 48px rgba(17, 24, 39, 0.14),
+    0 0 0 1px rgba(17, 24, 39, 0.06);
+  overflow: hidden;
 }
 
 .phone-shot::before {
-  content: "";
-  position: absolute;
-  top: 9px;
-  left: 50%;
-  z-index: 2;
-  width: 42%;
-  height: 24px;
-  border-radius: 0 0 16px 16px;
-  background: #111111;
-  transform: translateX(-50%);
+  content: none;
 }
 
 .phone-shot img {
   width: 100%;
   height: auto;
-  border-radius: 31px;
+  display: block;
+  border-radius: 28px;
 }
 
 .phone-shot.is-front {
-  max-width: 252px;
-  transform: translateY(4px);
+  max-width: 256px;
+  transform: translateY(6px);
 }
 
 .download-features {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: clamp(78px, 10vw, 140px) 0;
+  padding: clamp(64px, 8.5vw, 112px) 0;
   display: grid;
   grid-template-columns: minmax(260px, 430px) minmax(0, 1fr);
   gap: clamp(42px, 7vw, 96px);
@@ -360,7 +355,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(260px, 430px);
   gap: clamp(32px, 7vw, 100px);
   align-items: center;
-  padding: clamp(54px, 8vw, 86px) max(24px, calc((100vw - 1180px) / 2));
+  padding: clamp(44px, 7vw, 72px) max(20px, calc((100vw - 1180px) / 2));
   background: #141414;
 }
 
@@ -389,6 +384,7 @@
 @media (max-width: 980px) {
   .download-page .nav {
     height: 86px;
+    background: #ffffff;
   }
 
   .download-page .nav-shell {
@@ -429,20 +425,6 @@
     gap: 14px;
   }
 
-  .phone-shot {
-    border-radius: 32px;
-    padding: 7px;
-  }
-
-  .phone-shot::before {
-    top: 7px;
-    height: 19px;
-  }
-
-  .phone-shot img {
-    border-radius: 25px;
-  }
-
   .download-features,
   .download-cta {
     grid-template-columns: 1fr;
@@ -471,6 +453,10 @@
 }
 
 @media (max-width: 680px) {
+  .download-page .nav {
+    background: #ffffff;
+  }
+
   .download-page .nav-shell {
     gap: 10px;
   }
@@ -480,145 +466,137 @@
   }
 
   .download-hero {
-    padding: 96px 14px 24px;
-    background: linear-gradient(180deg, var(--primary) 0%, var(--primary) 72%, #ffffff 72%, #ffffff 100%);
+    padding: 96px 16px 32px;
+    background: #ffffff;
   }
 
   .download-hero::after {
-    display: none;
+    content: none;
   }
 
   .download-copy.centered {
-    max-width: 100%;
-    text-align: left;
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
   }
 
   .download-copy.centered .download-badges,
   .download-copy.centered .download-options {
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .download-hero .download-kicker {
-    min-height: 30px;
-    padding: 0 12px;
-    background: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-    font-size: 11px;
-    letter-spacing: 0.11em;
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--primary);
   }
 
   .download-copy h1 {
-    max-width: 100%;
-    margin: 16px 0 12px;
-    color: #ffffff;
-    font-size: clamp(2.05rem, 9vw, 2.85rem);
-    line-height: 1.03;
+    max-width: 14.4em;
+    margin-inline: auto;
+    color: #141414;
+    font-size: clamp(2.05rem, 8vw, 2.85rem);
+    line-height: 1.04;
   }
 
   .download-hero .download-copy p {
-    max-width: 100%;
-    color: rgba(255, 255, 255, 0.84);
+    max-width: 620px;
+    margin-inline: auto;
+    color: rgba(20, 20, 20, 0.68);
     font-size: 1rem;
-    line-height: 1.5;
+    line-height: 1.68;
   }
 
   .download-copy h1 span {
-    white-space: normal;
+    white-space: nowrap;
   }
 
   .download-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
   }
 
   .download-option {
     width: 100%;
     min-width: 0;
-    min-height: 74px;
-    padding: 10px;
+    min-height: 60px;
+    padding: 10px 12px;
     gap: 10px;
-    border-color: rgba(255, 255, 255, 0.26);
-    border-radius: 14px;
-    box-shadow: 0 12px 26px rgba(75, 14, 14, 0.14);
   }
 
   .download-option i {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .download-option strong {
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
 
   .download-option small {
-    font-size: 0.78rem;
-    line-height: 1.2;
+    font-size: inherit;
+    line-height: 1.35;
+    color: rgba(20, 20, 20, 0.58);
   }
 
   .hero-phone-row {
-    width: min(430px, 100%);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    justify-content: stretch;
-    gap: clamp(5px, 2vw, 8px);
-    margin-top: 18px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 28px;
+    gap: 10px;
   }
 
   .hero-phone-row .phone-shot {
-    max-width: 132px;
-    padding: 5px;
-    border-radius: 24px;
+    max-width: none;
+    border-radius: 22px;
   }
 
   .hero-phone-row .phone-shot:first-child,
   .hero-phone-row .phone-shot:last-child {
-    transform: translateY(18px) scale(0.94);
+    transform: translateY(10px) scale(0.96);
   }
 
   .hero-phone-row .phone-shot.is-front {
+    max-width: none;
     transform: none;
   }
 
-  .hero-phone-row .phone-shot::before {
-    top: 5px;
-    height: 14px;
-    border-radius: 0 0 10px 10px;
-  }
-
   .hero-phone-row .phone-shot img {
-    border-radius: 19px;
+    border-radius: 22px;
   }
 
   .download-badges a,
   .download-badges img {
-    width: 160px;
-    height: 48px;
+    width: 180px;
+    height: 54px;
   }
 
   .feature-grid {
-    grid-template-columns: 1fr;
-    gap: 22px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 34px;
   }
 
   .feature-phone-wrap {
-    min-height: auto;
-    padding-block: 24px;
+    min-height: 520px;
+    padding-block: 0;
   }
 
   .feature-phone-wrap .phone-shot,
   .cta-phone-wrap .phone-shot {
-    width: min(245px, 78vw);
-    max-width: 245px;
+    width: 100%;
+    max-width: 300px;
   }
 
   .feature-phone-wrap::before {
-    left: 0;
-    width: 150px;
-    height: 116px;
+    left: 6%;
+    width: 190px;
+    height: 150px;
   }
 }
 
@@ -643,30 +621,18 @@
     display: none;
   }
 
-  .download-page .nav-cta i {
-    color: #ffffff;
+  .download-copy h1 span {
+    white-space: normal;
   }
 
-  .download-badges {
-    gap: 10px;
-  }
-
-  .download-badges a,
-  .download-badges img {
-    width: min(146px, calc((100vw - 42px) / 2));
-    height: auto;
-    min-height: 40px;
+  .download-options {
+    max-width: 100%;
+    gap: 8px;
   }
 
   .download-option {
-    min-width: 0;
-    min-height: 70px;
-    padding: 9px;
-  }
-
-  .download-option i {
-    width: 32px;
-    height: 32px;
+    min-height: 56px;
+    padding: 9px 10px;
   }
 
   .download-option strong {
@@ -674,22 +640,24 @@
   }
 
   .download-option small {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
   }
 
   .hero-phone-row {
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 14px;
+    gap: 8px;
   }
 
   .hero-phone-row .phone-shot {
-    max-width: 112px;
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .hero-phone-row .phone-shot img {
-    border-radius: 15px;
+    border-radius: 18px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
   }
 }
 
@@ -704,9 +672,5 @@
 
   .download-copy h1 {
     font-size: 2rem;
-  }
-
-  .hero-phone-row .phone-shot {
-    max-width: 94px;
   }
 }

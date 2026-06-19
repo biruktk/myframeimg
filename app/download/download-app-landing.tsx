@@ -34,9 +34,9 @@ const appStoreSearchUrl = "https://apps.apple.com/us/search?term=MyFrame";
 const playStoreSearchUrl = "https://play.google.com/store/search?q=MyFrame&c=apps";
 
 const heroScreens = [
-  { src: "/assets/myframe-app-home.jpg", alt: "MyFrame home app screen" },
-  { src: "/assets/myframe-app-send.jpg", alt: "MyFrame send photo app screen" },
-  { src: "/assets/myframe-app-playlist.jpg", alt: "MyFrame playlist app screen" },
+  { src: "/assets/myframe-app-home.png", alt: "MyFrame home app screen" },
+  { src: "/assets/myframe-app-send.png", alt: "MyFrame send photo app screen" },
+  { src: "/assets/myframe-app-gallery.png", alt: "MyFrame gallery app screen" },
 ];
 
 const downloadCopy: Record<Locale, DownloadCopy> = {
@@ -267,7 +267,7 @@ export function DownloadAppLanding({
 
         <section className="download-section download-features">
           <div className="feature-phone-wrap">
-            <PhoneShot src="/assets/myframe-app-family.jpg" alt="MyFrame family sharing app screen" />
+            <PhoneShot src="/assets/myframe-app-family.png" alt="MyFrame family sharing app screen" />
           </div>
 
           <div className="download-copy">
@@ -296,7 +296,7 @@ export function DownloadAppLanding({
           </div>
 
           <div className="cta-phone-wrap">
-            <PhoneShot src="/assets/myframe-app-settings.jpg" alt="MyFrame settings app screen" />
+            <PhoneShot src="/assets/myframe-app-settings.png" alt="MyFrame settings app screen" />
           </div>
         </section>
       </main>

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db/store";
 import { normalizedFrameMediaBaseUrl } from "../config/frame_media";
+import { appendFrameLog } from "../services/frame_logs";
 import {
   getFrame,
   isFrameMqttOnline,
@@ -228,6 +229,15 @@ deviceRouter.post("/device/send", async (req, res) => {
     }
     await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
     const now = Date.now();
+    const hwMac = resolveMqttHardwareMac(deviceId) ?? deviceId;
+    appendFrameLog({
+      direction: "tx",
+      mac: hwMac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase(),
+      frameName: data.device.name || deviceId,
+      topic: `/inkjoyap/${hwMac}`,
+      action: "play",
+      payload: JSON.stringify({ imageUrl, source: "api_device_send" }),
+    });
     db.mutate((draft) => {
       draft.device.connected = true;
       draft.device.id = deviceId;

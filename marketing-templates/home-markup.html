@@ -12,7 +12,16 @@
                 <button class="nav-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open menu" aria-expanded="false">
                     <i class="fas fa-bars"></i>
                 </button>
-                <select id="languageSelect" class="nav-lang" aria-label="Language"></select>
+                <div id="languageSwitcher">
+                    <select id="languageSelect" class="nav-lang" aria-label="Language">
+                        <option value="en">English</option>
+                        <option value="zh">中文</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                </div>
                 <a href="/cart-checkout.html?add=YX-133P" class="nav-cta"><i class="fas fa-gift"></i> Buy for Gift</a>
             </div>
         </div>
@@ -23,6 +32,16 @@
         <a href="#pricing">Pricing</a>
         <a href="#family">For Families</a>
         <a href="/cart-checkout.html">Cart</a>
+        <div class="mobile-menu-lang" id="mobileLanguageSwitcher">
+            <select id="mobileLanguageSelect" class="nav-lang mobile-nav-lang" aria-label="Language">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
     </div>
 
     <main class="page-shell">
@@ -353,7 +372,7 @@
                 </div>
                 <div class="family-image">
                     <div class="family-app-visual" id="familyAppVisual">
-                        <img src="/assets/family-app-two-phones-transparent.png" alt="Two iPhone screens showing the MyFrame app home and playlist views">
+                        <img src="/assets/family-app-two-phones-transparent.png?v=20260620-hq" width="1536" height="1024" alt="Two iPhone screens showing the MyFrame app home and send photo views" decoding="async">
                     </div>
                 </div>
             </div>

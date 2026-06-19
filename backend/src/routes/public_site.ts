@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 
+import { lookupGeoByIp } from "../../../lib/geo-lookup";
+import { shippingEstimateForCountry } from "../../../lib/shipping-estimate";
 import { db, marketingCmsSeed } from "../db/store";
 import { defaultBlogPosts, publishedBlogs } from "../data/blog_defaults";
 import { getPublicSitePayload, priceBySkuFromDb } from "../services/marketing_public";
@@ -41,70 +43,12 @@ function nextOrderNumber(): string {
   return `MF-${t}-${r}`;
 }
 
-function languageForCountry(countryCode: string, acceptLanguage = "") {
-  const country = countryCode.toUpperCase();
-  const accept = acceptLanguage.toLowerCase();
-  if (["CN", "HK", "MO", "TW", "SG"].includes(country) || accept.includes("zh")) return "zh";
-  if (["JP"].includes(country) || accept.includes("ja")) return "ja";
-  if (["ES", "MX", "AR", "CL", "CO", "PE", "UY", "VE", "EC", "BO", "PY", "CR", "PA", "DO", "GT", "HN", "NI", "SV"].includes(country) || accept.includes("es")) return "es";
-  if (["FR", "BE", "MC", "LU", "CH", "CA"].includes(country) || accept.includes("fr")) return "fr";
-  if (["DE", "AT"].includes(country) || accept.includes("de")) return "de";
-  return "en";
-}
-
-function currencyForCountry(countryCode: string, language: string) {
-  const country = countryCode.toUpperCase();
-  if (["CN", "HK", "MO"].includes(country) || language === "zh") return "CNY";
-  if (["FR", "DE", "ES", "AT", "BE", "LU", "MC"].includes(country)) return "EUR";
-  return "USD";
-}
-
-function shippingEstimateForCountry(countryCodeRaw: string) {
-  const countryCode = normalizeCountryCode(countryCodeRaw);
-  if (["HK", "MO"].includes(countryCode)) {
-    return { price: 8, currency: "USD", minDays: 1, maxDays: 2, service: "Hong Kong local courier" };
-  }
-  if (["CN", "TW"].includes(countryCode)) {
-    return { price: 12, currency: "USD", minDays: 3, maxDays: 5, service: "Regional express from Hong Kong" };
-  }
-  if (["JP", "KR", "SG", "MY", "TH", "VN", "PH", "ID"].includes(countryCode)) {
-    return { price: 18, currency: "USD", minDays: 4, maxDays: 7, service: "Asia express from Hong Kong" };
-  }
-  if (["US", "CA", "MX"].includes(countryCode)) {
-    return { price: 26, currency: "USD", minDays: 6, maxDays: 10, service: "International express from Hong Kong" };
-  }
-  if (["GB", "FR", "DE", "ES", "IT", "NL", "BE", "SE", "DK", "NO", "FI", "IE", "AT", "CH", "PT", "PL"].includes(countryCode)) {
-    return { price: 28, currency: "USD", minDays: 7, maxDays: 12, service: "International express from Hong Kong" };
-  }
-  return { price: 35, currency: "USD", minDays: 8, maxDays: 15, service: "International tracked shipping from Hong Kong" };
-}
-
-function normalizeCountryCode(value: string) {
-  const raw = value.trim().toUpperCase();
-  const names: Record<string, string> = {
-    "UNITED STATES": "US",
-    USA: "US",
-    "UNITED STATES OF AMERICA": "US",
-    CANADA: "CA",
-    CHINA: "CN",
-    "HONG KONG": "HK",
-    JAPAN: "JP",
-    GERMANY: "DE",
-    FRANCE: "FR",
-    SPAIN: "ES",
-    "UNITED KINGDOM": "GB",
-    UK: "GB",
-    "GREAT BRITAIN": "GB",
-    AUSTRALIA: "AU",
-    SINGAPORE: "SG",
-  };
-  return names[raw] || raw.slice(0, 2);
-}
-
 function getClientIp(req: Request) {
   const forwarded = String(req.header("x-forwarded-for") ?? "").split(",")[0]?.trim();
   const realIp = String(req.header("x-real-ip") ?? "").trim();
-  const ip = forwarded || realIp || req.ip || "";
+  const cfIp = String(req.header("cf-connecting-ip") ?? "").trim();
+  const trueClient = String(req.header("true-client-ip") ?? "").trim();
+  const ip = cfIp || trueClient || forwarded || realIp || req.ip || "";
   return ip.replace(/^::ffff:/, "");
 }
 
@@ -136,71 +80,14 @@ publicSiteRouter.get("/public/blogs/by-slug/:slug", (req: Request, res: Response
   });
 });
 
-/** GET /api/public/location — IP geo detection via ipapi.co with Accept-Language fallback. */
+/** GET /api/public/location — live IP geo → language + currency suggestion. */
 publicSiteRouter.get("/public/location", async (req: Request, res: Response) => {
   const acceptLanguage = String(req.header("accept-language") ?? "");
   const ip = getClientIp(req);
-  const isLocalIp = !ip || ip === "::1" || ip === "127.0.0.1" || ip.startsWith("10.") || ip.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
-  let geo: Record<string, unknown> = {};
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1600);
-    const url = isLocalIp ? "https://ipapi.co/json/" : `https://ipapi.co/${encodeURIComponent(ip)}/json/`;
-    const upstream = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
-    clearTimeout(timeout);
-    if (upstream.ok) {
-      const parsed = (await upstream.json()) as Record<string, unknown>;
-      if (parsed.error !== true) geo = parsed;
-    }
-  } catch {
-    geo = {};
-  }
-  if (!Object.keys(geo).length) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1600);
-      const url = isLocalIp ? "https://freeipapi.com/api/json" : `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`;
-      const upstream = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
-      clearTimeout(timeout);
-      if (upstream.ok) {
-        const parsed = (await upstream.json()) as Record<string, unknown>;
-        if (parsed.countryCode || parsed.countryName) {
-          geo = {
-            country_code: parsed.countryCode,
-            country_name: parsed.countryName,
-            region: parsed.regionName,
-            city: parsed.cityName,
-            postal: parsed.zipCode,
-            timezone: Array.isArray(parsed.timeZones) ? parsed.timeZones[0] : "",
-            currency: String(parsed.currency ?? ""),
-            provider: "freeipapi.com",
-          };
-        }
-      }
-    } catch {
-      geo = {};
-    }
-  }
-
-  const countryCode = String(geo.country_code ?? geo.country ?? "").toUpperCase();
-  const recommendedLanguage = languageForCountry(countryCode, acceptLanguage);
-  const geoCurrency = String(geo.currency ?? "").toUpperCase();
-  const recommendedCurrency = ["USD", "EUR", "CNY"].includes(geoCurrency)
-    ? geoCurrency
-    : currencyForCountry(countryCode, recommendedLanguage);
-  const shipping = shippingEstimateForCountry(countryCode || "US");
+  const geo = await lookupGeoByIp(ip, acceptLanguage);
+  const shipping = shippingEstimateForCountry(geo.countryCode || "US");
   res.json({
-    ok: true,
-    provider: String(geo.provider ?? (Object.keys(geo).length ? "ipapi.co" : "accept-language-fallback")),
-    ip: ip || undefined,
-    recommendedLanguage,
-    recommendedCurrency,
-    countryCode,
-    country: String(geo.country_name ?? ""),
-    region: String(geo.region ?? ""),
-    city: String(geo.city ?? ""),
-    postal: String(geo.postal ?? ""),
-    timezone: String(geo.timezone ?? ""),
+    ...geo,
     shipping,
   });
 });
