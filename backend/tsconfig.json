@@ -9,5 +9,5 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src/**/*", "../lib/geo-language.ts", "../lib/geo-lookup.ts"]
+  "include": ["src/**/*", "../lib/geo-language.ts", "../lib/geo-lookup.ts", "../lib/shipping-estimate.ts"]
 }

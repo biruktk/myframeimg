@@ -1,11 +1,8 @@
 import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 
-import {
-  currencyForCountry,
-  normalizeCountryCode,
-} from "../../../lib/geo-language";
 import { lookupGeoByIp } from "../../../lib/geo-lookup";
+import { shippingEstimateForCountry } from "../../../lib/shipping-estimate";
 import { db, marketingCmsSeed } from "../db/store";
 import { defaultBlogPosts, publishedBlogs } from "../data/blog_defaults";
 import { getPublicSitePayload, priceBySkuFromDb } from "../services/marketing_public";
@@ -49,28 +46,10 @@ function nextOrderNumber(): string {
 function getClientIp(req: Request) {
   const forwarded = String(req.header("x-forwarded-for") ?? "").split(",")[0]?.trim();
   const realIp = String(req.header("x-real-ip") ?? "").trim();
-  const ip = forwarded || realIp || req.ip || "";
+  const cfIp = String(req.header("cf-connecting-ip") ?? "").trim();
+  const trueClient = String(req.header("true-client-ip") ?? "").trim();
+  const ip = cfIp || trueClient || forwarded || realIp || req.ip || "";
   return ip.replace(/^::ffff:/, "");
-}
-
-function shippingEstimateForCountry(countryCodeRaw: string) {
-  const countryCode = normalizeCountryCode(countryCodeRaw);
-  if (["HK", "MO"].includes(countryCode)) {
-    return { price: 8, currency: "USD", minDays: 1, maxDays: 2, service: "Hong Kong local courier" };
-  }
-  if (["CN", "TW"].includes(countryCode)) {
-    return { price: 12, currency: "USD", minDays: 3, maxDays: 5, service: "Regional express from Hong Kong" };
-  }
-  if (["JP", "KR", "SG", "MY", "TH", "VN", "PH", "ID"].includes(countryCode)) {
-    return { price: 18, currency: "USD", minDays: 4, maxDays: 7, service: "Asia express from Hong Kong" };
-  }
-  if (["US", "CA", "MX"].includes(countryCode)) {
-    return { price: 26, currency: "USD", minDays: 6, maxDays: 10, service: "International express from Hong Kong" };
-  }
-  if (["GB", "FR", "DE", "ES", "IT", "NL", "BE", "SE", "DK", "NO", "FI", "IE", "AT", "CH", "PT", "PL"].includes(countryCode)) {
-    return { price: 28, currency: "USD", minDays: 7, maxDays: 12, service: "International express from Hong Kong" };
-  }
-  return { price: 35, currency: "USD", minDays: 8, maxDays: 15, service: "International tracked shipping from Hong Kong" };
 }
 
 /** GET /api/public/site — CMS JSON persisted in DB (`marketingSite`). */

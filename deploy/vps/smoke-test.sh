@@ -35,9 +35,19 @@ echo "[5/6] MDM console (Next.js /mdm)..."
 curl -fsSI "https://${APP_DOMAIN}/mdm" >/dev/null
 echo "  OK https://${APP_DOMAIN}/mdm"
 
-echo "[6/6] MDM bridge asset..."
+echo "[6/8] MDM bridge asset..."
 curl -fsSI "https://${APP_DOMAIN}/mdm/bridge.js" >/dev/null
 echo "  OK https://${APP_DOMAIN}/mdm/bridge.js"
 
+echo "[7/8] Geo location API (https://${APP_DOMAIN}/api/public/location)..."
+LOC_JSON="$(curl -fsS "https://${APP_DOMAIN}/api/public/location")"
+echo "${LOC_JSON}" | sed -n '1,1p' | head -c 240
+echo ""
+
+echo "[8/8] Geo redirect proxy (root → locale prefix)..."
+REDIR="$(curl -sSI "https://${APP_DOMAIN}/" | awk 'tolower($1)=="location:" {print $2}' | tr -d '\r')"
+echo "  Location: ${REDIR:-<none>}"
+
 echo "Smoke test complete."
 echo "MDM login: open https://${APP_DOMAIN}/mdm and sign in with ADMIN_USER / ADMIN_PASS from repo .env"
+echo "Geo (Ethiopia → es): curl -s 'https://${APP_DOMAIN}/api/public/location' -H 'X-Forwarded-For: 196.188.0.1'"

@@ -36,12 +36,14 @@ const LOCATION_FALLBACK: GeoLocationResult = {
 };
 
 export function getClientIpFromHeaders(headers: Headers | { get(name: string): string | null | undefined }): string {
-  const forwarded = String(headers.get("x-forwarded-for") ?? "")
-    .split(",")[0]
-    ?.trim();
-  const realIp = String(headers.get("x-real-ip") ?? "").trim();
-  const ip = forwarded || realIp || "";
-  return ip.replace(/^::ffff:/, "");
+  const headerNames = ["cf-connecting-ip", "true-client-ip", "x-real-ip", "x-forwarded-for"] as const;
+  for (const name of headerNames) {
+    const raw = String(headers.get(name) ?? "").trim();
+    if (!raw) continue;
+    const ip = (name === "x-forwarded-for" ? raw.split(",")[0]?.trim() : raw) ?? "";
+    if (ip) return ip.replace(/^::ffff:/, "");
+  }
+  return "";
 }
 
 function isPrivateOrLocalIp(ip: string): boolean {
@@ -72,12 +74,17 @@ export async function lookupGeoByIp(
   ip: string,
   acceptLanguage = "",
 ): Promise<GeoLocationResult> {
-  const isLocalIp = isPrivateOrLocalIp(ip);
+  const clientIp = ip.trim().replace(/^::ffff:/, "");
+  if (!clientIp) {
+    return geoLocationFallback(acceptLanguage);
+  }
+
+  const isLocalIp = isPrivateOrLocalIp(clientIp);
   let geo: Record<string, unknown> = {};
 
   const ipapiUrl = isLocalIp
     ? "https://ipapi.co/json/"
-    : `https://ipapi.co/${encodeURIComponent(ip)}/json/`;
+    : `https://ipapi.co/${encodeURIComponent(clientIp)}/json/`;
   const ipapi = await fetchJson(ipapiUrl);
   if (ipapi && ipapi.error !== true) {
     geo = { ...ipapi, provider: "ipapi.co" };
@@ -114,7 +121,7 @@ export async function lookupGeoByIp(
   return {
     ok: true,
     provider: String(geo.provider ?? (Object.keys(geo).length ? "ipapi.co" : "accept-language-fallback")),
-    ip: ip || undefined,
+    ip: clientIp || undefined,
     recommendedLanguage,
     recommendedCurrency,
     countryCode,

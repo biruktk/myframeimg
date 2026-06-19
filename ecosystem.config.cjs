@@ -18,6 +18,7 @@ module.exports = {
         NODE_ENV: "production",
         PORT: "3000",
         MYFRAME_API_URL: "http://127.0.0.1:3001",
+        NEXT_PUBLIC_SITE_URL: "https://myframe.ink",
       },
     },
   ],
