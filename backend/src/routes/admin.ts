@@ -112,6 +112,32 @@ function appendAudit(actor: string, action: string, target: string, meta?: Recor
   });
 }
 
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+
+function frameGroupId(
+  frameId: string,
+  ownerUserId: string,
+  familyGroups: MyframeDb["familyGroups"],
+): string | null {
+  for (const g of familyGroups) {
+    if (g.frameIds.includes(frameId)) return g.id;
+  }
+  return ownerUserId ? `g-${ownerUserId}` : null;
+}
+
 adminRouter.get("/admin/commerce/summary", (_req, res) => {
   const data = db.read();
   const sold = data.commerceEvents.filter((e) => e.type === "items_sold");
@@ -812,6 +838,322 @@ adminRouter.post("/admin/content/notify", (req, res) => {
     });
   });
   res.json({ ok: true });
+});
+
+/** MDM console bootstrap — real fleet/users/content; empty arrays and zeros when unavailable. */
+adminRouter.get("/admin/mdm/bootstrap", (_req, res) => {
+  const data = db.read();
+  const now = Date.now();
+
+  const frames = data.frames.map((f) => {
+    const enriched =
+      f.id === data.device.id && data.device.connected
+        ? { ...f, wifiStatus: "online" as const, lastSeenAtMs: f.lastSeenAtMs ?? now }
+        : f;
+    const owner = data.users.find((u) => u.id === enriched.ownerUserId) ?? null;
+    const familyGroup = data.familyGroups.find((g) => g.frameIds.includes(enriched.id)) ?? null;
+    return {
+      ...enriched,
+      owner,
+      familyGroupId: familyGroup?.id ?? null,
+      groupId: frameGroupId(enriched.id, enriched.ownerUserId, data.familyGroups),
+    };
+  });
+
+  const online = frames.filter((f) => f.wifiStatus === "online").length;
+  const offline = frames.filter((f) => f.wifiStatus === "offline").length;
+  const neverProvisioned = frames.filter((f) => f.wifiStatus === "never_provisioned").length;
+  const activeToday = frames.filter((f) => f.lastSeenAtMs && now - f.lastSeenAtMs < 24 * 60 * 60 * 1000).length;
+  const firmwareDistribution = frames.reduce<Record<string, number>>((acc, f) => {
+    acc[f.firmwareVersion] = (acc[f.firmwareVersion] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const uploadUserByFrame = new Map<string, string>();
+  for (const f of data.frames) uploadUserByFrame.set(f.id, f.ownerUserId);
+
+  const recentUploads = data.uploads.slice(0, 200).map((u) => ({
+    ...u,
+    bytes: effectiveUploadBytes(u.filename, u.bytes),
+    ownerUserId: uploadUserByFrame.get(u.deviceId) ?? null,
+    imageUrl: `/frame-media/${encodeURIComponent(u.filename)}`,
+  }));
+
+  const stuckUploads = data.uploads.filter((u) => u.deliveredToFrame === false);
+
+  const groups = [
+    ...data.familyGroups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      parentId: null as string | null,
+      description: `${g.frameIds.length} frame(s) · ${g.members.length} member(s)`,
+      type: "family",
+    })),
+  ];
+  const groupIds = new Set(groups.map((g) => g.id));
+  for (const u of data.users) {
+    const gid = `g-${u.id}`;
+    if (groupIds.has(gid)) continue;
+    const owned = frames.filter((f) => f.ownerUserId === u.id);
+    if (owned.length === 0) continue;
+    groups.push({
+      id: gid,
+      name: u.name || u.email,
+      parentId: u.familyGroupId,
+      description: `${owned.length} frame(s)`,
+      type: "owner",
+    });
+    groupIds.add(gid);
+  }
+
+  const users = data.users.map((u) => {
+    const ownedFrames = frames.filter((f) => f.ownerUserId === u.id);
+    const familyGroup = data.familyGroups.find((g) => g.id === u.familyGroupId) ?? null;
+    const memberRole = familyGroup?.members.find((m) => m.userId === u.id)?.role;
+    let role = "Member";
+    if (memberRole === "owner" || u.subscriptionTier === "pro") role = "Admin";
+    const scope = familyGroup?.name ?? (ownedFrames.length ? `${ownedFrames.length} frame(s)` : "No frames");
+    return {
+      id: u.id,
+      initials: initialsFromName(u.name || u.email),
+      name: u.name || u.email,
+      email: u.email,
+      role,
+      scope,
+      lastLogin: u.lastSeenAtMs ?? 0,
+      status: u.status,
+      subscriptionTier: u.subscriptionTier,
+      frameCount: ownedFrames.length,
+    };
+  });
+
+  const content = recentUploads.map((u) => {
+    const baseName = u.filename.replace(/^.*[/\\]/, "");
+    return {
+      id: u.id,
+      name: baseName.replace(/\.[^.]+$/, "") || baseName,
+      type: "Photo",
+      file: u.filename,
+      size: formatBytes(u.bytes),
+      date: u.atMs,
+      note:
+        u.deliveredToFrame === true
+          ? `Delivered to ${u.deviceId}`
+          : u.deliveredToFrame === false
+            ? "Delivery pending"
+            : "—",
+      emoji: "📸",
+      imageUrl: u.imageUrl,
+    };
+  });
+
+  const pushLog = recentUploads.slice(0, 50).map((u) => ({
+    id: u.id,
+    emoji: "📸",
+    name: u.filename.replace(/^.*[/\\]/, ""),
+    target: u.deviceId,
+    status:
+      u.deliveredToFrame === true ? "Delivered" : u.deliveredToFrame === false ? "Queued" : "Unknown",
+    time: u.atMs,
+  }));
+
+  const schedules = data.playlists.map((pl) => ({
+    id: pl.id,
+    name: pl.title,
+    trigger: pl.scheduleRule?.trim() || "Manual",
+    target: pl.assignedFrameIds.length ? pl.assignedFrameIds.join(", ") : "None",
+    status: pl.assignedFrameIds.length > 0,
+    type: pl.system ? "system" : "playlist",
+  }));
+
+  const mdmPlaylists = data.playlists.map((pl) => ({
+    id: pl.id,
+    name: pl.title,
+    items: pl.photoIds,
+    scheduleRule: pl.scheduleRule,
+    assignedFrameIds: pl.assignedFrameIds,
+  }));
+
+  const alerts: Array<{
+    id: string;
+    icon: string;
+    level: string;
+    title: string;
+    desc: string;
+    time: number;
+    resolved: boolean;
+  }> = [];
+
+  for (const f of frames) {
+    if (f.wifiStatus === "offline") {
+      const ago = f.lastSeenAtMs ? Math.max(0, now - f.lastSeenAtMs) : 0;
+      const hours = Math.floor(ago / 3600000);
+      alerts.push({
+        id: `alert-offline-${f.id}`,
+        icon: "🔴",
+        level: "Critical",
+        title: `${f.id} offline`,
+        desc: f.lastSeenAtMs
+          ? `No heartbeat for ${hours > 0 ? `${hours}h` : "<1h"}. Last seen ${new Date(f.lastSeenAtMs).toISOString()}.`
+          : "Device has not reported online.",
+        time: f.lastSeenAtMs ?? 0,
+        resolved: false,
+      });
+    } else if (f.wifiStatus === "never_provisioned") {
+      alerts.push({
+        id: `alert-never-${f.id}`,
+        icon: "⚠️",
+        level: "Warning",
+        title: `${f.id} never provisioned`,
+        desc: "Wi-Fi not configured — device has not completed setup.",
+        time: 0,
+        resolved: false,
+      });
+    }
+    if (f.ota?.status === "failed") {
+      alerts.push({
+        id: `alert-ota-${f.id}`,
+        icon: "⚠️",
+        level: "Warning",
+        title: `OTA failed — ${f.id}`,
+        desc: f.ota.targetVersion ? `Target firmware ${f.ota.targetVersion} failed.` : "Firmware update failed.",
+        time: f.lastSeenAtMs ?? 0,
+        resolved: false,
+      });
+    }
+  }
+
+  for (const u of stuckUploads.slice(0, 20)) {
+    alerts.push({
+      id: `alert-stuck-${u.id}`,
+      icon: "⚠️",
+      level: "Warning",
+      title: `Upload stuck — ${u.filename.replace(/^.*[/\\]/, "")}`,
+      desc: `Not delivered to ${u.deviceId}.`,
+      time: u.atMs,
+      resolved: false,
+    });
+  }
+
+  for (const entry of data.auditLog.slice(0, 15)) {
+    alerts.push({
+      id: `alert-audit-${entry.id}`,
+      icon: "✅",
+      level: "Info",
+      title: entry.action.replace(/_/g, " "),
+      desc: `${entry.actor} → ${entry.target}`,
+      time: entry.atMs,
+      resolved: true,
+    });
+  }
+
+  const notif = data.settings?.notifications;
+  const rules = [
+    {
+      id: "r-offline",
+      name: "Device offline",
+      trigger: "Wi-Fi status",
+      channel: "Email + Push",
+      status: notif?.offlineAlerts !== false,
+    },
+    {
+      id: "r-upload",
+      name: "Upload alerts",
+      trigger: "Delivery queue",
+      channel: "Push",
+      status: notif?.uploadAlerts !== false,
+    },
+    {
+      id: "r-birthday",
+      name: "Birthday reminders",
+      trigger: "Calendar",
+      channel: "Email",
+      status: notif?.birthdayReminders === true,
+    },
+  ];
+
+  const mqttUrl = process.env.MQTT_URL || "";
+  let mqttHost = "";
+  let mqttPort = "0";
+  let mqttTls = false;
+  try {
+    if (mqttUrl) {
+      const parsed = new URL(mqttUrl);
+      mqttHost = parsed.hostname;
+      mqttPort = parsed.port || (parsed.protocol === "mqtts:" ? "8883" : "1883");
+      mqttTls = parsed.protocol === "mqtts:";
+    }
+  } catch {
+    /* keep zeros */
+  }
+
+  res.json({
+    frames,
+    fleet: {
+      totalFrames: frames.length,
+      onlineNow: online,
+      offline,
+      neverProvisioned,
+      dailyActiveFrames: activeToday,
+      firmwareDistribution,
+      locations: frames.filter((f) => f.location).map((f) => ({ id: f.id, ...(f.location as { lat: number; lng: number }) })),
+    },
+    users,
+    groups,
+    content,
+    pushLog,
+    schedules,
+    playlists: mdmPlaylists,
+    alerts,
+    campaigns: [],
+    advertisers: [],
+    rules,
+    channels: {
+      email: {
+        icon: "📧",
+        name: "Email",
+        detail: data.settings?.account?.email || "—",
+        enabled: notif?.uploadAlerts !== false || notif?.offlineAlerts !== false,
+      },
+      push: { icon: "📱", name: "Mobile Push", detail: "App notifications", enabled: notif?.uploadAlerts !== false },
+      webhook: { icon: "🔗", name: "Webhook", detail: "—", enabled: false },
+      wechat: {
+        icon: "💬",
+        name: "WeChat",
+        detail: data.settings?.integrations?.wechatConnected ? "Connected" : "Not connected",
+        enabled: data.settings?.integrations?.wechatConnected === true,
+      },
+    },
+    settings: {
+      mqttHost,
+      mqttPort,
+      mqttTls,
+      mqttQos: "1",
+      mqttLastWill: true,
+      apiBaseUrl: process.env.MYFRAME_PUBLIC_API_URL || "",
+      cdnEndpoint: "",
+      apiKey: "",
+      twoFactorAuth: false,
+      certRotation: false,
+      remoteWipe: false,
+      contentAllowlist: false,
+      defaultBrightness: "0%",
+      refreshInterval: `${data.settings?.preferences?.autoRotateMinutes ?? 0} min`,
+      sleepStart: "—",
+      wakeTime: "—",
+      autoTimezone: true,
+      webhook_enabled: false,
+      wechat_enabled: data.settings?.integrations?.wechatConnected === true,
+      weather_enabled: false,
+      holiday_enabled: false,
+      grafana_enabled: false,
+    },
+    queue: { total: data.uploads.length, stuck: stuckUploads.length },
+    commerce: {
+      orderCount: data.orders.length,
+      subscriberCount: data.notifySubscribers.length,
+    },
+  });
 });
 
 attachCmsManageRoutes(adminRouter);

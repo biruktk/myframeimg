@@ -28,6 +28,12 @@
     var status = mapWifiStatus(frame, mqttFrame);
     var ownerName = frame.owner && frame.owner.name ? frame.owner.name : 'Unassigned';
     var isPrimary = deviceMeta && frame.id === deviceMeta.id;
+    var usedGb = 0;
+    var totalGb = 0;
+    if (isPrimary && deviceMeta) {
+      usedGb = Math.round((deviceMeta.usedBytes || 0) / 1024 / 1024 / 1024);
+      totalGb = Math.round((deviceMeta.capacityBytes || 0) / 1024 / 1024 / 1024);
+    }
     return {
       id: frame.id,
       name: isPrimary && deviceMeta.name ? deviceMeta.name : frame.id,
@@ -35,19 +41,22 @@
       type: 'frame',
       model: frame.id.indexOf('133') >= 0 ? 'YX-133P' : 'YX-6',
       status: status,
-      rssi: mqttFrame && mqttFrame.age < 120000 ? -45 : null,
-      storageUsed: isPrimary && deviceMeta ? Math.round((deviceMeta.usedBytes || 0) / 1024 / 1024 / 1024) : 0,
-      storageTotal: isPrimary && deviceMeta ? Math.round((deviceMeta.capacityBytes || 32 * 1024 * 1024 * 1024) / 1024 / 1024 / 1024) : 32,
-      firmware: frame.firmwareVersion ? 'v' + frame.firmwareVersion : 'v1.0.0',
-      temperature: 38,
-      brightness: 75,
+      rssi: mqttFrame && mqttFrame.age < 120000 && mqttFrame.rssi != null ? mqttFrame.rssi : 0,
+      storageUsed: usedGb,
+      storageTotal: totalGb,
+      firmware: frame.firmwareVersion ? 'v' + frame.firmwareVersion : 'v0',
+      temperature: 0,
+      brightness: 0,
+      volume: 0,
       uptime: frame.uptimeMs || 0,
-      lastPhoto: frame.lastSeenAtMs || mqttFrame?.lastSeen || Date.now() - 86400000,
-      lastSeen: mqttFrame ? mqttFrame.lastSeen : frame.lastSeenAtMs,
-      groupId: frame.ownerUserId ? 'g-' + frame.ownerUserId : null,
+      lastPhoto: frame.lastSeenAtMs || (mqttFrame ? mqttFrame.lastSeen : 0) || 0,
+      lastSeen: mqttFrame ? mqttFrame.lastSeen : (frame.lastSeenAtMs || 0),
+      groupId: frame.groupId || (frame.familyGroupId ? frame.familyGroupId : (frame.ownerUserId ? 'g-' + frame.ownerUserId : null)),
       district: ownerName,
       location: frame.location || null,
-      createdAt: frame.lastSeenAtMs || Date.now(),
+      createdAt: frame.lastSeenAtMs || 0,
+      otaStatus: frame.ota ? frame.ota.status : 'idle',
+      otaTarget: frame.ota ? frame.ota.targetVersion : null,
     };
   }
 
@@ -109,7 +118,8 @@
     }
     if (ok) {
       unlockApp();
-      if (typeof renderDashboard === 'function') renderDashboard();
+      if (typeof window.renderAllMdmPages === 'function') window.renderAllMdmPages();
+      else if (typeof renderDashboard === 'function') renderDashboard();
     }
     return ok;
   }
@@ -182,8 +192,8 @@
       return false;
     }
 
-    var framesRes = await fetchJson('/api/admin/frames');
-    if (isAuthFailure(framesRes)) {
+    var bootstrapRes = await fetchJson('/api/admin/mdm/bootstrap');
+    if (isAuthFailure(bootstrapRes)) {
       ensureLoginOverlay();
       notify('warning', 'Admin session invalid — sign in again');
       return false;
@@ -192,7 +202,6 @@
     enableLiveMode();
 
     var statusRes = await fetchJson('/api/devs/status');
-    var fleetRes = await fetchJson('/api/admin/fleet/overview');
     var overviewRes = await fetchJson('/api/admin/overview');
 
     window.__mdmStatus = statusRes.ok ? statusRes.data : null;
@@ -204,12 +213,14 @@
       id: overviewRes.data.deviceId,
       name: overviewRes.data.deviceName || overviewRes.data.deviceId,
       usedBytes: overviewRes.data.usedBytes || 0,
-      capacityBytes: overviewRes.data.capacityBytes || 32 * 1024 * 1024 * 1024,
+      capacityBytes: overviewRes.data.capacityBytes || 0,
     } : null;
 
-    var frameRows = framesRes.ok && Array.isArray(framesRes.data) ? framesRes.data : [];
-    if (!framesRes.ok) {
-      notify('warning', 'Could not load frames from API');
+    var bootstrap = bootstrapRes.ok && bootstrapRes.data ? bootstrapRes.data : null;
+    var frameRows = bootstrap && Array.isArray(bootstrap.frames) ? bootstrap.frames : [];
+
+    if (!bootstrapRes.ok) {
+      notify('warning', 'Could not load MDM data from API — showing zeros');
     }
 
     var devices = frameRows.map(function (frame) {
@@ -223,13 +234,18 @@
       store.devices = devices;
     }
 
-    if (fleetRes.ok && fleetRes.data && typeof store.setFleetMeta === 'function') {
-      store.setFleetMeta(fleetRes.data);
+    if (typeof store.hydrateFromBootstrap === 'function') {
+      store.hydrateFromBootstrap(bootstrap || {});
+    } else if (bootstrap && bootstrap.fleet && typeof store.setFleetMeta === 'function') {
+      store.setFleetMeta(bootstrap.fleet);
     }
 
     window.__mdmHydrated = true;
+    window.__mdmBootstrapPayload = bootstrap;
     unlockApp();
-    notify('success', 'Live data: ' + devices.length + ' frame(s)' + (statusRes.ok && statusRes.data && statusRes.data.mqtt && statusRes.data.mqtt.connected ? ' · MQTT connected' : ' · MQTT offline'));
+
+    var mqttNote = statusRes.ok && statusRes.data && statusRes.data.mqtt && statusRes.data.mqtt.connected ? ' · MQTT connected' : ' · MQTT offline';
+    notify('success', 'Live data: ' + devices.length + ' frame(s)' + mqttNote);
     return true;
   }
 

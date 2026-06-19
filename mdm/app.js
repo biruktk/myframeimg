@@ -41,208 +41,29 @@ class DataStore {
     this.rules = [];
     /** @type {Object} */
     this.settings = {};
-    this._seed();
+    this._initDefaults();
   }
 
-  /** Generate 50+ mock devices with all required fields */
-  _seed() {
-    // ── device models ──
-    const models = ['YX-6', 'YX-6P', 'YX-133P'];
-    const types = ['frame', 'billboard', 'wall'];
-    const statuses = ['online', 'offline', 'sleeping'];
-    const statusWeights = { online: 0.7, sleeping: 0.15, offline: 0.15 };
-    const districts = ['Jing\'an', 'Pudong', 'Xuhui', 'Changning', 'Huangpu', 'Hongkou', 'Yangpu', 'Minhang'];
-    const firmwares = ['v1.4.2', 'v1.4.3'];
+  /** Empty defaults — populated from live API via hydrateFromBootstrap(). */
+  _initDefaults() {
+    this.devices = [];
+    this.groups = [];
+    this.content = [];
+    this.users = [];
+    this.campaigns = [];
+    this.advertisers = [];
+    this.schedules = [];
+    this.alerts = [];
+    this.pushLog = [];
+    this.rules = [];
 
-    const deviceNames = [
-      'Living Room Frame', 'Grandma\'s Bedroom', 'Office Entrance', 'Café Billboard #1',
-      'CBD Corner #4', 'Kitchen Display', 'Conference Room', 'Lobby Welcome',
-      'Warehouse Terminal', 'Store Window #1', 'Store Window #2', 'Hospital Lobby',
-      'Mall Atrium', 'Art Gallery Wall', 'Kids Room', 'Hallway Frame',
-      'Restaurant Menu #1', 'Restaurant Menu #2', 'Hotel Reception', 'Spa Lounge',
-      'Gym Display', 'Library Board', 'Classroom Frame', 'Lab Monitor',
-      'Park Entrance', 'Bus Shelter #1', 'Subway Platform #2', 'Airport Gate #3',
-      'Café Billboard #2', 'CBD Corner #1', 'CBD Corner #2', 'CBD Corner #3',
-      'Nanjing Rd Display', 'Bund View Frame', 'Tech Hub Lobby', 'Coworking Space',
-      'Rooftop Terrace', 'Garage Entrance', 'Elevator Lobby', 'VIP Lounge',
-      'Dining Room', 'Study Room', 'Balcony Frame', 'Guest Bedroom',
-      'Nursery Frame', 'Basement Frame', 'Patio Display', 'Poolside Frame',
-      'Bar Counter Display', 'Rooftop Billboard #1', 'Rooftop Billboard #2',
-      'Concourse Screen', 'Food Court Menu', 'Info Kiosk #1', 'Info Kiosk #2',
-      'Parking Lot Display', 'Outdoor Billboard #1'
-    ];
-
-    const selectedNames = deviceNames.slice(0, 56);
-
-    let macIndex = 0;
-    const pickWeighted = (weights) => {
-      const r = Math.random();
-      let cumulative = 0;
-      for (const [key, weight] of Object.entries(weights)) {
-        cumulative += weight;
-        if (r < cumulative) return key;
-      }
-      return Object.keys(weights)[0];
-    };
-
-    for (let i = 0; i < selectedNames.length; i++) {
-      const name = selectedNames[i];
-      const isBillboard = name.toLowerCase().includes('billboard') || name.toLowerCase().includes('ad');
-      const isWall = name.toLowerCase().includes('wall') || name.toLowerCase().includes('kiosk');
-      const type = isBillboard ? 'billboard' : isWall ? 'wall' : 'frame';
-      const model = type === 'billboard' ? 'YX-133P' : models[i % 3];
-      const status = pickWeighted(statusWeights);
-      const district = districts[i % districts.length];
-      const rssi = -30 - Math.floor(Math.random() * 55);
-      const storageUsed = 2 + Math.floor(Math.random() * 27);
-      const storageTotal = 32;
-      const firmware = firmwares[i % 2];
-      const temperature = 35 + Math.floor(Math.random() * 8);
-      const brightness = 40 + Math.floor(Math.random() * 61);
-      const uptime = 85 + Math.floor(Math.random() * 16);
-      const volume = Math.random() > 0.5 ? 50 + Math.floor(Math.random() * 51) : 0;
-      const orientations = ['landscape', 'portrait', 'auto'];
-      const orientation = orientations[i % 3];
-      const groupId = type === 'billboard' ? 'g-cbd' : type === 'frame' ? (i % 3 === 0 ? 'g-liu' : 'g-jingan') : 'g-jingan';
-      const lastPhoto = status === 'offline' ? Date.now() - (2 + Math.floor(Math.random() * 48)) * 3600000
-        : Date.now() - Math.floor(Math.random() * 3600000);
-
-      const macParts = [
-        'AA', 'BB', 'CC', 'DD',
-        String(0x10 + Math.floor(macIndex / 256)).toUpperCase().padStart(2, '0'),
-        String(macIndex % 256).toUpperCase().padStart(2, '0')
-      ];
-      macIndex++;
-
-      this.devices.push({
-        id: `d-${String(i + 1).padStart(3, '0')}`,
-        name,
-        model,
-        mac: macParts.join(':'),
-        groupId,
-        type,
-        status,
-        rssi: status === 'offline' ? null : rssi,
-        storageUsed,
-        storageTotal,
-        lastPhoto,
-        location: `${district}, Shanghai`,
-        firmware,
-        temperature,
-        uptime,
-        brightness,
-        volume,
-        orientation,
-        createdAt: Date.now() - Math.floor(Math.random() * 30) * 86400000
-      });
-    }
-
-    // ── groups ──
-    this.groups = [
-      { id: 'g-liu', name: 'Liu Family', parentId: null, description: 'Family photo frames at home', type: 'family' },
-      { id: 'g-cbd', name: 'CBD Zone', parentId: null, description: 'Commercial billboard screens in CBD', type: 'billboard' },
-      { id: 'g-jingan', name: 'Jing\'an District', parentId: null, description: 'All devices in Jing\'an district', type: 'region' },
-      { id: 'g-shanghai-office', name: 'Shanghai Office', parentId: 'g-jingan', description: 'Office building devices', type: 'office' },
-      { id: 'g-hospital', name: 'Hospital Lobby', parentId: 'g-jingan', description: 'Hospital information displays', type: 'medical' },
-      { id: 'g-mall', name: 'Mall Atrium', parentId: 'g-cbd', description: 'Shopping mall displays', type: 'retail' },
-      { id: 'g-family', name: 'Family Group', parentId: 'g-liu', description: 'Extended family members', type: 'family' }
-    ];
-
-    // ── content items ──
-    this.content = [
-      { id: 'c-001', name: 'Morning Sunrise', type: 'Photo', file: 'photo_001.jpg', size: '2.1 MB', date: Date.now() - 86400000, note: 'Used on 3 devices', emoji: '🌅' },
-      { id: 'c-002', name: 'Family Picnic', type: 'Photo', file: 'photo_042.jpg', size: '3.4 MB', date: Date.now() - 3 * 86400000, note: 'Used on 5 devices', emoji: '👨‍👩‍👧' },
-      { id: 'c-003', name: 'Abstract Art #7', type: 'Photo', file: 'art_007.png', size: '1.8 MB', date: Date.now() - 5 * 86400000, note: 'In Art Gallery playlist', emoji: '🎨' },
-      { id: 'c-004', name: 'Birthday Cake', type: 'Photo', file: 'photo_bday.jpg', size: '2.6 MB', date: Date.now() - 6 * 86400000, note: 'Scheduled Jun 12', emoji: '🎂' },
-      { id: 'c-005', name: 'Max Sleeping', type: 'Photo', file: 'pet_001.jpg', size: '1.2 MB', date: Date.now() - 8 * 86400000, note: 'Used on 2 devices', emoji: '🐕' },
-      { id: 'c-006', name: 'CBD Ad — Nike', type: 'Photo', file: 'nike_summer.jpg', size: '4.1 MB', date: Date.now() - 10 * 86400000, note: 'Active campaign', emoji: '🏙️' },
-      { id: 'c-007', name: 'Spring Garden', type: 'Photo', file: 'photo_spring.jpg', size: '2.9 MB', date: Date.now() - 12 * 86400000, note: 'Not used', emoji: '🌸' },
-      { id: 'c-008', name: 'Welcome Template', type: 'Template', file: 'tpl_welcome.html', size: '42 KB', date: Date.now() - 14 * 86400000, note: 'Template', emoji: '📋' },
-      { id: 'c-009', name: 'Office Tour Video', type: 'Video', file: 'tour_office.mp4', size: '28 MB', date: Date.now() - 4 * 86400000, note: 'Lobby loop', emoji: '🎬' },
-      { id: 'c-010', name: 'Holiday Greeting', type: 'Template', file: 'holiday_v2.html', size: '36 KB', date: Date.now() - 2 * 86400000, note: 'Template', emoji: '🎄' },
-      { id: 'c-011', name: 'Menu Specials', type: 'Photo', file: 'specials_jun.jpg', size: '1.6 MB', date: Date.now() - 86400000, note: 'Restaurant use', emoji: '🍽️' },
-      { id: 'c-012', name: 'Live Cam Feed', type: 'Live Feed', file: 'rtsp://cam.lobby/live', size: '—', date: Date.now(), note: 'Lobby stream', emoji: '📹' }
-    ];
-
-    // ── users ──
-    this.users = [
-      { id: 'u-001', initials: 'JL', name: 'Jenny Liu', email: 'jenny@myframe.ink', role: 'Admin', scope: 'All devices', lastLogin: Date.now() - 600000 },
-      { id: 'u-002', initials: 'DC', name: 'David Chen', email: 'david@myframe.ink', role: 'Operator', scope: 'Shanghai Office', lastLogin: Date.now() - 4 * 3600000 },
-      { id: 'u-003', initials: 'AW', name: 'Ad Manager Wang', email: 'wang@agency.com', role: 'Ad Manager', scope: 'CBD Zone only', lastLogin: Date.now() - 86400000 },
-      { id: 'u-004', initials: 'VL', name: 'Viewer Lee', email: 'lee@example.com', role: 'Viewer', scope: 'Read-only', lastLogin: Date.now() - 3 * 86400000 },
-      { id: 'u-005', initials: 'ML', name: 'Mom Liu', email: 'mom@liu.family', role: 'Member', scope: 'Liu Family', lastLogin: Date.now() - 7 * 86400000 },
-      { id: 'u-006', initials: 'GL', name: 'Grandpa Liu', email: 'qr-only', role: 'Viewer', scope: 'QR code only', lastLogin: Date.now() - 14 * 86400000 }
-    ];
-
-    // ── campaigns ──
-    this.campaigns = [
-      { id: 'cmp-001', name: 'Starbucks Summer', client: 'Starbucks CN', slots: '1–3', schedule: 'Mon–Fri 08–20', impressions: 12440, status: 'Active', emoji: '☕' },
-      { id: 'cmp-002', name: 'Nike Summer Drop', client: 'Nike China', slots: '4', schedule: 'All day · All screens', impressions: 8820, status: 'Active', emoji: '👟' },
-      { id: 'cmp-003', name: 'Ping An Health PSA', client: 'Ping An', slots: '5', schedule: 'Weekends', impressions: 3210, status: 'Weekend only', emoji: '🏥' },
-      { id: 'cmp-004', name: 'Coca-Cola Summer', client: 'Coca-Cola', slots: '2', schedule: 'Mon–Fri 12–14', impressions: 5600, status: 'Active', emoji: '🥤' }
-    ];
-
-    // ── advertisers ──
-    this.advertisers = [
-      { id: 'adv-001', name: 'Starbucks CN', contact: 'starbucks@partner.com', campaigns: ['cmp-001'], status: 'Active' },
-      { id: 'adv-002', name: 'Nike China', contact: 'nike@partner.com', campaigns: ['cmp-002'], status: 'Active' },
-      { id: 'adv-003', name: 'Ping An', contact: 'pingan@partner.com', campaigns: ['cmp-003'], status: 'Active' },
-      { id: 'adv-004', name: 'Coca-Cola', contact: 'coke@partner.com', campaigns: ['cmp-004'], status: 'Active' }
-    ];
-
-    // ── schedules ──
-    this.schedules = [
-      { id: 's-001', name: 'Morning Moments', trigger: 'Daily 07:00–10:00', target: 'Liu Family (4)', status: true, type: 'daily' },
-      { id: 's-002', name: 'Memory Flashback', trigger: 'Daily 08:00 — same date last year', target: 'All family frames', status: true, type: 'memory' },
-      { id: 's-003', name: 'Birthday — David Chen', trigger: 'Jun 12 · all day', target: 'Liu Family (4)', status: false, type: 'date' },
-      { id: 's-004', name: 'Nike Summer Ad', trigger: 'Mon–Fri 08:00–20:00', target: 'CBD Zone (12)', status: true, type: 'daily' },
-      { id: 's-005', name: 'Sleep Mode', trigger: 'Daily 23:00–07:00', target: 'All devices', status: true, type: 'daily' },
-      { id: 's-006', name: 'Art Gallery Weekend', trigger: 'Sat–Sun all day', target: 'Office Entrance', status: false, type: 'weekly' }
-    ];
-
-    // ── alerts ──
-    this.alerts = [
-      { id: 'a-001', icon: '🔴', level: 'Critical', title: 'Café Billboard #1 offline', desc: 'MQTT Last Will triggered — no heartbeat for 2h 14m. Device at Nanjing Rd, Huangpu.', time: Date.now() - 8000000, resolved: false },
-      { id: 'a-002', icon: '⚠️', level: 'Warning', title: 'Office Entrance — weak WiFi', desc: 'Signal strength −74 dBm. Photo delivery delays detected.', time: Date.now() - 2700000, resolved: false },
-      { id: 'a-003', icon: '💾', level: 'Warning', title: 'Grandma\'s Bedroom SD card', desc: '14.2 GB used of 16 GB (89%). Clear old photos to prevent delivery failure.', time: Date.now() - 3600000, resolved: false },
-      { id: 'a-004', icon: '✅', level: 'Info', title: 'Living Room Frame back online', desc: 'Was offline for 4 minutes — auto-reconnected.', time: Date.now() - 86400000, resolved: true },
-      { id: 'a-005', icon: '✅', level: 'Info', title: 'OTA v1.4.3 completed — all 8 devices', desc: 'Shanghai Office group firmware update successful.', time: Date.now() - 2 * 86400000, resolved: true },
-      { id: 'a-006', icon: '✅', level: 'Info', title: 'CBD Corner #3 storage cleared', desc: 'SD card freed after auto-cleanup. 8.1 GB recovered.', time: Date.now() - 3 * 86400000, resolved: true },
-      { id: 'a-007', icon: '🔴', level: 'Critical', title: 'CPU overheat — Rooftop Billboard #1', desc: 'Temperature 47°C exceeds threshold. Fan failure suspected.', time: Date.now() - 500000, resolved: false },
-      { id: 'a-008', icon: '⚠️', level: 'Warning', title: 'Firmware 4 devices outdated', desc: 'Grandma\'s Bedroom, CBD Corner #4, and 2 others on v1.4.2.', time: Date.now() - 12 * 3600000, resolved: false }
-    ];
-
-    // ── push log ──
-    this.pushLog = [
-      { id: 'pl-001', emoji: '📸', name: 'Family Picnic', target: 'Living Room Frame', status: 'Delivered', time: Date.now() - 120000 },
-      { id: 'pl-002', emoji: '🌅', name: 'Morning Sunrise', target: 'Liu Family (4)', status: 'Delivered', time: Date.now() - 840000 },
-      { id: 'pl-003', emoji: '🎨', name: 'Abstract Art #7', target: 'Art Gallery group', status: 'Delivered', time: Date.now() - 3600000 },
-      { id: 'pl-004', emoji: '🏙️', name: 'Nike Summer Ad', target: 'CBD Zone (12)', status: 'Queued (1 offline)', time: Date.now() - 7200000 },
-      { id: 'pl-005', emoji: '📋', name: 'Welcome Template', target: 'Office Entrance', status: 'Failed', time: Date.now() - 10800000 },
-      { id: 'pl-006', emoji: '🎂', name: 'Birthday Banner', target: 'Liu Family (4)', status: 'Delivered', time: Date.now() - 14400000 },
-      { id: 'pl-007', emoji: '🍽️', name: 'Menu Specials', target: 'Restaurant Menu #1', status: 'Delivered', time: Date.now() - 5 * 3600000 },
-      { id: 'pl-008', emoji: '📹', name: 'Lobby Stream', target: 'Lobby Welcome', status: 'Failed', time: Date.now() - 8 * 3600000 }
-    ];
-
-    // ── rules ──
-    this.rules = [
-      { id: 'r-001', name: 'Device offline', trigger: 'MQTT LWT', channel: 'Email + Push', status: true },
-      { id: 'r-002', name: 'Storage > 85%', trigger: 'Telemetry check', channel: 'Email', status: true },
-      { id: 'r-003', name: 'WiFi < −70 dBm', trigger: 'Telemetry check', channel: 'Push', status: true },
-      { id: 'r-004', name: 'OTA failed', trigger: 'OTA ack timeout', channel: 'Email + Webhook', status: true },
-      { id: 'r-005', name: 'Photo delivery failed', trigger: 'ACK timeout', channel: 'Push', status: false },
-      { id: 'r-006', name: 'Firmware out of date', trigger: 'Version check', channel: 'Email', status: false }
-    ];
-
-    // ── notification channels ──
     this.channels = {
-      email: { icon: '📧', name: 'Email', detail: 'jenny@example.com', enabled: true },
-      push: { icon: '📱', name: 'Mobile Push', detail: 'iOS + Android app', enabled: true },
-      webhook: { icon: '🔗', name: 'Webhook', detail: 'https://hooks.example.com', enabled: false },
-      wechat: { icon: '💬', name: 'WeChat', detail: 'Linked account', enabled: false }
+      email: { icon: '📧', name: 'Email', detail: '—', enabled: false },
+      push: { icon: '📱', name: 'Mobile Push', detail: '—', enabled: false },
+      webhook: { icon: '🔗', name: 'Webhook', detail: '—', enabled: false },
+      wechat: { icon: '💬', name: 'WeChat', detail: '—', enabled: false },
     };
 
-    // ── permissions matrix (label → [Admin, Operator, Ad Manager, Viewer]) ──
     this.permissions = {
       'Push photos':    [true,  true,  true,  false],
       'Manage devices': [true,  true,  false, false],
@@ -250,34 +71,55 @@ class DataStore {
       'Manage campaigns': [true, false, true,  false],
       'View analytics': [true,  true,  true,  true],
       'Manage users':   [true,  false, false, false],
-      'API access':     [true,  true,  false, false]
+      'API access':     [true,  true,  false, false],
     };
 
-    // ── settings ──
     this.settings = {
-      mqttHost: 'broker.myframe.ink',
-      mqttPort: '8883',
-      mqttTls: true,
-      mqttQos: '1',
-      mqttLastWill: true,
-      apiBaseUrl: 'https://api.myframe.ink/v2',
-      cdnEndpoint: 'https://cdn.myframe.ink',
-      apiKey: 'mf_live_sk_xxxxxxxxxxxxx',
-      twoFactorAuth: true,
-      certRotation: true,
+      mqttHost: '',
+      mqttPort: '0',
+      mqttTls: false,
+      mqttQos: '0',
+      mqttLastWill: false,
+      apiBaseUrl: '',
+      cdnEndpoint: '',
+      apiKey: '',
+      twoFactorAuth: false,
+      certRotation: false,
       remoteWipe: false,
       contentAllowlist: false,
-      defaultBrightness: '75%',
-      refreshInterval: '30 min',
-      sleepStart: '23:00',
-      wakeTime: '07:00',
+      defaultBrightness: '0%',
+      refreshInterval: '0 min',
+      sleepStart: '—',
+      wakeTime: '—',
       autoTimezone: true,
       webhook_enabled: false,
-      wechat_enabled: true,
+      wechat_enabled: false,
       weather_enabled: false,
-      holiday_enabled: true,
-      grafana_enabled: false
+      holiday_enabled: false,
+      grafana_enabled: false,
     };
+  }
+
+  /** Replace store sections from GET /api/admin/mdm/bootstrap payload. */
+  hydrateFromBootstrap(payload) {
+    if (!payload || typeof payload !== 'object') return;
+    if (Array.isArray(payload.users)) this.users = payload.users;
+    if (Array.isArray(payload.groups)) this.groups = payload.groups;
+    if (Array.isArray(payload.content)) this.content = payload.content;
+    if (Array.isArray(payload.schedules)) this.schedules = payload.schedules;
+    if (Array.isArray(payload.alerts)) this.alerts = payload.alerts;
+    if (Array.isArray(payload.pushLog)) this.pushLog = payload.pushLog;
+    if (Array.isArray(payload.campaigns)) this.campaigns = payload.campaigns;
+    if (Array.isArray(payload.advertisers)) this.advertisers = payload.advertisers;
+    if (Array.isArray(payload.rules)) this.rules = payload.rules;
+    if (payload.channels && typeof payload.channels === 'object') this.channels = payload.channels;
+    if (payload.settings && typeof payload.settings === 'object') {
+      this.settings = { ...this.settings, ...payload.settings };
+    }
+    if (Array.isArray(payload.playlists) && typeof window.__mdmSetPlaylists === 'function') {
+      window.__mdmSetPlaylists(payload.playlists);
+    }
+    if (payload.fleet) this.setFleetMeta(payload.fleet);
   }
 
   // ── Device CRUD ──
@@ -624,6 +466,18 @@ let pendingTimeouts = [];
 
 /** @type {Array} Saved playlists */
 let playlists = [];
+
+window.__mdmSetPlaylists = function (rows) {
+  playlists = Array.isArray(rows)
+    ? rows.map(function (pl) {
+        return {
+          id: pl.id,
+          name: pl.name || pl.title || 'Playlist',
+          items: Array.isArray(pl.items) ? pl.items : (Array.isArray(pl.photoIds) ? pl.photoIds : []),
+        };
+      })
+    : [];
+};
 
 /** @type {Object|null} Playlist builder draft state */
 let _playlistDraft = null;
@@ -1213,6 +1067,17 @@ const pageRenderers = {
   users: renderUsers,
   settings: renderSettings
 };
+
+function renderAllMdmPages() {
+  Object.keys(pageRenderers).forEach(function (pageId) {
+    try {
+      pageRenderers[pageId]();
+    } catch (err) {
+      console.warn('[mdm] render failed:', pageId, err);
+    }
+  });
+}
+window.renderAllMdmPages = renderAllMdmPages;
 
 function navigate(id) {
   document.querySelectorAll('.sb-item').forEach(el => {
@@ -1879,7 +1744,7 @@ function renderDevices() {
     const statusDot = d.status === 'online' ? 'sdot-g' : d.status === 'sleeping' ? 'sdot-a' : 'sdot-r';
     const statusColor = d.status === 'online' ? 'var(--green)' : d.status === 'sleeping' ? 'var(--amber)' : 'var(--red)';
     const rssiStr = d.rssi != null ? d.rssi + ' dBm' + (d.rssi < -70 ? ' ⚠️' : '') : '<span style="color:var(--ink4)">—</span>';
-    const storagePct = Math.round((d.storageUsed / d.storageTotal) * 100);
+    const storagePct = d.storageTotal ? Math.round((d.storageUsed / d.storageTotal) * 100) : 0;
     const storageColor = storagePct > 85 ? 'var(--red)' : storagePct > 70 ? 'var(--amber)' : 'var(--green)';
     const group = store.getGroup(d.groupId);
     const groupPill = group ? `<span class="pill pill-b">${escapeHtml(group.name)}</span>` : '<span class="pill" style="background:var(--border);color:var(--ink4)">None</span>';
@@ -4582,10 +4447,10 @@ async function init() {
   }
 
   if (authed || window.__mdmHydrated) {
-    renderDashboard();
+    renderAllMdmPages();
     document.body.classList.add('rendered');
     document.body.classList.remove('mdm-app-locked');
-  } else if (!window.__mdmLiveMode) {
+  } else {
     document.body.classList.add('mdm-app-locked');
   }
 }
