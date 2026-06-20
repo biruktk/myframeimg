@@ -182,6 +182,7 @@ const basic = {
   productDescription:
     "The latest E-ink technology delivers 65,000 colors with a paper-like finish. No glare, no backlight — just natural, beautiful images that look like prints.",
   specsTitle: "Choose Your Frame",
+  pricingLabel: "Pricing",
   pricingTitle: "Simple, Transparent",
   pricingDescription: "One price. No subscriptions. No hidden fees.",
   familyTitle: "Family Connection,<br>Simplified",
@@ -265,67 +266,19 @@ const gateways = [
   { code: "paypal", title: "Paypal", config: { clientId: "", clientSecret: "", mode: "sandbox" } },
 ];
 
-const translationsZh: Record<string, string> = {
-  menuFeatures: "功能",
-  menuProduct: "产品",
-  menuPricing: "价格",
-  menuFamilies: "家庭使用",
-  menuCart: "购物车",
-  buyForGift: "作为礼物购买",
-  footerGroupProduct: "产品",
-  footerGroupSupport: "支持",
-  footerGroupCompany: "公司",
-  footerGroupAccount: "账号",
-  footerCustomerLogin: "客户登录",
-  footerLoginBar: "客户登录 · 门户控制台",
-  badgeAvailableNow: "现已发售",
-  badgeComingSoon: "即将推出",
-  badgeUnderDevelopment: "开发中",
-  oneTimePurchase: "一次性购买",
-  heroBadge: "让家人随时出现",
-  heroTitle: "保持亲近，",
-  heroHighlight: "不受距离限制",
-  heroSubtitle: "将照片即时发送到亲人的相框，让陪伴每天都被看见。",
-  heroPrimaryButton: "立即订购 - $360",
-  heroSecondaryButton: "观看视频",
-  heroImageCaption: "您的照片将显示在这里",
-  addToCartButton: "加入购物车",
-  notifyMeButton: "通知我",
-  productTitle: "Spectra 6 显示屏",
-  productDescription:
-    "新一代电子墨水技术可呈现 65,000 种色彩，拥有纸张般的观感。无眩光、无背光，只留下自然细腻的画面。",
-  featureLabel: "为真实家庭而生",
-  featureTitle: "让值得珍藏的时刻一直可见",
-  featureDescription:
-    "MyFrame 适合父母、伴侣和家庭，让照片融入日常生活，而不是消失在手机相册里。",
-  pricingTitle: "简单透明",
-  pricingDescription: "一次购买，无订阅，无隐藏费用。",
-  familyTitle: "家庭连接，<br>更简单",
-  familyDescription: "通过微信、短信或邮件发送二维码或邀请链接，让远方的家人每天都能看见你的照片。",
-  footerText: "一款让家人随时“出现”的设备，为最重要的人而打造。",
-  specsTitle: "选择您的相框",
-  notifyMeSuccess: "提交成功，我们会在产品开售时通知您。",
-};
-
-const zhScenarioFeatures = [
-  { title: "给远方的父母", description: "把当天的一张照片发送过去，让它成为家中安静可见的片刻。" },
-  { title: "给日常家庭生活", description: "让小小的日常一直可见：孩子的笑脸，或一句来自同城的问候。" },
-  { title: "给婚礼和礼物", description: "有意义的礼物能在特别的一天之后继续生长，变成家中的相册。" },
-  { title: "生日之后", description: "让庆祝过后的细小瞬间也一直留在家中。" },
-  { title: "房间里的艺术展", description: "把喜欢的作品和旅行照片，变成安静的家庭画廊角落。" },
-  { title: "给动物和宠物", description: "让宠物照片留在比相册更温暖的地方。" },
-];
+import { loadMarketingFixtureBundle } from "./marketing_fixture_loader";
 
 /** Persisted CMS payload (languages/currencies are merged at runtime from exports below). */
 export function marketingSiteSeed() {
+  const fixture = loadMarketingFixtureBundle();
   return {
     basic: { ...basic },
     footer: { ...footer },
     maintenance: { ...maintenance },
     media: { ...media },
-    translations: { zh: { ...translationsZh } },
-    translatedFeatures: { zh: zhScenarioFeatures.map((item) => ({ ...item })) },
-    contentPages: { en: {}, zh: {} },
+    translations: fixture?.translations ?? {},
+    translatedFeatures: fixture?.translatedFeatures ?? {},
+    contentPages: fixture?.contentPages ?? { en: {}, zh: {} },
     seo: seo.map((row) => ({ ...row })),
     menus: menus.map((row) => ({ ...row })),
     footerLinks: footerLinks.map((row) => ({ ...row })),

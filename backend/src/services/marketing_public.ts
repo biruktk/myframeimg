@@ -4,7 +4,46 @@ import path from "path";
 import type { MarketingSiteStored } from "../data/marketing_defaults";
 import { marketingSiteSeed, staticCurrencies, staticLanguages } from "../data/marketing_defaults";
 import { marketingContentPagesDefault } from "../data/marketing_content_pages_default";
+import { marketingTranslationGaps } from "../data/marketing_translation_gaps";
 import { db } from "../db/store";
+
+type TranslationMap = Record<string, Record<string, unknown>>;
+type FeatureMap = Record<string, Array<{ title: string; description: string }>>;
+
+function mergeLocaleRecords<T extends Record<string, unknown>>(
+  seed: Record<string, T>,
+  stored: Record<string, Partial<T>> | undefined,
+  gapByLocale: Record<string, Partial<T>> | undefined,
+): Record<string, T> {
+  const locales = new Set<string>([
+    ...Object.keys(seed),
+    ...Object.keys(stored ?? {}),
+    ...Object.keys(gapByLocale ?? {}),
+  ]);
+  const out: Record<string, T> = {};
+  for (const locale of locales) {
+    out[locale] = {
+      ...(gapByLocale?.[locale] ?? {}),
+      ...(seed[locale] ?? {}),
+      ...(stored?.[locale] ?? {}),
+    } as T;
+  }
+  return out;
+}
+
+function mergeTranslatedFeatures(seed: FeatureMap, stored: FeatureMap | undefined): FeatureMap {
+  const locales = new Set<string>([...Object.keys(seed), ...Object.keys(stored ?? {})]);
+  const out: FeatureMap = {};
+  for (const locale of locales) {
+    const seedItems = seed[locale] ?? [];
+    const storedItems = stored?.[locale];
+    out[locale] =
+      Array.isArray(storedItems) && storedItems.length >= seedItems.length
+        ? storedItems.map((item) => ({ ...item }))
+        : seedItems.map((item) => ({ ...item }));
+  }
+  return out;
+}
 
 type ContentSlugDoc = {
   title: string;
@@ -87,8 +126,15 @@ function mergeMarketingSite(stored: Partial<MarketingSiteStored> | null | undefi
     footer: { ...s.footer, ...(u.footer ?? {}) },
     maintenance: { ...s.maintenance, ...(u.maintenance ?? {}) },
     media: { ...s.media, ...(u.media ?? {}) },
-    translations: { ...s.translations, ...(u.translations ?? {}) },
-    translatedFeatures: { ...s.translatedFeatures, ...(u.translatedFeatures ?? {}) },
+    translations: mergeLocaleRecords(
+      s.translations as TranslationMap,
+      (u.translations ?? {}) as TranslationMap,
+      marketingTranslationGaps as TranslationMap,
+    ),
+    translatedFeatures: mergeTranslatedFeatures(
+      s.translatedFeatures as FeatureMap,
+      (u.translatedFeatures ?? {}) as FeatureMap,
+    ),
     contentPages: { ...s.contentPages, ...(u.contentPages ?? {}) },
     seo: Array.isArray(u.seo) && u.seo.length > 0 ? (u.seo as MarketingSiteStored["seo"]) : s.seo,
     menus: Array.isArray(u.menus) && u.menus.length > 0 ? (u.menus as MarketingSiteStored["menus"]) : s.menus,

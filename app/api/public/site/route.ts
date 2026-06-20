@@ -14,12 +14,27 @@ function hasContentPages(payload: unknown): boolean {
   );
 }
 
-function withFallbackContentPages(payload: unknown) {
+function withFallbackMarketing(payload: unknown) {
   if (!payload || typeof payload !== "object") return publicSiteDevFallback;
-  if (hasContentPages(payload)) return payload;
+  const base = payload as Record<string, unknown>;
+  const fb = publicSiteDevFallback as {
+    translations?: Record<string, Record<string, unknown>>;
+    translatedFeatures?: Record<string, unknown>;
+    contentPages?: Record<string, unknown>;
+  };
+  const mergedTranslations: Record<string, Record<string, unknown>> = { ...(fb.translations ?? {}) };
+  const incoming = (base.translations ?? {}) as Record<string, Record<string, unknown>>;
+  for (const [locale, row] of Object.entries(incoming)) {
+    mergedTranslations[locale] = { ...(mergedTranslations[locale] ?? {}), ...row };
+  }
+  const mergedFeatures = { ...(fb.translatedFeatures ?? {}), ...(base.translatedFeatures as object ?? {}) };
   return {
-    ...(payload as Record<string, unknown>),
-    contentPages: publicSiteDevFallback.contentPages,
+    ...base,
+    translations: mergedTranslations,
+    translatedFeatures: mergedFeatures,
+    contentPages: hasContentPages(payload)
+      ? base.contentPages
+      : publicSiteDevFallback.contentPages,
   };
 }
 
@@ -32,7 +47,7 @@ export async function GET() {
         throw new Error(`Unexpected public site content type: ${contentType || "unknown"}`);
       }
       const payload = await res.json();
-      return NextResponse.json(withFallbackContentPages(payload), {
+      return NextResponse.json(withFallbackMarketing(payload), {
         status: res.status,
         headers: { "cache-control": "no-store" },
       });
