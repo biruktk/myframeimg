@@ -3354,11 +3354,9 @@ function appendMqttLiveEntry(entry) {
   var timeStr = hh + ':' + mm + ':' + ss;
   var dir = entry.direction === 'tx' ? 'TX' : 'RX';
   var cssClass = entry.direction === 'tx' ? 'tpay' : 'tstat';
-  var label = entry.action ? entry.action.toUpperCase().padEnd(7, ' ') + ' ' : '';
   var html = '<div><span class="tts">' + escapeHtml(timeStr) + ' </span>' +
     '<span class="ttopic">' + escapeHtml(entry.topic) + ' </span>' +
     '<span class="ttype">' + escapeHtml(dir) + ' </span>' +
-    (label ? '<span class="ttype">' + escapeHtml(label) + '</span>' : '') +
     '<span class="' + cssClass + '">' + escapeHtml(entry.payload) + '</span></div>';
   var msgData = {
     html: html,
@@ -3397,12 +3395,12 @@ function renderMqttLive() {
 
   startMqttStatsPoll();
 
-  fetch('/api/devs/logs?limit=200', { cache: 'no-store', credentials: 'same-origin' })
+  fetch('/api/devs/logs?limit=200&source=mqtt', { cache: 'no-store', credentials: 'same-origin' })
     .then(function (res) { return res.ok ? res.json() : null; })
     .then(function (data) {
       if (!termBody) return;
       if (!data || !Array.isArray(data.items) || data.items.length === 0) {
-        termBody.innerHTML = '<div class="tmuted" style="color:rgba(255,255,255,.35);font-family:var(--mono);font-size:11px">No frame traffic yet. Logs appear when frames send MQTT messages or photos are pushed.</div>';
+        termBody.innerHTML = '<div class="tmuted" style="color:rgba(255,255,255,.35);font-family:var(--mono);font-size:11px">No frame MQTT traffic yet. Raw logs appear here when frames talk to the VPS broker.</div>';
         return;
       }
       termBody.innerHTML = '';
@@ -3412,7 +3410,7 @@ function renderMqttLive() {
       if (termBody) termBody.innerHTML = '<div class="terr">Could not load live logs. Is the backend running?</div>';
     });
 
-  mqttEventSource = new EventSource('/api/devs/logs/stream');
+  mqttEventSource = new EventSource('/api/devs/logs/stream?source=mqtt');
   mqttEventSource.addEventListener('log', function (ev) {
     if (mqttPaused) return;
     try {

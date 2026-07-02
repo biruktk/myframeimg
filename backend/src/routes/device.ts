@@ -178,6 +178,7 @@ deviceRouter.post("/device/send", async (req, res) => {
     const hwMac = resolveMqttHardwareMac(deviceId) ?? deviceId;
     appendFrameLog({
       direction: "tx",
+      source: "api",
       mac: hwMac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase(),
       frameName: data.device.name || deviceId,
       topic: `/inkjoyap/${hwMac}`,

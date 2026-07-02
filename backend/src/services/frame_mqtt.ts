@@ -61,12 +61,24 @@ function logFrameTraffic(
   const body = typeof payload === "string" ? payload : JSON.stringify(payload);
   appendFrameLog({
     direction,
+    source: "mqtt",
     mac: normalizeMac(mac),
     frameName: resolveFrameName(mac),
     topic,
     action: action ?? (typeof payload === "object" ? String(payload.action ?? "") || null : null),
     payload: body.length > 4000 ? `${body.slice(0, 4000)}…` : body,
   });
+}
+
+function parseMqttJson(text: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return parsed != null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function mqttDebugRx(topic: string, raw: Buffer) {
@@ -125,24 +137,22 @@ function publishFrameCommand(
 
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
-  let data: Record<string, unknown>;
-  try {
-    data = JSON.parse(raw.toString()) as Record<string, unknown>;
-  } catch {
-    return;
-  }
+  const payloadText = raw.toString("utf8");
+  const data = parseMqttJson(payloadText);
 
   const tail = topic.split("/").pop() ?? "";
   const clientid =
-    (typeof data.clientid === "string" && data.clientid) ||
-    (typeof data.stamac === "string" && data.stamac) ||
+    (typeof data?.clientid === "string" && data.clientid) ||
+    (typeof data?.stamac === "string" && data.stamac) ||
     tail;
 
   const mac = normalizeMac(clientid);
   if (!mac) return;
 
-  const action = String(data.action ?? "");
-  logFrameTraffic("rx", mac, topic, data, action || null);
+  const action = String(data?.action ?? "");
+  logFrameTraffic("rx", mac, topic, payloadText, action || null);
+  if (!data) return;
+
   const rec: FrameRecord =
     frames.get(mac) ??
     ({
@@ -241,7 +251,7 @@ export function startFrameMqtt(): void {
   mqttClient.on("connect", () => {
     mqttConnectedAt = Date.now();
     console.log("[frame-mqtt] connected");
-    mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
+    mqttClient?.subscribe("/device/report/#", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
     });
   });

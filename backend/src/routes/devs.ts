@@ -52,12 +52,13 @@ devsRouter.get("/devs/logs", (req, res) => {
   const mac = String(req.query.mac ?? "");
   const name = String(req.query.name ?? "");
   const q = String(req.query.q ?? "");
+  const source = String(req.query.source ?? "");
   const since = Number(req.query.since ?? 0) || 0;
   const limit = Number(req.query.limit ?? 500) || 500;
   res.json({
     ok: true,
-    items: getFrameLogs({ mac, name, q, since, limit }),
-    total: getFrameLogs({ mac, name, q, since, limit: 2000 }).length,
+    items: getFrameLogs({ mac, name, q, source, since, limit }),
+    total: getFrameLogs({ mac, name, q, source, since, limit: 2000 }).length,
   });
 });
 
@@ -70,11 +71,13 @@ devsRouter.get("/devs/logs/stream", (req, res) => {
   const mac = String(req.query.mac ?? "");
   const name = String(req.query.name ?? "");
   const q = String(req.query.q ?? "");
+  const source = String(req.query.source ?? "").trim().toLowerCase();
 
   const matches = (entry: ReturnType<typeof getFrameLogs>[number]) => {
     const macQ = mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
     const nameQ = name.trim().toLowerCase();
     const textQ = q.trim().toLowerCase();
+    if (source && (entry.source ?? "").toLowerCase() !== source) return false;
     if (macQ && !entry.mac.includes(macQ)) return false;
     if (nameQ && !(entry.frameName ?? "").toLowerCase().includes(nameQ)) return false;
     if (textQ) {
