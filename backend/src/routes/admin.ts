@@ -11,6 +11,8 @@ import { db, type MyframeDb } from "../db/store";
 import { requireAdminToken } from "../middleware/security";
 
 import { attachCmsManageRoutes } from "./cms_manage_routes";
+import { pushFirmwareOtaToFrameById } from "../services/firmware_ota";
+import { latestFirmwareRelease } from "../data/firmware_releases";
 
 export const adminRouter = Router();
 adminRouter.use(requireAdminToken);
@@ -453,34 +455,20 @@ adminRouter.delete("/admin/frames/:id", (req, res) => {
   res.json({ ok: true });
 });
 
-adminRouter.post("/admin/frames/:id/ota", (req, res) => {
+adminRouter.post("/admin/frames/:id/ota", async (req, res) => {
   const id = String(req.params.id);
-  const version = String(req.body?.version ?? "").trim();
+  const version = String(req.body?.version ?? latestFirmwareRelease().version).trim();
   if (!version) {
     res.status(400).json({ ok: false, error: "version_required" });
     return;
   }
-  let found = false;
-  db.mutate((draft) => {
-    draft.frames = draft.frames.map((f) => {
-      if (f.id !== id) return f;
-      found = true;
-      return { ...f, ota: { targetVersion: version, status: "queued" } };
-    });
-    draft.auditLog.unshift({
-      id: `audit_${Date.now()}`,
-      actor: "superadmin",
-      action: "ota_push",
-      target: id,
-      atMs: Date.now(),
-      meta: { version },
-    });
-  });
-  if (!found) {
-    res.status(404).json({ ok: false, error: "frame_not_found" });
+  const outcome = await pushFirmwareOtaToFrameById(id, "superadmin");
+  if (!outcome.ok) {
+    const status = outcome.error === "frame_not_found" ? 404 : 502;
+    res.status(status).json(outcome);
     return;
   }
-  res.json({ ok: true });
+  res.json(outcome);
 });
 
 adminRouter.get("/admin/frames/:id/ble-logs", (req, res) => {
@@ -1089,6 +1077,7 @@ adminRouter.get("/admin/mdm/bootstrap", (_req, res) => {
 
   res.json({
     frames,
+    latestFirmware: latestFirmwareRelease(),
     fleet: {
       totalFrames: frames.length,
       onlineNow: online,

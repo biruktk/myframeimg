@@ -26,10 +26,10 @@
       "name": "WeChat 936****9278",
       "orgId": "org_default",
       "subscriptionTier": "free",
-      "familyGroupId": null,
+      "familyGroupId": "fam_1781923821367_2a3c",
       "status": "active",
       "createdAtMs": 1780345189110,
-      "lastSeenAtMs": 1781303173988
+      "lastSeenAtMs": 1781924290955
     },
     {
       "id": "usr_wx_38cbc7bccfa9_0da050",
@@ -51,7 +51,7 @@
       "familyGroupId": null,
       "status": "active",
       "createdAtMs": 1780404902890,
-      "lastSeenAtMs": 1780583613121
+      "lastSeenAtMs": 1782050506733
     },
     {
       "id": "usr_wx_942c6d22ebf5_e6ed29",
@@ -59,7 +59,7 @@
       "name": "WeChat 131****4938",
       "orgId": "org_default",
       "subscriptionTier": "free",
-      "familyGroupId": null,
+      "familyGroupId": "fam_1782526775435_e145",
       "status": "active",
       "createdAtMs": 1780405749000,
       "lastSeenAtMs": 1781448594095
@@ -73,7 +73,7 @@
       "familyGroupId": "fam_test_c26e",
       "status": "active",
       "createdAtMs": 1780411616478,
-      "lastSeenAtMs": 1781471780238,
+      "lastSeenAtMs": 1781950608100,
       "passwordSalt": "f2e5355c584380e274337066a3a62aca",
       "passwordHash": "df5c49fdc73a45cc577586997b53762f7ef38533fb584748a8c8147d7fcebee297eadc50f360ac4816564f50d49bdc90e7bad86c33500f651b312bd63643c07b"
     },
@@ -86,7 +86,7 @@
       "familyGroupId": "fam_1781884768827_0858b7",
       "status": "active",
       "createdAtMs": 1780523236601,
-      "lastSeenAtMs": 1781318622473,
+      "lastSeenAtMs": 1781921017690,
       "appleSub": "000443.db48979577d44ff2a5044ca988734df4.2228"
     },
     {
@@ -98,7 +98,7 @@
       "familyGroupId": "fam_1780697698041_8dc730",
       "status": "active",
       "createdAtMs": 1780523251780,
-      "lastSeenAtMs": 1781318524895,
+      "lastSeenAtMs": 1782030855061,
       "wechatOpenId": "oQ1FU2Vz904a4M88i1hEXlISB420",
       "wechatUnionId": "on4Jj2drSt2ZhHLmbSJOpywvjrF8"
     },
@@ -108,10 +108,10 @@
       "name": "HOOBEN",
       "orgId": "org_default",
       "subscriptionTier": "free",
-      "familyGroupId": "fam_1780573753257_d4b5b3",
+      "familyGroupId": null,
       "status": "active",
       "createdAtMs": 1780531154977,
-      "lastSeenAtMs": 1780717190096,
+      "lastSeenAtMs": 1781930436536,
       "wechatOpenId": "oQ1FU2c0UqtRN4Rr34hPN1MXk_YQ",
       "wechatUnionId": "on4Jj2V4LHQpIcUFEaUWmVW_dlbs"
     },
@@ -137,7 +137,7 @@
       "familyGroupId": "fam_1780832363642_791980",
       "status": "active",
       "createdAtMs": 1780717100339,
-      "lastSeenAtMs": 1780960138939,
+      "lastSeenAtMs": 1781959974546,
       "wechatOpenId": "oQ1FU2VbQW8xhkYM_yPTBcBo6kZ4",
       "wechatUnionId": "on4Jj2UrkK0ALwkpTTUGHmcW0hvw"
     },
@@ -147,10 +147,10 @@
       "name": "悦彤 孙",
       "orgId": "org_default",
       "subscriptionTier": "free",
-      "familyGroupId": null,
+      "familyGroupId": "fam_1782307037235_0fa1",
       "status": "active",
       "createdAtMs": 1780734865964,
-      "lastSeenAtMs": 1780734865964,
+      "lastSeenAtMs": 1782307775455,
       "appleSub": "000932.b2f1c8470131469985ff19a27a738a92.0834"
     },
     {
@@ -159,10 +159,10 @@
       "name": "WeChat 133****9244",
       "orgId": "org_default",
       "subscriptionTier": "free",
-      "familyGroupId": null,
+      "familyGroupId": "fam_1781943464892_cc4b",
       "status": "active",
       "createdAtMs": 1780741730035,
-      "lastSeenAtMs": 1781096781532
+      "lastSeenAtMs": 1781949206886
     },
     {
       "id": "usr_1780818214113_c973cf91",
@@ -185,7 +185,7 @@
       "familyGroupId": null,
       "status": "active",
       "createdAtMs": 1780958205754,
-      "lastSeenAtMs": 1780958205754,
+      "lastSeenAtMs": 1781946378044,
       "googleSub": "103424600219407116421"
     },
     {
@@ -226,6 +226,19 @@
       "lastSeenAtMs": 1781556687076,
       "wechatOpenId": "oQ1FU2aWEiPqiOP8ZavbfR0d7IRM",
       "wechatUnionId": "on4Jj2UjVmsB91M3kZ_2Ei5Ov4pg"
+    },
+    {
+      "id": "usr_wx_1781947340689_16f90eb2",
+      "email": "wechat_c9c5a5dec0880903eeda55cc@wechat.myframe.local",
+      "name": "Nb",
+      "orgId": "org_default",
+      "subscriptionTier": "free",
+      "familyGroupId": "fam_1781947912863_243d",
+      "status": "active",
+      "createdAtMs": 1781947340689,
+      "lastSeenAtMs": 1781947340689,
+      "wechatOpenId": "oQ1FU2Q9f741YY4pBM080T_lI7tc",
+      "wechatUnionId": "on4Jj2d3Noq_He2Ne-J_VmH-6BQQ"
     }
   ],
   "familyGroups": [
@@ -258,18 +271,6 @@
       ]
     },
     {
-      "id": "fam_1780573753257_d4b5b3",
-      "name": "Our family",
-      "inviteCode": "BXYMJEMG",
-      "members": [
-        {
-          "userId": "usr_wx_1780531154977_3d095c18",
-          "role": "owner"
-        }
-      ],
-      "frameIds": []
-    },
-    {
       "id": "fam_1780697698041_8dc730",
       "name": "Our family",
       "inviteCode": "H7EY2G77",
@@ -279,7 +280,9 @@
           "role": "owner"
         }
       ],
-      "frameIds": []
+      "frameIds": [
+        "D0CF13F0161C"
+      ]
     },
     {
       "id": "fam_1780832363642_791980",
@@ -291,7 +294,9 @@
           "role": "owner"
         }
       ],
-      "frameIds": []
+      "frameIds": [
+        "D0CF13E06D2C"
+      ]
     },
     {
       "id": "fam_1781884768827_0858b7",
@@ -303,7 +308,80 @@
           "role": "owner"
         }
       ],
-      "frameIds": []
+      "frameIds": [
+        "D0CF13F0161C"
+      ]
+    },
+    {
+      "id": "fam_1781923821367_2a3c",
+      "name": "WeChat 936****9278's Family",
+      "inviteCode": "INV-12206B",
+      "members": [
+        {
+          "userId": "usr_wx_c612851badd4_134bbc",
+          "role": "owner"
+        }
+      ],
+      "frameIds": [
+        "D0CF13F0161C"
+      ]
+    },
+    {
+      "id": "fam_1781943464892_cc4b",
+      "name": "WeChat 133****9244's Family",
+      "inviteCode": "INV-450266",
+      "members": [
+        {
+          "userId": "usr_wx_39674d7b4fbb_ba32fd",
+          "role": "owner"
+        }
+      ],
+      "frameIds": [
+        "10BDA3C12B96"
+      ]
+    },
+    {
+      "id": "fam_1781947912863_243d",
+      "name": "Nb's Family",
+      "inviteCode": "INV-E109AC",
+      "members": [
+        {
+          "userId": "usr_wx_1781947340689_16f90eb2",
+          "role": "owner"
+        }
+      ],
+      "frameIds": [
+        "10BDA3C12B96",
+        "10BDA3C12B94"
+      ]
+    },
+    {
+      "id": "fam_1782307037235_0fa1",
+      "name": "悦彤 孙's Family",
+      "inviteCode": "INV-339266",
+      "members": [
+        {
+          "userId": "usr_apple_1780734865964_e254e434",
+          "role": "owner"
+        }
+      ],
+      "frameIds": [
+        "D0CF13E06D2C"
+      ]
+    },
+    {
+      "id": "fam_1782526775435_e145",
+      "name": "WeChat 131****4938's Family",
+      "inviteCode": "INV-5B3A6D",
+      "members": [
+        {
+          "userId": "usr_wx_942c6d22ebf5_e6ed29",
+          "role": "owner"
+        }
+      ],
+      "frameIds": [
+        "D0CF13F015F4"
+      ]
     }
   ],
   "frames": [
@@ -319,23 +397,23 @@
       "uptimeMs": 0,
       "photoQueueDepth": 0,
       "ota": {
-        "targetVersion": null,
-        "status": "idle"
+        "targetVersion": "1.4.3",
+        "status": "updating"
       }
     },
     {
       "id": "D0CF13F0161C",
       "bleMac": "D0CF13F0161C",
-      "ownerUserId": "usr_test_159fb4ba",
+      "ownerUserId": "usr_wx_c612851badd4_134bbc",
       "wifiSsid": null,
       "wifiStatus": "online",
       "firmwareVersion": "unknown",
-      "lastSeenAtMs": 1781884978531,
+      "lastSeenAtMs": 1782629902968,
       "uptimeMs": 0,
       "photoQueueDepth": 0,
       "ota": {
-        "targetVersion": null,
-        "status": "idle"
+        "targetVersion": "1.4.3",
+        "status": "updating"
       },
       "orgId": "org_default"
     },
@@ -354,22 +432,86 @@
         "status": "idle"
       },
       "orgId": "org_default"
+    },
+    {
+      "id": "10BDA3C12B96",
+      "bleMac": "10BDA3C12B96",
+      "ownerUserId": "usr_wx_1781947340689_16f90eb2",
+      "orgId": "org_default",
+      "wifiSsid": null,
+      "wifiStatus": "online",
+      "firmwareVersion": "1.0.0",
+      "lastSeenAtMs": 1782978902302,
+      "uptimeMs": 0,
+      "photoQueueDepth": 0,
+      "ota": {
+        "targetVersion": "1.4.3",
+        "status": "updating"
+      }
+    },
+    {
+      "id": "D0CF13E06D2C",
+      "bleMac": "D0CF13E06D2C",
+      "ownerUserId": "usr_apple_1780734865964_e254e434",
+      "orgId": "org_default",
+      "wifiSsid": null,
+      "wifiStatus": "online",
+      "firmwareVersion": "1.0.0",
+      "lastSeenAtMs": 1782654518225,
+      "uptimeMs": 0,
+      "photoQueueDepth": 0,
+      "ota": {
+        "targetVersion": "1.4.3",
+        "status": "updating"
+      }
+    },
+    {
+      "id": "D0CF13F015F4",
+      "bleMac": "D0CF13F015F4",
+      "ownerUserId": "usr_wx_942c6d22ebf5_e6ed29",
+      "orgId": "org_default",
+      "wifiSsid": null,
+      "wifiStatus": "online",
+      "firmwareVersion": "1.0.0",
+      "lastSeenAtMs": 1782703070036,
+      "uptimeMs": 0,
+      "photoQueueDepth": 0,
+      "ota": {
+        "targetVersion": null,
+        "status": "idle"
+      }
+    },
+    {
+      "id": "10BDA3C12B94",
+      "bleMac": "10BDA3C12B94",
+      "ownerUserId": "usr_wx_1781947340689_16f90eb2",
+      "orgId": "org_default",
+      "wifiSsid": null,
+      "wifiStatus": "online",
+      "firmwareVersion": "1.0.0",
+      "lastSeenAtMs": 1782974523666,
+      "uptimeMs": 0,
+      "photoQueueDepth": 0,
+      "ota": {
+        "targetVersion": "1.4.3",
+        "status": "updating"
+      }
     }
   ],
   "device": {
-    "id": "D0CF13F0161C",
-    "name": "D0CF13F0161C Connected",
+    "id": "10BDA3C12B96",
+    "name": "10BDA3C12B96 Connected",
     "room": "Family Room",
-    "connected": true,
+    "connected": false,
     "transport": {
       "wifi": true,
       "bluetooth": false
     },
     "capacityBytes": 17179869184,
-    "usedBytes": 386631910,
+    "usedBytes": 503752398,
     "startedAtMs": 1780343910419,
-    "lastPhotoAtMs": 1781884978531,
-    "photoCount": 311
+    "lastPhotoAtMs": 1782978902302,
+    "photoCount": 433
   },
   "settings": {
     "account": {
@@ -394,6 +536,1348 @@
     }
   },
   "uploads": [
+    {
+      "id": "1782978902302-c353cd",
+      "filename": "1782978901173_photo_2026-07-02T15-52-33.302289.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782978902302,
+      "checksumSha256": "a8c751b68e00aaae6c5424db0e019ee1bada4ae61a8fa613d2d7e9b3c4ca392a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782978902302
+    },
+    {
+      "id": "1782978758583-9514c8",
+      "filename": "1782978757400_photo_2026-07-02T15-52-33.302289.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782978758583,
+      "checksumSha256": "a8c751b68e00aaae6c5424db0e019ee1bada4ae61a8fa613d2d7e9b3c4ca392a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782978758583
+    },
+    {
+      "id": "1782978094384-055f56",
+      "filename": "1782978093136_photo_2026-07-02T15-41-29.130694.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782978094384,
+      "checksumSha256": "e10148ac9dbc00f2edcbc799476ed9c4522ef6f623c4de6b001b6bc0bbc57e1a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782978094384
+    },
+    {
+      "id": "1782977489940-ca3965",
+      "filename": "1782977488660_photo_2026-07-02T15-31-24.628670.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782977489940,
+      "checksumSha256": "377f7a4d727948fa8729a199b2ebe510a258f62eabbfc6408f12adc3e22f84a0",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782977489940
+    },
+    {
+      "id": "1782977326810-6dfb84",
+      "filename": "1782977325537_photo_2026-07-02T15-28-41.418071.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782977326810,
+      "checksumSha256": "dc3110963615ab4761bef96ae8563c1e4a2eda550bd15f223c58ade05807fe1f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782977326810
+    },
+    {
+      "id": "1782976772013-a3b2aa",
+      "filename": "1782976770934_photo_2026-07-02T15-17-03.813748.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782976772013,
+      "checksumSha256": "a8c751b68e00aaae6c5424db0e019ee1bada4ae61a8fa613d2d7e9b3c4ca392a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782976772013
+    },
+    {
+      "id": "1782976629040-5465e2",
+      "filename": "1782976627802_photo_2026-07-02T15-17-03.813748.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782976629040,
+      "checksumSha256": "a8c751b68e00aaae6c5424db0e019ee1bada4ae61a8fa613d2d7e9b3c4ca392a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782976629040
+    },
+    {
+      "id": "1782974523666-d89d4b",
+      "filename": "1782974522246_slideshow_1782974518179.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782974523666,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782974523666
+    },
+    {
+      "id": "1782974425085-f62ca1",
+      "filename": "1782974423838_slideshow_1782974419806.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782974425085,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782974425085
+    },
+    {
+      "id": "1782974391920-63312c",
+      "filename": "1782974390665_slideshow_1782974386504.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782974391920,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782974391920
+    },
+    {
+      "id": "1782974287460-1c035c",
+      "filename": "1782974286212_slideshow_1782974281994.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782974287460,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782974287460
+    },
+    {
+      "id": "1782974175637-3825c0",
+      "filename": "1782974174385_photo_2026-07-02T14-36-10.358539.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782974175637,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782974175637
+    },
+    {
+      "id": "1782973642563-f5b468",
+      "filename": "1782973641196_photo_2026-07-02T14-27-17.083155.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782973642563,
+      "checksumSha256": "0fe587ef7b1b9cb711918203c3c90b10ed7e76ff6fa44f6c8054529d83f8226c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782973642563
+    },
+    {
+      "id": "1782918896188-2eca48",
+      "filename": "1782918895065_photo_2026-07-01T23-11-49.818373.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918896188,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918896188
+    },
+    {
+      "id": "1782918751829-730c95",
+      "filename": "1782918750589_photo_2026-07-01T23-11-49.818373.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918751829,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918751829
+    },
+    {
+      "id": "1782918561546-356288",
+      "filename": "1782918560325_slideshow_1782918378628.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918561546,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918561546
+    },
+    {
+      "id": "1782918542264-47f0c9",
+      "filename": "1782918539221_slideshow_1782918350327.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918542264,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918542264
+    },
+    {
+      "id": "1782918420641-47400b",
+      "filename": "1782918419418_slideshow_1782918378628.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918420641,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918420641
+    },
+    {
+      "id": "1782918355521-3ff458",
+      "filename": "1782918354281_slideshow_1782918350327.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918355521,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918355521
+    },
+    {
+      "id": "1782918155319-5c27c8",
+      "filename": "1782918154196_slideshow_1782917996819.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918155319,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918155319
+    },
+    {
+      "id": "1782918012208-2944c3",
+      "filename": "1782918002504_slideshow_1782917996819.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782918012208,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782918012208
+    },
+    {
+      "id": "1782917888651-9c56f0",
+      "filename": "1782917887435_slideshow_1782917846746.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782917888651,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782917888651
+    },
+    {
+      "id": "1782917729663-593ce5",
+      "filename": "1782917728522_slideshow_1782917579727.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782917729663,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782917729663
+    },
+    {
+      "id": "1782917585108-3bda47",
+      "filename": "1782917583848_slideshow_1782917579727.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782917585108,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782917585108
+    },
+    {
+      "id": "1782905044044-86c783",
+      "filename": "1782905042886_photo_2026-07-01T19-21-35.296946.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782905044044,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782905044044
+    },
+    {
+      "id": "1782904900498-e27acf",
+      "filename": "1782904899247_photo_2026-07-01T19-21-35.296946.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782904900498,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782904900498
+    },
+    {
+      "id": "1782899058256-39d89b",
+      "filename": "1782899057117_photo_2026-07-01T17-41-50.038275.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782899058256,
+      "checksumSha256": "1810a2b82f3f6d7a17244d1476cddda4c0a99a08fad3988908a86ac124fbe527",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782899058256
+    },
+    {
+      "id": "1782898915208-e41e89",
+      "filename": "1782898913961_photo_2026-07-01T17-41-50.038275.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782898915208,
+      "checksumSha256": "1810a2b82f3f6d7a17244d1476cddda4c0a99a08fad3988908a86ac124fbe527",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782898915208
+    },
+    {
+      "id": "1782898712685-de527e",
+      "filename": "1782898711424_photo_2026-07-01T17-38-27.441700.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782898712685,
+      "checksumSha256": "c7604469f4ed70070b5c49517acd4c5f67679a75c54451592fc2165be4ed45ce",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782898712685
+    },
+    {
+      "id": "1782898390336-fd01f5",
+      "filename": "1782898389063_photo_2026-07-01T17-33-05.058507.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782898390336,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782898390336
+    },
+    {
+      "id": "1782898149612-6bc009",
+      "filename": "1782898148419_slideshow_1782897673514.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782898149612,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782898149612
+    },
+    {
+      "id": "1782897678517-b0829d",
+      "filename": "1782897677300_slideshow_1782897673514.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782897678517,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782897678517
+    },
+    {
+      "id": "1782897650777-8bcca0",
+      "filename": "1782897649688_slideshow_1782897645800.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782897650777,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782897650777
+    },
+    {
+      "id": "1782897522916-1668a2",
+      "filename": "1782897521638_slideshow_1782897517572.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782897522916,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782897522916
+    },
+    {
+      "id": "1782897404723-f1c099",
+      "filename": "1782897403356_slideshow_1782897399371.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782897404723,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782897404723
+    },
+    {
+      "id": "1782896902959-dfb915",
+      "filename": "1782896901713_photo_2026-07-01T17-08-17.818335.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B94",
+      "atMs": 1782896902959,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782896902959
+    },
+    {
+      "id": "1782806055947-445514",
+      "filename": "1782806054670_photo_2026-06-30T15-50-18.957240.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782806055947,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782806055947
+    },
+    {
+      "id": "1782805906697-2025f9",
+      "filename": "1782805905296_photo_2026-06-30T15-50-18.957240.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782805906697,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782805906697
+    },
+    {
+      "id": "1782741684680-b15c6a",
+      "filename": "1782741683514_photo_2026-06-29T21-57-35.893804.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782741684680,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782741684680
+    },
+    {
+      "id": "1782741541593-ee0576",
+      "filename": "1782741540387_photo_2026-06-29T21-57-35.893804.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782741541593,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782741541593
+    },
+    {
+      "id": "1782738921426-9c8a40",
+      "filename": "1782738920347_photo_2026-06-29T21-11-33.016540.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782738921426,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782738921426
+    },
+    {
+      "id": "1782738778498-24d907",
+      "filename": "1782738777306_photo_2026-06-29T21-11-33.016540.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782738778498,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782738778498
+    },
+    {
+      "id": "1782738539053-9320d4",
+      "filename": "1782738537816_photo_2026-06-29T21-07-33.288788.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782738539053,
+      "checksumSha256": "2c00e6feeba9a52609a9dbd09952360ca73d1f8cf6ddfc8cb8a08a28fca05231",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782738539053
+    },
+    {
+      "id": "1782703070036-5ebd4d",
+      "filename": "1782703070025_photo_2026-06-29T03-17-47.458Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F015F4",
+      "atMs": 1782703070036,
+      "checksumSha256": "8173e6f089a2e62fb2340d03270531fd0dab1ad4a2f7bc8298dab72e90eaed21",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782703070036
+    },
+    {
+      "id": "1782702806054-662a62",
+      "filename": "1782702806026_photo_2026-06-29T03-13-05.489Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F015F4",
+      "atMs": 1782702806054,
+      "checksumSha256": "d2121c6e0f38c4498e4662cdc1e6e4eaa6b7fe42377e98c8487cc9344e893c43",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782702806054
+    },
+    {
+      "id": "1782553395140-a05323",
+      "filename": "1782553395129_photo_2026-06-27T09-41-56.641Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782553395140,
+      "checksumSha256": "b08f6c079386c0f5d1afe8f3527feba60ca1d6dde7df7b51a6f81ecfdd974ea7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782553395140
+    },
+    {
+      "id": "1782553339741-2f88e6",
+      "filename": "1782553339730_photo_2026-06-27T09-41-56.641Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782553339741,
+      "checksumSha256": "b08f6c079386c0f5d1afe8f3527feba60ca1d6dde7df7b51a6f81ecfdd974ea7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782553339741
+    },
+    {
+      "id": "1782551298550-dab765",
+      "filename": "1782551296852_photo_2026-06-27T12-08-12.257605.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782551298550,
+      "checksumSha256": "e5d8e4182bbc3f33316cf19a229c7460d6055f38414912dcc57e944604286649",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782551298550
+    },
+    {
+      "id": "1782551098062-5613f2",
+      "filename": "1782551093363_photo_2026-06-27T12-00-27.277134.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782551098062,
+      "checksumSha256": "e5d8e4182bbc3f33316cf19a229c7460d6055f38414912dcc57e944604286649",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782551098062
+    },
+    {
+      "id": "1782551029790-4e9f15",
+      "filename": "1782551020742_photo_2026-06-27T12-00-27.277134.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782551029790,
+      "checksumSha256": "e5d8e4182bbc3f33316cf19a229c7460d6055f38414912dcc57e944604286649",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782551029790
+    },
+    {
+      "id": "1782548569483-6e8c78",
+      "filename": "1782548567798_photo_2026-06-27T11-21-34.320501.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1782548569483,
+      "checksumSha256": "7f78972c1a2545892040e60ac179a423133c080f9e9e16536f82c6047f50907a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782548569483
+    },
+    {
+      "id": "1782526850933-451df2",
+      "filename": "1782526850922_photo_2026-06-27T02-20-34.042Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F015F4",
+      "atMs": 1782526850933,
+      "checksumSha256": "4ce9a980243c8736d36ca04677e072972921b21ac0dd905c9b57bfad8239b890",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782526850933
+    },
+    {
+      "id": "1782375036948-6427de",
+      "filename": "1782375024161_photo_2026-06-25T16-09-00.119918.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782375036948,
+      "checksumSha256": "44b98c3d11642172fbe08cc1a6ea0d6e1d9c30cdc3e229851bf16c3e80ec0fc3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782375036948
+    },
+    {
+      "id": "1782214624710-1b663b",
+      "filename": "1782214608329_photo_2026-06-23T19-32-54.735919.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782214624710,
+      "checksumSha256": "8ed82572c53bbbacf6a9ac862eb1c2a5a3bb20f496d8556515550da35aad0bed",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782214624710
+    },
+    {
+      "id": "1782214461392-7a7cf7",
+      "filename": "1782214460163_photo_2026-06-23T19-32-54.735919.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782214461392,
+      "checksumSha256": "8ed82572c53bbbacf6a9ac862eb1c2a5a3bb20f496d8556515550da35aad0bed",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782214461392
+    },
+    {
+      "id": "1782200008167-fd62b0",
+      "filename": "1782200006844_photo_2026-06-23T15-32-01.358474.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782200008167,
+      "checksumSha256": "be172e89fa1c2ac90e797d5ead80f95bf2fa9dbd70b9fbfbf0162ee4431aa705",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782200008167
+    },
+    {
+      "id": "1782199249912-3d69e3",
+      "filename": "1782199248770_photo_2026-06-23T15-16-43.894892.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782199249912,
+      "checksumSha256": "a2a18ec1f6330ae0d5e1df410275bdc5783d17536362460837ed2bd14fdbbfa3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782199249912
+    },
+    {
+      "id": "1782199090484-2052ad",
+      "filename": "1782199089412_photo_2026-06-23T15-16-43.894892.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1782199090484,
+      "checksumSha256": "a2a18ec1f6330ae0d5e1df410275bdc5783d17536362460837ed2bd14fdbbfa3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782199090484
+    },
+    {
+      "id": "1782140386926-421a3d",
+      "filename": "1782140386921_photo_2026-06-22T14-59-36.098Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782140386926,
+      "checksumSha256": "b0cc3737ce0e966d490308a46b137a7d7e3f738111ddc490d6791c8d7c599939",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782140386926
+    },
+    {
+      "id": "1782140334709-d4fb6d",
+      "filename": "1782140334700_photo_2026-06-22T14-58-22.869Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782140334709,
+      "checksumSha256": "97018050e66c9457b84f90f950d5e5a4b92e128fe1f3fcb05c5def1f73a7518c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782140334709
+    },
+    {
+      "id": "1782139405131-a3edeb",
+      "filename": "1782139405123_photo_2026-06-22T14-41-47.175Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782139405131,
+      "checksumSha256": "549e41c3965816099d1407e830d431db4f514e029f40b3a99780342ddcbb8250",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782139405131
+    },
+    {
+      "id": "1782139334140-125c57",
+      "filename": "1782139334131_photo_2026-06-22T14-41-47.175Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782139334140,
+      "checksumSha256": "549e41c3965816099d1407e830d431db4f514e029f40b3a99780342ddcbb8250",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782139334140
+    },
+    {
+      "id": "1782032478142-229ee5",
+      "filename": "1782032476741_photo_2026-06-21T17-01-13.478154.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782032478142,
+      "checksumSha256": "f58e4798423c73f1c9264472d74bf396d16063da856b1cb0733a086f28c4b26d",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782032478142
+    },
+    {
+      "id": "1782031720216-d922a6",
+      "filename": "1782031718923_photo_2026-06-21T16-47-32.606343.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782031720216,
+      "checksumSha256": "fdd27d3f7ad618379db74bfbe3e1079c110e2e52112939e5c1e9f3453a254234",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782031720216
+    },
+    {
+      "id": "1782030946057-46a912",
+      "filename": "1782030944683_photo_2026-06-21T16-35-41.284367.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782030946057,
+      "checksumSha256": "a840e232d8a93140f23f41542a5d567683f13114ff13c64be9399f04d08fca9c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782030946057
+    },
+    {
+      "id": "1782030558336-bce69c",
+      "filename": "1782030556974_photo_2026-06-21T16-28-10.899519.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782030558336,
+      "checksumSha256": "7f419aa1250712dd2f167aef71b1372ea9e12e80193c347a717f9848ec1fd606",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782030558336
+    },
+    {
+      "id": "1782029742293-88c6de",
+      "filename": "1782029741061_photo_2026-06-21T16-15-36.427317.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782029742293,
+      "checksumSha256": "67c023279178a34c27b89f7f112a14c22fda9da9954a23e6a59ca5fb348a31ae",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782029742293
+    },
+    {
+      "id": "1782029336403-7e2a24",
+      "filename": "1782029335078_photo_2026-06-21T16-08-50.210435.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782029336403,
+      "checksumSha256": "9f847f1bf74898815f2bf52e4ba6649c6a58bc2e1ce2055be42d947f6313dc81",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782029336403
+    },
+    {
+      "id": "1782029098223-fb9056",
+      "filename": "1782029096599_photo_2026-06-21T16-04-52.883721.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782029098223,
+      "checksumSha256": "1e289a9334b0cccb4f0825e8055d5e4f342ea7be204fb4f998f96f5b2e2f1104",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782029098223
+    },
+    {
+      "id": "1782028432617-1d1f3c",
+      "filename": "1782028431276_photo_2026-06-21T15-53-47.803935.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782028432617,
+      "checksumSha256": "1bc491f56aab27237b1d829f08fdfdfc9f6f2948c2d2e5073a02fef8b30b003c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782028432617
+    },
+    {
+      "id": "1782028348867-690e5b",
+      "filename": "1782028347475_photo_2026-06-21T15-52-23.721027.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782028348867,
+      "checksumSha256": "874cc5f9b56f959b3c0deb665acb764ce79e405c4b6bfdab64f06a27036fa677",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782028348867
+    },
+    {
+      "id": "1782028209119-a1b988",
+      "filename": "1782028207572_photo_2026-06-21T15-50-02.302306.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782028209119,
+      "checksumSha256": "282c79f8537eb49c278015396750a8f2c35d8e769510c1b7e4611636d2507fc7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782028209119
+    },
+    {
+      "id": "1782028097423-89f6c7",
+      "filename": "1782028096169_photo_2026-06-21T15-48-12.041701.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782028097423,
+      "checksumSha256": "282c79f8537eb49c278015396750a8f2c35d8e769510c1b7e4611636d2507fc7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782028097423
+    },
+    {
+      "id": "1782027824119-5ccac7",
+      "filename": "1782027822803_slideshow_1782027818692.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027824119,
+      "checksumSha256": "b8a1ae6644dbbbf34e1ec31c3cde8b401fde85e30470381733a596a5de77875a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027824119
+    },
+    {
+      "id": "1782027804374-407f7e",
+      "filename": "1782027802220_slideshow_1782027798652.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027804374,
+      "checksumSha256": "fe33e4b3fc33cb0fb40cc8957c713317f0646d48c27982d0b73f9dc3d615fd3d",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027804374
+    },
+    {
+      "id": "1782027783679-e665e4",
+      "filename": "1782027782391_slideshow_1782027776454.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027783679,
+      "checksumSha256": "48d9570f43c3a7d16e47748bd0deee667354c9bff245cc2034648ad6275db6fb",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027783679
+    },
+    {
+      "id": "1782027759353-6c0f0c",
+      "filename": "1782027757825_slideshow_1782027752691.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027759353,
+      "checksumSha256": "9d53c57280798c4792b1bd1f48c80be2d59aee48646c4cabed08c66d9db86acf",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027759353
+    },
+    {
+      "id": "1782027727656-6aaa0a",
+      "filename": "1782027726157_slideshow_1782027721097.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027727656,
+      "checksumSha256": "27d14620e2eb4ec0ec9e75b9bcf61feaf1b7b296f960ad4d1d8924ba540488b1",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027727656
+    },
+    {
+      "id": "1782027695075-78bf07",
+      "filename": "1782027693654_slideshow_1782027686338.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027695075,
+      "checksumSha256": "3e302a48e38d43830ca1f3149e02227b87e77041fe953ad37aa39d46fb088092",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027695075
+    },
+    {
+      "id": "1782027603483-d267ee",
+      "filename": "1782027602010_photo_2026-06-21T15-39-57.676075.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027603483,
+      "checksumSha256": "8aaac05a57efec1373a59b039f2dbc11d284ca27d6ad9914209c52209fc0118b",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027603483
+    },
+    {
+      "id": "1782027528258-f5daf7",
+      "filename": "1782027526709_photo_2026-06-21T15-38-42.362599.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027528258,
+      "checksumSha256": "b8a1ae6644dbbbf34e1ec31c3cde8b401fde85e30470381733a596a5de77875a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027528258
+    },
+    {
+      "id": "1782027379570-81cacf",
+      "filename": "1782027376972_photo_2026-06-21T15-36-12.367466.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027379570,
+      "checksumSha256": "ec61a789283ebdfdfb0a7982e1fb538ffca8e1eb38d687f8f29b20ffce437bbb",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027379570
+    },
+    {
+      "id": "1782027075489-a79f3c",
+      "filename": "1782027067739_photo_2026-06-21T15-31-03.172230.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782027075489,
+      "checksumSha256": "48d9570f43c3a7d16e47748bd0deee667354c9bff245cc2034648ad6275db6fb",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782027075489
+    },
+    {
+      "id": "1782026934280-e2946f",
+      "filename": "1782026926752_photo_2026-06-21T15-28-43.142645.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782026934280,
+      "checksumSha256": "f3a79adddda0830eb2cfa003ef50e6962cc9ae72e94418211861b2d041c882be",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782026934280
+    },
+    {
+      "id": "1782026600279-67e8d9",
+      "filename": "1782026591449_photo_2026-06-21T15-19-21.919050.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782026600279,
+      "checksumSha256": "5e1e22de49413a3f2d6f3e8aa8e95159c5d5136790bec83564565138bf9c726c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782026600279
+    },
+    {
+      "id": "1782026452231-f590c4",
+      "filename": "1782026443844_photo_2026-06-21T15-19-21.919050.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782026452231,
+      "checksumSha256": "5e1e22de49413a3f2d6f3e8aa8e95159c5d5136790bec83564565138bf9c726c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782026452231
+    },
+    {
+      "id": "1782026174199-1455b4",
+      "filename": "1782026166784_photo_2026-06-21T15-12-16.507814.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782026174199,
+      "checksumSha256": "fb2320df4c4d55a78c5a0ced9ea8534db49f0207e2d5735b26b56f85959599f7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782026174199
+    },
+    {
+      "id": "1782026027276-87e20a",
+      "filename": "1782026019833_photo_2026-06-21T15-12-16.507814.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782026027276,
+      "checksumSha256": "fb2320df4c4d55a78c5a0ced9ea8534db49f0207e2d5735b26b56f85959599f7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782026027276
+    },
+    {
+      "id": "1782025713349-3830ac",
+      "filename": "1782025705626_photo_2026-06-21T15-02-02.369540.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782025713349,
+      "checksumSha256": "a7c656a472e5bf67a092492948f1837d2713d19b9a99c6dfa28cb4becd2ab5d9",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782025713349
+    },
+    {
+      "id": "1782025564813-ecb40b",
+      "filename": "1782025563270_photo_2026-06-21T15-02-02.369540.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782025564813,
+      "checksumSha256": "a7c656a472e5bf67a092492948f1837d2713d19b9a99c6dfa28cb4becd2ab5d9",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782025564813
+    },
+    {
+      "id": "1782025132100-31b020",
+      "filename": "1782025130506_photo_2026-06-21T14-55-01.080341.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782025132100,
+      "checksumSha256": "e35ca60b3fbe91333bef0382658791de76153ce80ea6774ed48f166b86e44d5f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782025132100
+    },
+    {
+      "id": "1782024990625-42e95a",
+      "filename": "1782024987334_photo_2026-06-21T14-55-01.080341.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782024990625,
+      "checksumSha256": "e35ca60b3fbe91333bef0382658791de76153ce80ea6774ed48f166b86e44d5f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782024990625
+    },
+    {
+      "id": "1782024764178-2982c3",
+      "filename": "1782024762090_photo_2026-06-21T14-48-13.949242.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782024764178,
+      "checksumSha256": "e35ca60b3fbe91333bef0382658791de76153ce80ea6774ed48f166b86e44d5f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782024764178
+    },
+    {
+      "id": "1782024623024-3c0904",
+      "filename": "1782024621471_photo_2026-06-21T14-48-13.949242.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1782024623024,
+      "checksumSha256": "e35ca60b3fbe91333bef0382658791de76153ce80ea6774ed48f166b86e44d5f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1782024623024
+    },
+    {
+      "id": "1781971256696-e6d942",
+      "filename": "1781971248311_photo_2026-06-21T00-00-44.671981.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1781971256696,
+      "checksumSha256": "0318704ffe4fd720c1165c5aa2f8505dc2bd74597b9116227b87b8aaf6be0445",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781971256696
+    },
+    {
+      "id": "1781971004164-ca0b14",
+      "filename": "1781970996085_photo_2026-06-20T23-56-32.093297.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1781971004164,
+      "checksumSha256": "3e302a48e38d43830ca1f3149e02227b87e77041fe953ad37aa39d46fb088092",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781971004164
+    },
+    {
+      "id": "1781970180970-8d55bd",
+      "filename": "1781970171622_photo_2026-06-20T23-42-45.270289.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1781970180970,
+      "checksumSha256": "63514438b2ad6e346da9361a93e688bc49ae59e8519c98de47648392def24975",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781970180970
+    },
+    {
+      "id": "1781970034656-c79bbf",
+      "filename": "1781970025597_photo_2026-06-20T23-40-21.457977.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1781970034656,
+      "checksumSha256": "f486796ac31563169556d5993ae440a94909e82a9c8ef7bebca043ab37e2a87c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781970034656
+    },
+    {
+      "id": "1781969751866-88b30c",
+      "filename": "1781969743302_photo_2026-06-20T23-35-39.218867.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1781969751866,
+      "checksumSha256": "3b67fce32d0b3d791f9ab2c2df20f4819452ac9f94554cd1f3670b5e68bd0a41",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781969751866
+    },
+    {
+      "id": "1781954362733-4d3007",
+      "filename": "1781954362718_photo_2026-06-20T11-19-17.358Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781954362733,
+      "checksumSha256": "b1636a0d7b7430b19a92f376b05e3b836febe579c84513cd77ab975945b6abb5",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781954362733
+    },
+    {
+      "id": "1781952940417-232268",
+      "filename": "1781952940408_photo_2026-06-20T10-55-23.677Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781952940417,
+      "checksumSha256": "c3f5065509c50ed80c4648d4353e55c82d7a925a1a689671090c9ba349aba643",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781952940417
+    },
+    {
+      "id": "1781948418643-367037",
+      "filename": "1781948418633_photo_2026-06-20T09-40-12.999Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781948418643,
+      "checksumSha256": "614b9ab4c90683cd9b1d4cd5aea93265e4ff8dd7af2d948fffa0d50607a064bc",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781948418643
+    },
+    {
+      "id": "1781947783927-5df227",
+      "filename": "1781947782626_photo_2026-06-20T17-26-36.645025.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1781947783927,
+      "checksumSha256": "4e7010f68c51b3c1707566ef5200753b547ebb33306f8e101d0b1acb5a879cc9",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781947783927
+    },
+    {
+      "id": "1781947683974-483f94",
+      "filename": "1781947682408_photo_2026-06-20T17-26-36.645025.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1781947683974,
+      "checksumSha256": "4e7010f68c51b3c1707566ef5200753b547ebb33306f8e101d0b1acb5a879cc9",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781947683974
+    },
+    {
+      "id": "1781946950824-6bfa0b",
+      "filename": "1781946948131_photo_2026-06-20T12-11-57.877471.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781946950824,
+      "checksumSha256": "e064113c603862457a32850e76474249a4dba39872b4f10df48e64ecbdd89226",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781946950824
+    },
+    {
+      "id": "1781946808789-102b15",
+      "filename": "1781946806945_photo_2026-06-20T12-11-57.877471.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781946808789,
+      "checksumSha256": "e064113c603862457a32850e76474249a4dba39872b4f10df48e64ecbdd89226",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781946808789
+    },
+    {
+      "id": "1781924532375-dfa562",
+      "filename": "1781924532366_photo_2026-06-20T03-02-06.924Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781924532375,
+      "checksumSha256": "9e285cee6dbc05ccebb3df4e8a5f30e093c0f8d5b461b0d6f095da88c55450a2",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781924532375
+    },
+    {
+      "id": "1781924388858-50fbd4",
+      "filename": "1781924388841_photo_2026-06-20T02-59-25.816Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781924388858,
+      "checksumSha256": "7de200aa47828897345d64670efc2c5e870f6bd8e431f4b7e72f47cbadee18ec",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781924388858
+    },
+    {
+      "id": "1781923866241-99bd71",
+      "filename": "1781923866229_photo_2026-06-20T02-50-43.198Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781923866241,
+      "checksumSha256": "ff65127bfeea72a8deb94590bff4ca099a6c04115141426c3d92213ca8487465",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781923866241
+    },
+    {
+      "id": "1781921103439-efece7",
+      "filename": "1781921101729_slideshow_1781921097223.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781921103439,
+      "checksumSha256": "6baab445aa2222f76963f5baa28292814a323f858b8b3ef1187d052040a64a06",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781921103439
+    },
+    {
+      "id": "1781921088021-ec6196",
+      "filename": "1781921086442_slideshow_1781921081353.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781921088021,
+      "checksumSha256": "448962a28544595e6734884d0d6fed5b8d52596fc09d29d1935d67cf78be2122",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781921088021
+    },
+    {
+      "id": "1781921042363-19df73",
+      "filename": "1781921040764_photo_2026-06-20T05-03-56.334188.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781921042363,
+      "checksumSha256": "5d6f3e1b038c09babe8124e21c91f2f02db83e0454ec732970819af2e2b913ea",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781921042363
+    },
+    {
+      "id": "1781920939833-6779e8",
+      "filename": "1781920938087_slideshow_1781920933675.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781920939833,
+      "checksumSha256": "d0d818d1ba7dda88337abdd9f4c46e006792021b20a7c1f2daa07113f6d59380",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781920939833
+    },
+    {
+      "id": "1781920924917-1f5af3",
+      "filename": "1781920923324_slideshow_1781920918270.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781920924917,
+      "checksumSha256": "6225960f2f5643e836f5488a2d8f03a0a12ab349c859ef37037c3edbb8ef5f15",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781920924917
+    },
+    {
+      "id": "1781920816878-d77457",
+      "filename": "1781920815137_photo_2026-06-20T04-59-23.048384.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781920816878,
+      "checksumSha256": "7e6927b148b08591ad8da72a2ddb9950063d88851f39c32d9408a9690b970e6c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781920816878
+    },
+    {
+      "id": "1781920409403-bc9d7e",
+      "filename": "1781920407867_photo_2026-06-20T04-53-10.273767.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781920409403,
+      "checksumSha256": "cd6699d90cfd18c0be1ae820b3fa8400ecf8687cf44a3db0a08c98eee0d614fb",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781920409403
+    },
+    {
+      "id": "1781919961178-21e717",
+      "filename": "1781919959646_photo_2026-06-20T04-44-37.655209.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781919961178,
+      "checksumSha256": "abd7a8c86822f382404984c6b232c95978cdb37eabb25495d759688cf55a4d42",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781919961178
+    },
+    {
+      "id": "1781919130532-744efc",
+      "filename": "1781919128879_slideshow_1781919124468.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781919130532,
+      "checksumSha256": "42238291a21f9e4eba64f0c424b3d98a889e4b8203613fcc2d5a4cff33998fb5",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781919130532
+    },
+    {
+      "id": "1781919115427-32c01e",
+      "filename": "1781919113771_slideshow_1781919108709.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781919115427,
+      "checksumSha256": "a12e682503dd45ad78e52ffa87fbb4494c2ed5efe65932b019a5703a1174ed8b",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781919115427
+    },
+    {
+      "id": "1781919001555-5196e4",
+      "filename": "1781918999879_photo_2026-06-20T04-29-22.356515.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781919001555,
+      "checksumSha256": "a12e682503dd45ad78e52ffa87fbb4494c2ed5efe65932b019a5703a1174ed8b",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781919001555
+    },
+    {
+      "id": "1781918968544-96be08",
+      "filename": "1781918966840_slideshow_1781918886356.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781918968544,
+      "checksumSha256": "a12e682503dd45ad78e52ffa87fbb4494c2ed5efe65932b019a5703a1174ed8b",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781918968544
+    },
+    {
+      "id": "1781916733291-9c9719",
+      "filename": "1781916731772_photo_2026-06-20T03-52-05.791405.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1781916733291,
+      "checksumSha256": "c8940be3903e4a597a7df6dc32463bf523b181191bd78ee685193900bb889911",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1781916733291
+    },
     {
       "id": "1781884978531-e183e3",
       "filename": "1781884976531_photo_2026-06-19T19-02-52.069963.bin",
@@ -3841,6 +5325,4507 @@
     }
   },
   "auditLog": [
+    {
+      "id": "audit_1782978902302_08e454",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782978902302,
+      "meta": {
+        "filename": "1782978901173_photo_2026-07-02T15-52-33.302289.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782978758583_eba2d0",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782978758583,
+      "meta": {
+        "filename": "1782978757400_photo_2026-07-02T15-52-33.302289.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782978094384_2b8374",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782978094384,
+      "meta": {
+        "filename": "1782978093136_photo_2026-07-02T15-41-29.130694.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782977489940_152f97",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782977489940,
+      "meta": {
+        "filename": "1782977488660_photo_2026-07-02T15-31-24.628670.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782977326810_cecc47",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782977326810,
+      "meta": {
+        "filename": "1782977325537_photo_2026-07-02T15-28-41.418071.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782976772013_61bc4a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782976772013,
+      "meta": {
+        "filename": "1782976770934_photo_2026-07-02T15-17-03.813748.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782976629040_3fb0ba",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782976629040,
+      "meta": {
+        "filename": "1782976627802_photo_2026-07-02T15-17-03.813748.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782974523666_978dc9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782974523666,
+      "meta": {
+        "filename": "1782974522246_slideshow_1782974518179.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782974425085_238f16",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782974425085,
+      "meta": {
+        "filename": "1782974423838_slideshow_1782974419806.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782974391920_87f163",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782974391920,
+      "meta": {
+        "filename": "1782974390665_slideshow_1782974386504.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782974287460_699cfa",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782974287460,
+      "meta": {
+        "filename": "1782974286212_slideshow_1782974281994.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782974175637_5882a4",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782974175637,
+      "meta": {
+        "filename": "1782974174385_photo_2026-07-02T14-36-10.358539.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782973642563_2dcb82",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782973642563,
+      "meta": {
+        "filename": "1782973641196_photo_2026-07-02T14-27-17.083155.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918896188_ce6909",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918896188,
+      "meta": {
+        "filename": "1782918895065_photo_2026-07-01T23-11-49.818373.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918751829_a3eb15",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918751829,
+      "meta": {
+        "filename": "1782918750589_photo_2026-07-01T23-11-49.818373.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918561546_53fe91",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918561546,
+      "meta": {
+        "filename": "1782918560325_slideshow_1782918378628.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918542264_9f1137",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918542264,
+      "meta": {
+        "filename": "1782918539221_slideshow_1782918350327.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918420641_ed779f",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918420641,
+      "meta": {
+        "filename": "1782918419418_slideshow_1782918378628.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918355521_533678",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918355521,
+      "meta": {
+        "filename": "1782918354281_slideshow_1782918350327.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918155319_b94ec2",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918155319,
+      "meta": {
+        "filename": "1782918154196_slideshow_1782917996819.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782918012208_b5c8c2",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782918012208,
+      "meta": {
+        "filename": "1782918002504_slideshow_1782917996819.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782917888651_f53905",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917888651,
+      "meta": {
+        "filename": "1782917887435_slideshow_1782917846746.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782917729663_b3c491",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917729663,
+      "meta": {
+        "filename": "1782917728522_slideshow_1782917579727.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782917585108_d10611",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917585108,
+      "meta": {
+        "filename": "1782917583848_slideshow_1782917579727.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782917556973_c23a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917556973,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917548065_ed46",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917548065,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917539156_b0b0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917539156,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917530152_100a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917530152,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917521140_35d0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917521140,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917512228_5045",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917512228,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917503322_5874",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917503322,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917494206_117e",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917494206,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917485297_ab44",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917485297,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917476290_854f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917476290,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917467273_4080",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917467273,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917458373_b0e3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917458373,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917449248_e90a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917449248,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917440242_ae52",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917440242,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917431252_00e3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917431252,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917406758_3255",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917406758,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917405118_3b38",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917405118,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917396107_1bcb",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917396107,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917387089_cd3b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917387089,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917378085_c3a2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917378085,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917369184_2abd",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917369184,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782917366201_90b5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782917366201,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782905044044_d59642",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782905044044,
+      "meta": {
+        "filename": "1782905042886_photo_2026-07-01T19-21-35.296946.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782904900498_78fbdd",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782904900498,
+      "meta": {
+        "filename": "1782904899247_photo_2026-07-01T19-21-35.296946.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782900147044_849f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900147044,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900138139_996c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900138139,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900129217_b4aa",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900129217,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900120325_f9c1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900120325,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900111400_99ec",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900111400,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900102495_71a2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900102495,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900093390_bf0b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900093390,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900084378_9c09",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900084378,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900075465_eb90",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900075465,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900066555_6edc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900066555,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900057649_9d88",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900057649,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900048639_e759",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900048639,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900039620_f530",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900039620,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900030625_cbb4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900030625,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900021602_cc68",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900021602,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900012696_ff78",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900012696,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900012202_d208b3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900012202,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900011782_c1ff",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900011782,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782900010138_d41d",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782900010138,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899937839_187f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899937839,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899937221_5877",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899937221,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899777066_5bab",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899777066,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899768166_f67e",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899768166,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899759250_bace",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899759250,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899750350_b819",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899750350,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899741436_ca2d",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899741436,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899732433_0b9f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899732433,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899723516_52f6",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899723516,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899714613_0ce0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899714613,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899705598_708b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899705598,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899696582_b415",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899696582,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899687675_89e1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899687675,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899678762_1fdd",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899678762,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899669855_50b8",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899669855,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899660942_cb52",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899660942,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899652038_70ae",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899652038,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899643133_7671",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899643133,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899634127_3597",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899634127,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899625216_2012",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899625216,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899616304_6a0c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899616304,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899607395_20be",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899607395,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899598487_521b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899598487,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899589498_00c3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899589498,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899580464_d6b2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899580464,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899571497_2f49",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899571497,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899562638_dfac",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899562638,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899553649_c995",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899553649,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899544626_98b3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899544626,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899535612_ac32",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899535612,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899526612_4a17",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899526612,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899517593_6794",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899517593,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899508681_560f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899508681,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899499771_f050",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899499771,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899490771_155c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899490771,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899481762_262d",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899481762,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899472838_4528",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899472838,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899463933_7515",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899463933,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899454819_9750",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899454819,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899446005_6c86",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899446005,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899445616_499354",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899445616,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899445191_e818",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899445191,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899444469_692f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899444469,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899337576_8637",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899337576,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899328654_d5fc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899328654,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899319546_02d4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899319546,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899310625_70b3",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899310625,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899310249_590b26",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899310249,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899309819_c974",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899309819,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899304904_82c8",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899304904,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899295898_a6dc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899295898,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899286976_57e1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899286976,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899278080_9ab2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899278080,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899277594_9983a9",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899277594,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899277156_95cd",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899277156,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899275006_d551",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899275006,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899266199_18db",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899266199,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782899058256_538344",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782899058256,
+      "meta": {
+        "filename": "1782899057117_photo_2026-07-01T17-41-50.038275.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782898915208_82f52b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898915208,
+      "meta": {
+        "filename": "1782898913961_photo_2026-07-01T17-41-50.038275.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782898838567_83bc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898838567,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782898712685_dd52fe",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898712685,
+      "meta": {
+        "filename": "1782898711424_photo_2026-07-01T17-38-27.441700.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782898390336_b93983",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898390336,
+      "meta": {
+        "filename": "1782898389063_photo_2026-07-01T17-33-05.058507.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782898187726_d44f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898187726,
+      "meta": {
+        "bleMac": "10BDA3C12B94"
+      }
+    },
+    {
+      "id": "audit_1782898149612_ee4eeb",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782898149612,
+      "meta": {
+        "filename": "1782898148419_slideshow_1782897673514.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782897678517_c66e99",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782897678517,
+      "meta": {
+        "filename": "1782897677300_slideshow_1782897673514.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782897650777_9ad297",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782897650777,
+      "meta": {
+        "filename": "1782897649688_slideshow_1782897645800.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782897522916_24a3d3",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782897522916,
+      "meta": {
+        "filename": "1782897521638_slideshow_1782897517572.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782897404723_85b5db",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782897404723,
+      "meta": {
+        "filename": "1782897403356_slideshow_1782897399371.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782896902959_980743",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B94",
+      "atMs": 1782896902959,
+      "meta": {
+        "filename": "1782896901713_photo_2026-07-01T17-08-17.818335.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782896486252_2a38",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782896486252,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782806055947_69a3e2",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782806055947,
+      "meta": {
+        "filename": "1782806054670_photo_2026-06-30T15-50-18.957240.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782805906697_f36364",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782805906697,
+      "meta": {
+        "filename": "1782805905296_photo_2026-06-30T15-50-18.957240.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782741684680_e6d8d7",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782741684680,
+      "meta": {
+        "filename": "1782741683514_photo_2026-06-29T21-57-35.893804.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782741541593_b287b7",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782741541593,
+      "meta": {
+        "filename": "1782741540387_photo_2026-06-29T21-57-35.893804.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782741432913_080c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782741432913,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738921426_2fa5b7",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738921426,
+      "meta": {
+        "filename": "1782738920347_photo_2026-06-29T21-11-33.016540.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782738778498_dd2fc6",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738778498,
+      "meta": {
+        "filename": "1782738777306_photo_2026-06-29T21-11-33.016540.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782738649084_dff1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738649084,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738539053_80b627",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738539053,
+      "meta": {
+        "filename": "1782738537816_photo_2026-06-29T21-07-33.288788.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782738415935_bf94",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738415935,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738407109_8ef4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738407109,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738398202_af32",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738398202,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738389027_0b09",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738389027,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738380080_29ba",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738380080,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738371169_ba57",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738371169,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738362159_5fc4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738362159,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738353306_7d2b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738353306,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738344440_6dcc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738344440,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738335545_e23c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738335545,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738326619_1011",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738326619,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738317671_7e15",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738317671,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738308820_a627",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738308820,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738299906_4ac5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738299906,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738290998_1fb4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738290998,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738282082_f009",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738282082,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738273173_9c6f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738273173,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738264262_87c5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738264262,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738255288_05e8",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738255288,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738246449_2cec",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738246449,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782738242272_4952",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782738242272,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737244968_1837",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737244968,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737236062_56dd",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737236062,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737227164_10ff",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737227164,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737218247_c6af",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737218247,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737209257_68aa",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737209257,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737200235_9242",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737200235,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737191196_0efb",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737191196,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737182309_f71b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737182309,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737173400_9b29",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737173400,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737164497_05fb",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737164497,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737155585_5a15",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737155585,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737146669_af85",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737146669,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737137767_2602",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737137767,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737128851_3cd4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737128851,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737119844_f68b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737119844,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737110729_896a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737110729,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737101508_ea7c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737101508,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737092517_571a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737092517,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737083690_90ba",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737083690,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737074790_3608",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737074790,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737065879_12dd",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737065879,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737056965_b219",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737056965,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737055026_2857",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737055026,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782737046220_baa6",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782737046220,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782703070036_a18a67",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F015F4",
+      "atMs": 1782703070036,
+      "meta": {
+        "filename": "1782703070025_photo_2026-06-29T03-17-47.458Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782702806054_da7e78",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F015F4",
+      "atMs": 1782702806054,
+      "meta": {
+        "filename": "1782702806026_photo_2026-06-29T03-13-05.489Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782702677925_f8e6",
+      "actor": "user:usr_wx_942c6d22ebf5_e6ed29",
+      "action": "add_device",
+      "target": "D0CF13F015F4",
+      "atMs": 1782702677925,
+      "meta": {
+        "bleMac": "D0CF13F015F4"
+      }
+    },
+    {
+      "id": "audit_1782654518225_4e3a1b",
+      "actor": "api_device_send",
+      "action": "device_send",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654518225,
+      "meta": {
+        "imageUrl": "http://128.241.231.234/frame-media/1782375024161_photo_2026-06-25T16-09-00.119918.bin"
+      }
+    },
+    {
+      "id": "audit_1782654133700_373f",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654133700,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782654107342_8358",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654107342,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782654103930_0d22",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654103930,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782654100327_3d45",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654100327,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782654091230_75fd",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782654091230,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782629902968_05a5cb",
+      "actor": "api_device_send",
+      "action": "device_send",
+      "target": "D0CF13F0161C",
+      "atMs": 1782629902968,
+      "meta": {
+        "imageUrl": "http://128.241.231.234/frame-media/1782553395129_photo_2026-06-27T09-41-56.641Z.bin"
+      }
+    },
+    {
+      "id": "audit_1782629890822_7731d1",
+      "actor": "api_device_send",
+      "action": "device_send",
+      "target": "D0CF13F0161C",
+      "atMs": 1782629890822,
+      "meta": {
+        "imageUrl": "http://128.241.231.234/frame-media/1782553395129_photo_2026-06-27T09-41-56.641Z.bin"
+      }
+    },
+    {
+      "id": "audit_1782553395140_2be83f",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782553395140,
+      "meta": {
+        "filename": "1782553395129_photo_2026-06-27T09-41-56.641Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782553339741_a88e61",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782553339741,
+      "meta": {
+        "filename": "1782553339730_photo_2026-06-27T09-41-56.641Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782553299036_b63b",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1782553299036,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1782551298550_73f662",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782551298550,
+      "meta": {
+        "filename": "1782551296852_photo_2026-06-27T12-08-12.257605.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782551098062_7408b5",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782551098062,
+      "meta": {
+        "filename": "1782551093363_photo_2026-06-27T12-00-27.277134.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782551029790_2a9acd",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782551029790,
+      "meta": {
+        "filename": "1782551020742_photo_2026-06-27T12-00-27.277134.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782550680210_c995",
+      "actor": "user:usr_wx_1780523251780_01d7a35f",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1782550680210,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1782550678664_0cf7",
+      "actor": "user:usr_wx_1780523251780_01d7a35f",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1782550678664,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1782548569483_6bb390",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1782548569483,
+      "meta": {
+        "filename": "1782548567798_photo_2026-06-27T11-21-34.320501.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782526850933_f20f53",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F015F4",
+      "atMs": 1782526850933,
+      "meta": {
+        "filename": "1782526850922_photo_2026-06-27T02-20-34.042Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782526775435_e915",
+      "actor": "user:usr_wx_942c6d22ebf5_e6ed29",
+      "action": "add_device",
+      "target": "D0CF13F015F4",
+      "atMs": 1782526775435,
+      "meta": {
+        "bleMac": "D0CF13F015F4"
+      }
+    },
+    {
+      "id": "audit_1782375036948_6e70ee",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782375036948,
+      "meta": {
+        "filename": "1782375024161_photo_2026-06-25T16-09-00.119918.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782374892900_c2ed",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782374892900,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782374854509_0bba",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782374854509,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782374700690_c55f",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782374700690,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782374674443_c903",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782374674443,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782374665165_43ba",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782374665165,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307775467_7c38",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "login_apple",
+      "target": "usr_apple_1780734865964_e254e434",
+      "atMs": 1782307775467,
+      "meta": {
+        "email": "apple_dfe9580a80569ba1053a4cc6@apple.myframe.local"
+      }
+    },
+    {
+      "id": "audit_1782307068757_0371",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307068757,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307062998_b966",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307062998,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307060606_6813",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307060606,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307052678_49dc",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307052678,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307046437_a2df",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307046437,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782307037235_3b79",
+      "actor": "user:usr_apple_1780734865964_e254e434",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782307037235,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782214624710_d4dcbc",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782214624710,
+      "meta": {
+        "filename": "1782214608329_photo_2026-06-23T19-32-54.735919.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782214461392_323073",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782214461392,
+      "meta": {
+        "filename": "1782214460163_photo_2026-06-23T19-32-54.735919.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782214189067_f0d7",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782214189067,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203314922_3f6a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203314922,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203306008_ccf1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203306008,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203305786_1bd5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203305786,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203305403_9eb650",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203305403,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203304981_e537",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203304981,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203297200_a159",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203297200,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203288274_c1ce",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203288274,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203279380_2505",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203279380,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203270389_d21d",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203270389,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203261573_0c26",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203261573,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203252652_6b0c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203252652,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203243760_770e",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203243760,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203234748_0310",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203234748,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203225837_f3ed",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203225837,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203216928_d803",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203216928,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782203208020_7230",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1782203208020,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1782200008167_b8ab29",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782200008167,
+      "meta": {
+        "filename": "1782200006844_photo_2026-06-23T15-32-01.358474.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782199249912_fd3f11",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782199249912,
+      "meta": {
+        "filename": "1782199248770_photo_2026-06-23T15-16-43.894892.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782199090484_10a54b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1782199090484,
+      "meta": {
+        "filename": "1782199089412_photo_2026-06-23T15-16-43.894892.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782140386926_67c5f4",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782140386926,
+      "meta": {
+        "filename": "1782140386921_photo_2026-06-22T14-59-36.098Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782140334709_b70bc3",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782140334709,
+      "meta": {
+        "filename": "1782140334700_photo_2026-06-22T14-58-22.869Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782139405131_36e971",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782139405131,
+      "meta": {
+        "filename": "1782139405123_photo_2026-06-22T14-41-47.175Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782139334140_63333e",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782139334140,
+      "meta": {
+        "filename": "1782139334131_photo_2026-06-22T14-41-47.175Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782050506733_6536",
+      "actor": "user:usr_wx_b32a21b100e0_faa081",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_b32a21b100e0_faa081",
+      "atMs": 1782050506733,
+      "meta": {
+        "openid": "oO9pV3Wx1CTirPdJ7YWHVDqRQAwQ"
+      }
+    },
+    {
+      "id": "audit_1782032478142_4963e9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782032478142,
+      "meta": {
+        "filename": "1782032476741_photo_2026-06-21T17-01-13.478154.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782031720216_6a5925",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782031720216,
+      "meta": {
+        "filename": "1782031718923_photo_2026-06-21T16-47-32.606343.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782030946057_d2a184",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782030946057,
+      "meta": {
+        "filename": "1782030944683_photo_2026-06-21T16-35-41.284367.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782030855061_5cf0",
+      "actor": "user:usr_wx_1780523251780_01d7a35f",
+      "action": "login_wechat",
+      "target": "usr_wx_1780523251780_01d7a35f",
+      "atMs": 1782030855061,
+      "meta": {
+        "unionid": "on4Jj2drSt2ZhHLmbSJOpywvjrF8"
+      }
+    },
+    {
+      "id": "audit_1782030756187_9ea3",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782030756187,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782030558336_66ffa2",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782030558336,
+      "meta": {
+        "filename": "1782030556974_photo_2026-06-21T16-28-10.899519.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782029742293_61a35c",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782029742293,
+      "meta": {
+        "filename": "1782029741061_photo_2026-06-21T16-15-36.427317.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782029336403_17082f",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782029336403,
+      "meta": {
+        "filename": "1782029335078_photo_2026-06-21T16-08-50.210435.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782029098223_d67234",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782029098223,
+      "meta": {
+        "filename": "1782029096599_photo_2026-06-21T16-04-52.883721.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782029013334_7b5b",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782029013334,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028432617_d9516d",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028432617,
+      "meta": {
+        "filename": "1782028431276_photo_2026-06-21T15-53-47.803935.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782028348867_ab069a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028348867,
+      "meta": {
+        "filename": "1782028347475_photo_2026-06-21T15-52-23.721027.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782028266590_93f1",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028266590,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028264170_50ec",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028264170,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028209119_ad2928",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028209119,
+      "meta": {
+        "filename": "1782028207572_photo_2026-06-21T15-50-02.302306.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782028185821_7d27",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028185821,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028183555_6cad",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028183555,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028143602_12df",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028143602,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028143168_f01be5",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028143168,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028142632_0061",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028142632,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028140714_2944",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028140714,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782028097423_4865ca",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782028097423,
+      "meta": {
+        "filename": "1782028096169_photo_2026-06-21T15-48-12.041701.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027918476_01f3",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027918476,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782027824119_7961a9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027824119,
+      "meta": {
+        "filename": "1782027822803_slideshow_1782027818692.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027804374_846854",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027804374,
+      "meta": {
+        "filename": "1782027802220_slideshow_1782027798652.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027783679_b76302",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027783679,
+      "meta": {
+        "filename": "1782027782391_slideshow_1782027776454.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027759353_d6082a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027759353,
+      "meta": {
+        "filename": "1782027757825_slideshow_1782027752691.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027727656_5c0281",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027727656,
+      "meta": {
+        "filename": "1782027726157_slideshow_1782027721097.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027695075_26930b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027695075,
+      "meta": {
+        "filename": "1782027693654_slideshow_1782027686338.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027603483_45e973",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027603483,
+      "meta": {
+        "filename": "1782027602010_photo_2026-06-21T15-39-57.676075.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027528258_0dd1b5",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027528258,
+      "meta": {
+        "filename": "1782027526709_photo_2026-06-21T15-38-42.362599.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027379570_6b02a9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027379570,
+      "meta": {
+        "filename": "1782027376972_photo_2026-06-21T15-36-12.367466.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027075489_133c9a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027075489,
+      "meta": {
+        "filename": "1782027067739_photo_2026-06-21T15-31-03.172230.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782027011614_6efd",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027011614,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782027011171_5dfb5e",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027011171,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782027010731_fc8e",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027010731,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782027008060_0540",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782027008060,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026934280_ba4fac",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026934280,
+      "meta": {
+        "filename": "1782026926752_photo_2026-06-21T15-28-43.142645.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782026868340_59b8",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026868340,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026866880_1ff0b8",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026866880,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026866411_ed5d",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026866411,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026864372_f2f0",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026864372,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026863902_12298e",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026863902,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026863422_183d",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026863422,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026859978_615b",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026859978,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026845677_3287",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026845677,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026836468_d5d0",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026836468,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026826568_53ee",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026826568,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026600279_cfe383",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026600279,
+      "meta": {
+        "filename": "1782026591449_photo_2026-06-21T15-19-21.919050.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782026452231_d64fa9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026452231,
+      "meta": {
+        "filename": "1782026443844_photo_2026-06-21T15-19-21.919050.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782026303067_db6e",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026303067,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782026174199_7dbc6a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026174199,
+      "meta": {
+        "filename": "1782026166784_photo_2026-06-21T15-12-16.507814.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782026027276_253a46",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782026027276,
+      "meta": {
+        "filename": "1782026019833_photo_2026-06-21T15-12-16.507814.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782025713349_ddace2",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782025713349,
+      "meta": {
+        "filename": "1782025705626_photo_2026-06-21T15-02-02.369540.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782025564813_cfe9ec",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782025564813,
+      "meta": {
+        "filename": "1782025563270_photo_2026-06-21T15-02-02.369540.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782025132100_eb6ba5",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782025132100,
+      "meta": {
+        "filename": "1782025130506_photo_2026-06-21T14-55-01.080341.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782024990625_b3dc58",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024990625,
+      "meta": {
+        "filename": "1782024987334_photo_2026-06-21T14-55-01.080341.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782024764178_84aa9d",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024764178,
+      "meta": {
+        "filename": "1782024762090_photo_2026-06-21T14-48-13.949242.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782024623024_311c60",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024623024,
+      "meta": {
+        "filename": "1782024621471_photo_2026-06-21T14-48-13.949242.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1782024428944_ca60",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024428944,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782024428182_80c490",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024428182,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782024427652_929a",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024427652,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782024426066_bdc3",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024426066,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1782024421934_55a0",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1782024421934,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1781971256696_000a96",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781971256696,
+      "meta": {
+        "filename": "1781971248311_photo_2026-06-21T00-00-44.671981.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781971004164_1a58c7",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781971004164,
+      "meta": {
+        "filename": "1781970996085_photo_2026-06-20T23-56-32.093297.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781970180970_2d893d",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781970180970,
+      "meta": {
+        "filename": "1781970171622_photo_2026-06-20T23-42-45.270289.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781970034656_211e79",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781970034656,
+      "meta": {
+        "filename": "1781970025597_photo_2026-06-20T23-40-21.457977.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781969922148_9c68",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781969922148,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1781969921717_6813c1",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781969921717,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1781969919927_6008",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781969919927,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1781969914611_ef5f",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781969914611,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1781969751866_dec2cf",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1781969751866,
+      "meta": {
+        "filename": "1781969743302_photo_2026-06-20T23-35-39.218867.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781959974546_2d52",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "login_wechat",
+      "target": "usr_wx_1780717100339_50da7776",
+      "atMs": 1781959974546,
+      "meta": {
+        "unionid": "on4Jj2UrkK0ALwkpTTUGHmcW0hvw"
+      }
+    },
+    {
+      "id": "audit_1781954362733_ade55e",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781954362733,
+      "meta": {
+        "filename": "1781954362718_photo_2026-06-20T11-19-17.358Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781954339961_badd",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781954339961,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781953161775_145d",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781953161775,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781952940417_bb27b7",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781952940417,
+      "meta": {
+        "filename": "1781952940408_photo_2026-06-20T10-55-23.677Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781952895161_5635",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781952895161,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781950608109_05ba",
+      "actor": "user:usr_test_159fb4ba",
+      "action": "test_login",
+      "target": "usr_test_159fb4ba",
+      "atMs": 1781950608109,
+      "meta": {
+        "email": "test@myframe.local"
+      }
+    },
+    {
+      "id": "audit_1781949206886_3006",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781949206886,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781948734454_5a2e",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781948734454,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781948418643_72d201",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781948418643,
+      "meta": {
+        "filename": "1781948418633_photo_2026-06-20T09-40-12.999Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781948390829_b292",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781948390829,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781948271460_7c87",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948271460,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948239723_d0dc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948239723,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948230809_4db7",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948230809,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948221902_3ada",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948221902,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948212905_5f0f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948212905,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948203983_25c1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948203983,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948194983_a19b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948194983,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948185866_dfdc",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948185866,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948176863_a505",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948176863,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948167856_43d2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948167856,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948158922_3627",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948158922,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948150026_224b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948150026,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948141113_adc1",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948141113,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948132206_e2e6",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948132206,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948123202_cbe4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948123202,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948114377_9055",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948114377,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948105395_4284",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948105395,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948096497_4c77",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948096497,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948087657_8cc2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948087657,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948078846_6421",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948078846,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948078454_c38938",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948078454,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948078024_ba41",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948078024,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781948067178_1f9e",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781948067178,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781947912863_0389",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781947912863,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781947783927_0a06cc",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1781947783927,
+      "meta": {
+        "filename": "1781947782626_photo_2026-06-20T17-26-36.645025.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781947683974_39bc1b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1781947683974,
+      "meta": {
+        "filename": "1781947682408_photo_2026-06-20T17-26-36.645025.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781947340689_3e9f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "register_wechat",
+      "target": "usr_wx_1781947340689_16f90eb2",
+      "atMs": 1781947340689,
+      "meta": {
+        "unionid": "on4Jj2d3Noq_He2Ne-J_VmH-6BQQ"
+      }
+    },
+    {
+      "id": "audit_1781947176975_9504",
+      "actor": "user:usr_test_159fb4ba",
+      "action": "test_login",
+      "target": "usr_test_159fb4ba",
+      "atMs": 1781947176975,
+      "meta": {
+        "email": "test@myframe.local"
+      }
+    },
+    {
+      "id": "audit_1781946950824_fd73c6",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781946950824,
+      "meta": {
+        "filename": "1781946948131_photo_2026-06-20T12-11-57.877471.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781946808789_a47236",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781946808789,
+      "meta": {
+        "filename": "1781946806945_photo_2026-06-20T12-11-57.877471.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781946592685_5422",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781946592685,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781946378049_1e68",
+      "actor": "user:usr_1780958205754_7abaefa9",
+      "action": "login_google",
+      "target": "usr_1780958205754_7abaefa9",
+      "atMs": 1781946378049,
+      "meta": {
+        "email": "amirjemal2128@gmail.com"
+      }
+    },
+    {
+      "id": "audit_1781945497648_8915",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781945497648,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781943466009_5331",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781943466009,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781943464892_3915",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1781943464892,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1781942886093_ea52",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781942886093,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781942057237_aa88",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781942057237,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781941966001_1da5",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781941966001,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781941367746_068d",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781941367746,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781941118077_4593",
+      "actor": "user:usr_wx_39674d7b4fbb_ba32fd",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_39674d7b4fbb_ba32fd",
+      "atMs": 1781941118077,
+      "meta": {
+        "openid": "oO9pV3U67UEcBF3-Md4nmzGtmnG8"
+      }
+    },
+    {
+      "id": "audit_1781930436536_930e",
+      "actor": "user:usr_wx_1780531154977_3d095c18",
+      "action": "login_wechat",
+      "target": "usr_wx_1780531154977_3d095c18",
+      "atMs": 1781930436536,
+      "meta": {
+        "unionid": "on4Jj2V4LHQpIcUFEaUWmVW_dlbs"
+      }
+    },
+    {
+      "id": "audit_1781928384159_366caf",
+      "actor": "superadmin",
+      "action": "firmware_ota_push",
+      "target": "YX-133P-001",
+      "atMs": 1781928384159,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13F0161E"
+      }
+    },
+    {
+      "id": "audit_1781924532375_9abeb9",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781924532375,
+      "meta": {
+        "filename": "1781924532366_photo_2026-06-20T03-02-06.924Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781924506852_4d31",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781924506852,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781924388858_b7cd89",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781924388858,
+      "meta": {
+        "filename": "1781924388841_photo_2026-06-20T02-59-25.816Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781924338846_48c6",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781924338846,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781924290955_a73e",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "wechat_phone_login",
+      "target": "usr_wx_c612851badd4_134bbc",
+      "atMs": 1781924290955,
+      "meta": {
+        "openid": "oO9pV3VtMQJPOeO2_C6VCAz1jG-s"
+      }
+    },
+    {
+      "id": "audit_1781923890286_3423",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781923890286,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781923866241_97d6df",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781923866241,
+      "meta": {
+        "filename": "1781923866229_photo_2026-06-20T02-50-43.198Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781923821367_af68",
+      "actor": "user:usr_wx_c612851badd4_134bbc",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781923821367,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921454518_d8b6",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921454518,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921440361_1b23",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921440361,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921431238_ea34",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921431238,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921430749_4131ff",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "firmware_ota_push",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921430749,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921430213_f11b",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921430213,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921427640_4b7c",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921427640,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921423053_f489",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921423053,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921422507_9011cc",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "firmware_ota_push",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921422507,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921421931_9831",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921421931,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921414411_1c19",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "add_device",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921414411,
+      "meta": {
+        "bleMac": "D0CF13F0161C"
+      }
+    },
+    {
+      "id": "audit_1781921103439_071f4c",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921103439,
+      "meta": {
+        "filename": "1781921101729_slideshow_1781921097223.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781921088021_640a88",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921088021,
+      "meta": {
+        "filename": "1781921086442_slideshow_1781921081353.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781921042363_9b8a47",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781921042363,
+      "meta": {
+        "filename": "1781921040764_photo_2026-06-20T05-03-56.334188.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781921017701_6121",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "login_apple",
+      "target": "usr_apple_1780523236601_42b4cdd8",
+      "atMs": 1781921017701,
+      "meta": {
+        "email": "amkcodeopia@icloud.com"
+      }
+    },
+    {
+      "id": "audit_1781920939833_461acc",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781920939833,
+      "meta": {
+        "filename": "1781920938087_slideshow_1781920933675.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781920924917_0e81c6",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781920924917,
+      "meta": {
+        "filename": "1781920923324_slideshow_1781920918270.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781920816878_eb9b87",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781920816878,
+      "meta": {
+        "filename": "1781920815137_photo_2026-06-20T04-59-23.048384.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781920409403_237ebe",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781920409403,
+      "meta": {
+        "filename": "1781920407867_photo_2026-06-20T04-53-10.273767.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781919961178_9f7bf8",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781919961178,
+      "meta": {
+        "filename": "1781919959646_photo_2026-06-20T04-44-37.655209.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781919130532_8be1fd",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781919130532,
+      "meta": {
+        "filename": "1781919128879_slideshow_1781919124468.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781919115427_1c7ff8",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781919115427,
+      "meta": {
+        "filename": "1781919113771_slideshow_1781919108709.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781919001555_351f10",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781919001555,
+      "meta": {
+        "filename": "1781918999879_photo_2026-06-20T04-29-22.356515.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781918968544_ff75af",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781918968544,
+      "meta": {
+        "filename": "1781918966840_slideshow_1781918886356.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1781918718073_a5c5",
+      "actor": "user:usr_apple_1780523236601_42b4cdd8",
+      "action": "login_apple",
+      "target": "usr_apple_1780523236601_42b4cdd8",
+      "atMs": 1781918718073,
+      "meta": {
+        "email": "amkcodeopia@icloud.com"
+      }
+    },
+    {
+      "id": "audit_1781916733291_7969c0",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1781916733291,
+      "meta": {
+        "filename": "1781916731772_photo_2026-06-20T03-52-05.791405.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
     {
       "id": "audit_1781884978531_8d2a4c",
       "actor": "api_upload",
@@ -10438,11 +16423,33 @@
   "slideshowsByBleMac": {
     "D0CF13F0161C": {
       "imageIds": [
-        "1780958781701_slideshow_1780958776918.bin",
-        "1780958812532_slideshow_1780958806790.bin"
+        "1781921086442_slideshow_1781921081353.bin",
+        "1781921101729_slideshow_1781921097223.bin"
       ],
       "intervalMinutes": 60,
-      "updatedAtMs": 1780958815410
+      "updatedAtMs": 1781921107104
+    },
+    "D0CF13E06D2C": {
+      "imageIds": [
+        "1782027693654_slideshow_1782027686338.bin",
+        "1782027726157_slideshow_1782027721097.bin",
+        "1782027757825_slideshow_1782027752691.bin",
+        "1782027782391_slideshow_1782027776454.bin",
+        "1782027802220_slideshow_1782027798652.bin",
+        "1782027822803_slideshow_1782027818692.bin"
+      ],
+      "intervalMinutes": 60,
+      "updatedAtMs": 1782027825781
+    },
+    "10BDA3C12B94": {
+      "imageIds": [
+        "1782974286212_slideshow_1782974281994.bin",
+        "1782974390665_slideshow_1782974386504.bin",
+        "1782974423838_slideshow_1782974419806.bin",
+        "1782974522246_slideshow_1782974518179.bin"
+      ],
+      "intervalMinutes": 60,
+      "updatedAtMs": 1782974608528
     }
   },
   "commerceEvents": [],
@@ -11030,6 +17037,111 @@
   ],
   "userGalleryPhotos": [
     {
+      "id": "ug_1782029037846_005623",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1782029037414_fd45a588.jpg",
+      "atMs": 1782029037846
+    },
+    {
+      "id": "ug_1781969953555_fe2330",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1781969939664_6c8a59ae.jpg",
+      "atMs": 1781969953555
+    },
+    {
+      "id": "ug_1780833807908_108b43",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1780833806985_9041a8db.jpg",
+      "atMs": 1780833807908
+    },
+    {
+      "id": "ug_1780833804964_e05df5",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1780833802358_e206ca70.jpg",
+      "atMs": 1780833804964
+    },
+    {
+      "id": "ug_1780833257469_63cd21",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1780833255688_9a226ba9.jpg",
+      "atMs": 1780833257469
+    },
+    {
+      "id": "ug_1780833248129_42e367",
+      "userId": "usr_wx_1780717100339_50da7776",
+      "previewFilename": "gallery_1780833246374_185e984a.jpg",
+      "atMs": 1780833248129
+    },
+    {
+      "id": "ug_1781930460272_d2efb7",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "gallery_1781930459997_a92edcbb.png",
+      "atMs": 1781930460272
+    },
+    {
+      "id": "ug_1780574321857_6c9d8f",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780574319496_photo_2026-06-04T19-58-38.712129.jpg",
+      "atMs": 1780574321857,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780573934638_880d24",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780573928098_photo_2026-06-04T19-52-07.338472.jpg",
+      "atMs": 1780573934638,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780573584551_88201e",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780573581354_photo_2026-06-04T19-46-19.589958.jpg",
+      "atMs": 1780573584551,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780573322570_9fb6f4",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780573320970_photo_2026-06-04T19-41-56.728130.jpg",
+      "atMs": 1780573322570,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780571802381_3184f8",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780571798801_photo_2026-06-04T19-16-32.741467.jpg",
+      "atMs": 1780571802381,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780571293838_ea2089",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780571291745_photo_2026-06-04T19-08-09.378352.jpg",
+      "atMs": 1780571293838,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780570900842_08ff8d",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780570898268_photo_2026-06-04T19-01-37.284278.jpg",
+      "atMs": 1780570900842,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780570878645_c71030",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780570875759_photo_2026-06-04T19-01-14.654056.jpg",
+      "atMs": 1780570878645,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
+      "id": "ug_1780531477722_14eb81",
+      "userId": "usr_wx_1780531154977_3d095c18",
+      "previewFilename": "1780531476146_photo_2026-06-04T08-04-33.888542.jpg",
+      "atMs": 1780531477722,
+      "deviceId": "D0CF13E033A8"
+    },
+    {
       "id": "ug_1781884802625_7ae29b",
       "userId": "usr_apple_1780523236601_42b4cdd8",
       "previewFilename": "gallery_1781884802004_d0ca376d.png",
@@ -11177,30 +17289,6 @@
       "userId": "usr_1780958205754_7abaefa9",
       "previewFilename": "gallery_1780958667953_5a41a4b6.jpg",
       "atMs": 1780958670850
-    },
-    {
-      "id": "ug_1780833807908_108b43",
-      "userId": "usr_wx_1780717100339_50da7776",
-      "previewFilename": "gallery_1780833806985_9041a8db.jpg",
-      "atMs": 1780833807908
-    },
-    {
-      "id": "ug_1780833804964_e05df5",
-      "userId": "usr_wx_1780717100339_50da7776",
-      "previewFilename": "gallery_1780833802358_e206ca70.jpg",
-      "atMs": 1780833804964
-    },
-    {
-      "id": "ug_1780833257469_63cd21",
-      "userId": "usr_wx_1780717100339_50da7776",
-      "previewFilename": "gallery_1780833255688_9a226ba9.jpg",
-      "atMs": 1780833257469
-    },
-    {
-      "id": "ug_1780833248129_42e367",
-      "userId": "usr_wx_1780717100339_50da7776",
-      "previewFilename": "gallery_1780833246374_185e984a.jpg",
-      "atMs": 1780833248129
     },
     {
       "id": "ug_1780758657517_d035bb",
@@ -11437,69 +17525,6 @@
       "previewFilename": "1780526150011_photo_2026-06-04T01-35-49.267163.jpg",
       "atMs": 1780526151070,
       "deviceId": "D0CF13F0161C"
-    },
-    {
-      "id": "ug_1780574321857_6c9d8f",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780574319496_photo_2026-06-04T19-58-38.712129.jpg",
-      "atMs": 1780574321857,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780573934638_880d24",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780573928098_photo_2026-06-04T19-52-07.338472.jpg",
-      "atMs": 1780573934638,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780573584551_88201e",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780573581354_photo_2026-06-04T19-46-19.589958.jpg",
-      "atMs": 1780573584551,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780573322570_9fb6f4",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780573320970_photo_2026-06-04T19-41-56.728130.jpg",
-      "atMs": 1780573322570,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780571802381_3184f8",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780571798801_photo_2026-06-04T19-16-32.741467.jpg",
-      "atMs": 1780571802381,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780571293838_ea2089",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780571291745_photo_2026-06-04T19-08-09.378352.jpg",
-      "atMs": 1780571293838,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780570900842_08ff8d",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780570898268_photo_2026-06-04T19-01-37.284278.jpg",
-      "atMs": 1780570900842,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780570878645_c71030",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780570875759_photo_2026-06-04T19-01-14.654056.jpg",
-      "atMs": 1780570878645,
-      "deviceId": "D0CF13E033A8"
-    },
-    {
-      "id": "ug_1780531477722_14eb81",
-      "userId": "usr_wx_1780531154977_3d095c18",
-      "previewFilename": "1780531476146_photo_2026-06-04T08-04-33.888542.jpg",
-      "atMs": 1780531477722,
-      "deviceId": "D0CF13E033A8"
     }
   ],
   "frameGuestInvites": [
@@ -11520,6 +17545,12 @@
       "deviceId": "68C63A8C3C30",
       "ownerUserId": "usr_test_159fb4ba",
       "createdAtMs": 1780819850763
+    },
+    {
+      "code": "TLX96T7N",
+      "deviceId": "D0CF13E06D2C",
+      "ownerUserId": "usr_wx_1780717100339_50da7776",
+      "createdAtMs": 1782026955282
     }
   ]
 }

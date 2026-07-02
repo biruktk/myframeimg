@@ -73,6 +73,10 @@ const mediaPublicBaseUrl =
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
+const firmwareDir = path.join(uploadDir, "firmware");
+if (!fs.existsSync(firmwareDir)) {
+  fs.mkdirSync(firmwareDir, { recursive: true });
+}
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
@@ -123,6 +127,17 @@ app.use("/frame-media", (err: NodeJS.ErrnoException, _req: express.Request, res:
   }
   next(err);
 });
+
+/** Frame OTA binaries (`GET /firmware/myframe-firmware-x.y.z.bin`). */
+app.use(
+  "/firmware",
+  express.static(firmwareDir, {
+    etag: true,
+    maxAge: "1d",
+    fallthrough: false,
+    index: false,
+  }),
+);
 
 app.get("/health", (_req, res) => {
   res.json({

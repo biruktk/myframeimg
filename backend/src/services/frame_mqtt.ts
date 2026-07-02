@@ -463,3 +463,37 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     }
   });
 }
+
+export type PublishOtaInput = {
+  mac: string;
+  version: string;
+  downloadUrl: string;
+  host: string;
+  port: number;
+  firmwarePath: string;
+};
+
+/** Publish OTA command — device downloads [firmwarePath] via HTTP from [host]:[port]. */
+export function publishOta(input: PublishOtaInput): Promise<void> {
+  const mac = resolveMqttHardwareMac(input.mac);
+  if (!mac) {
+    return Promise.reject(new Error("invalid_device_id_for_mqtt_ota"));
+  }
+  const msgid = Date.now().toString();
+  const versionTag = input.version.startsWith("v") ? input.version : `v${input.version}`;
+  const payload = {
+    action: "ota",
+    cmd: "ota",
+    msgid,
+    stamac: mac,
+    url: input.downloadUrl,
+    version: versionTag,
+    data: {
+      host: input.host,
+      port: input.port,
+      url: input.firmwarePath,
+      version: input.version.replace(/^v/i, ""),
+    },
+  };
+  return publishFrameCommand(mac, payload, 1, "ota");
+}

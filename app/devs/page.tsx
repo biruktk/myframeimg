@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
-import { DevsLogConsole } from "@/components/devs/devs-log-console";
+import { DevPortal } from "@/components/devs/dev-portal";
 
 import "./devs.css";
 
 export const metadata: Metadata = {
-  title: "MyFrame Devs — Frame Logs",
+  title: "MyFrame Dev Portal",
   robots: { index: false, follow: false },
 };
 
 export default function DevsPage() {
-  return <DevsLogConsole />;
+  return <DevPortal />;
 }

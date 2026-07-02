@@ -3,6 +3,7 @@ import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import type { AuthedUser } from "../services/app_user_jwt";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
+import { firmwareCheckForDevice, triggerFirmwareUpdate } from "../services/firmware_ota";
 
 export const userPortalRouter = Router();
 userPortalRouter.use(express.json({ limit: "256kb" }));
@@ -360,3 +361,48 @@ userPortalRouter.patch("/user/playlists/:id", (req: Request, res: Response) => {
   const pl = next.playlists.find((p) => p.id === id);
   res.json({ ok: true, playlist: pl });
 });
+
+/** GET /api/user/firmware/check?deviceId= — compare frame firmware with latest release. */
+userPortalRouter.get("/user/firmware/check", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const deviceId = String(req.query.deviceId ?? "").trim();
+  if (!deviceId) {
+    res.status(400).json({ ok: false, error: "device_id_required" });
+    return;
+  }
+  const visible = visibleFrameIdsForUser(auth.userId);
+  const result = firmwareCheckForDevice(deviceId, visible);
+  if (!result.ok) {
+    res.status(404).json(result);
+    return;
+  }
+  res.json(result);
+});
+
+/** POST /api/user/firmware/update — queue real OTA over MQTT for the user's frame. */
+userPortalRouter.post("/user/firmware/update", async (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const deviceId = String(req.body?.deviceId ?? req.body?.id ?? "").trim();
+  if (!deviceId) {
+    res.status(400).json({ ok: false, error: "device_id_required" });
+    return;
+  }
+  const visible = visibleFrameIdsForUser(auth.userId);
+  const outcome = await triggerFirmwareUpdate(deviceId, visible, auth.userId);
+  if (!outcome.ok) {
+    const status =
+      outcome.error === "frame_not_found"
+        ? 404
+        : outcome.error === "already_up_to_date"
+          ? 409
+          : outcome.error === "frame_offline"
+            ? 503
+            : 502;
+    res.status(status).json(outcome);
+    return;
+  }
+  res.json(outcome);
+});
+
