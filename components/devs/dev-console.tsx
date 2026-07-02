@@ -40,7 +40,11 @@ export function DevConsole() {
   }, [consoleEntries]);
 
   useEffect(() => {
+<<<<<<< HEAD
     const es = new EventSource("/api/devs/logs/stream");
+=======
+    const es = new EventSource("/api/devs/logs/stream?source=mqtt");
+>>>>>>> 48080f9811028793ad13ab3d10cbe435874d2f08
     es.addEventListener("ready", () => {
       addConsoleEntry({
         id: `sse-ready-${Date.now()}`,
@@ -66,7 +70,11 @@ export function DevConsole() {
           id: entry.id,
           timestamp: formatLogTime(entry.atMs),
           level: entry.direction === "rx" ? "success" : "info",
+<<<<<<< HEAD
           message: `[${entry.direction.toUpperCase()}] ${entry.mac} ${entry.topic}${entry.action ? ` · ${entry.action}` : ""}`,
+=======
+          message: `[${entry.direction.toUpperCase()}] ${entry.mac} ${entry.topic}`,
+>>>>>>> 48080f9811028793ad13ab3d10cbe435874d2f08
           detail: entry.payload,
         });
       } catch {

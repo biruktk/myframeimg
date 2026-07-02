@@ -23,7 +23,11 @@ export const QUICK_GUIDE_ITEMS: QuickGuideItem[] = [
     id: "live-logs",
     title: "4. Live Frame Logs",
     content:
+<<<<<<< HEAD
       "Enable the debug console (bug icon) to stream MQTT/device traffic via GET /api/devs/logs/stream (Server-Sent Events).\n\nHistorical logs: GET /api/devs/logs with mac, name, q, and limit filters.",
+=======
+      "Enable the debug console (bug icon) to stream raw MQTT traffic via GET /api/devs/logs/stream?source=mqtt (Server-Sent Events).\n\nHistorical logs: GET /api/devs/logs with mac, name, q, source, and limit filters.",
+>>>>>>> 48080f9811028793ad13ab3d10cbe435874d2f08
   },
   {
     id: "errors",

@@ -45,6 +45,48 @@ export function resolveMqttHardwareMac(raw: string): string | null {
   return h.toUpperCase();
 }
 
+<<<<<<< HEAD
+=======
+function resolveFrameName(mac: string): string | null {
+  const data = db.read();
+  const norm = normalizeMac(mac);
+  const frame = data.frames.find((f) => normalizeMac(f.id) === norm || normalizeMac(f.bleMac) === norm);
+  if (frame) return frame.id;
+  if (normalizeMac(data.device.id) === norm) return data.device.name || data.device.id;
+  return null;
+}
+
+function logFrameTraffic(
+  direction: "rx" | "tx",
+  mac: string,
+  topic: string,
+  payload: Record<string, unknown> | string,
+  action?: string | null,
+) {
+  const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+  appendFrameLog({
+    direction,
+    source: "mqtt",
+    mac: normalizeMac(mac),
+    frameName: resolveFrameName(mac),
+    topic,
+    action: action ?? (typeof payload === "object" ? String(payload.action ?? "") || null : null),
+    payload: body.length > 4000 ? `${body.slice(0, 4000)}…` : body,
+  });
+}
+
+function parseMqttJson(text: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return parsed != null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+>>>>>>> 48080f9811028793ad13ab3d10cbe435874d2f08
 function mqttDebugRx(topic: string, raw: Buffer) {
   if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1") return;
   const txt = raw.toString("utf8");
@@ -140,23 +182,26 @@ async function publishToStationAndBleMac(
 
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
-  let data: Record<string, unknown>;
-  try {
-    data = JSON.parse(raw.toString()) as Record<string, unknown>;
-  } catch {
-    return;
-  }
+  const payloadText = raw.toString("utf8");
+  const data = parseMqttJson(payloadText);
 
   const tail = topic.split("/").pop() ?? "";
   const clientid =
-    (typeof data.clientid === "string" && data.clientid) ||
-    (typeof data.stamac === "string" && data.stamac) ||
+    (typeof data?.clientid === "string" && data.clientid) ||
+    (typeof data?.stamac === "string" && data.stamac) ||
     tail;
 
   const mac = resolveMqttHardwareMac(clientid) ?? normalizeMac(clientid);
   if (!mac) return;
 
+<<<<<<< HEAD
   const action = String(data.action ?? "");
+=======
+  const action = String(data?.action ?? "");
+  logFrameTraffic("rx", mac, topic, payloadText, action || null);
+  if (!data) return;
+
+>>>>>>> 48080f9811028793ad13ab3d10cbe435874d2f08
   const rec: FrameRecord =
     frames.get(mac) ??
     ({
@@ -267,7 +312,7 @@ export function startFrameMqtt(): void {
 
   mqttClient.on("connect", () => {
     console.log("[frame-mqtt] connected");
-    mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
+    mqttClient?.subscribe("/device/report/#", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
     });
   });

@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "baseUrl": "https://api.myframe.ink/v1",
+  "categories": [
+    "Frame Management",
+    "Photo Management",
+    "AI Art",
+    "Family Management",
+    "Device Logs",
+    "Webhooks"
+  ],
+  "apis": [
+    {
+      "id": "mf_1",
+      "name": "获取设备列表",
+      "nameEn": "List Frames",
+      "category": "Frame Management",
+      "method": "GET",
+      "url": "https://api.myframe.ink/v1/frames",
+      "description": "Retrieve all frames associated with your account. Returns frame status, battery level, firmware version, and active family members. Use the returned frame IDs to manage individual frames.",
+      "params": [
+        { "name": "status", "required": false, "type": "string", "description": "Filter by status: online, offline, low_battery", "defaultValue": "" },
+        { "name": "limit", "required": false, "type": "integer", "description": "Number of results (default: 20, max: 100)", "defaultValue": "20" },
+        { "name": "offset", "required": false, "type": "integer", "description": "Pagination offset", "defaultValue": "0" }
+      ],
+      "responseExample": "{\"frames\":[{\"id\":\"s133-9a2b\",\"name\":\"Living Room\",\"status\":\"online\",\"battery\":87,\"firmware\":\"v2.4.1\",\"family_members\":3,\"last_seen\":\"2026-06-20T14:23:45Z\"}],\"total\":1,\"limit\":20,\"offset\":0}",
+      "dependencies": []
+    },
+    {
+      "id": "mf_2",
+      "name": "获取设备详情",
+      "nameEn": "Get Frame Details",
+      "category": "Frame Management",
+      "method": "GET",
+      "url": "https://api.myframe.ink/v1/frames/{id}",
+      "description": "Get detailed information about a specific frame including hardware specs, storage, Wi-Fi status, and display settings.",
+      "requestNote": "Replace {id} with the frame ID from the List Frames response.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID (e.g. s133-9a2b)", "defaultValue": "" }
+      ],
+      "responseExample": "{\"id\":\"s133-9a2b\",\"name\":\"Living Room\",\"model\":\"S133E6-F0\",\"status\":\"online\",\"battery\":87,\"battery_health\":\"good\",\"storage_used_gb\":12.4,\"storage_total_gb\":30,\"firmware\":\"v2.4.1\",\"wifi_ssid\":\"MyHome\",\"wifi_signal_dbm\":-52,\"display_brightness\":60,\"auto_rotate\":true,\"ai_art_enabled\":true}",
+      "dependencies": ["mf_1"]
+    },
+    {
+      "id": "mf_3",
+      "name": "发送照片",
+      "nameEn": "Send Photo to Frame",
+      "category": "Photo Management",
+      "method": "POST",
+      "url": "https://api.myframe.ink/v1/frames/{id}/photos",
+      "description": "Send a photo to a specific frame. The image is automatically optimized for the E Ink Spectra 6 display (color space conversion, contrast enhancement, and dithering). Supported formats: JPEG, PNG, WebP.",
+      "requestNote": "Provide either image_url for a publicly accessible image, or upload via multipart/form-data with the 'file' field.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "image_url", "required": false, "type": "string", "description": "Public URL of the image", "defaultValue": "" },
+        { "name": "caption", "required": false, "type": "string", "description": "Caption displayed below the photo", "defaultValue": "" },
+        { "name": "priority", "required": false, "type": "string", "description": "normal (default) | high | low", "defaultValue": "normal" }
+      ],
+      "responseExample": "{\"success\":true,\"photo_id\":\"photo_abc123\",\"status\":\"queued\",\"estimated_display_time\":\"2026-06-20T14:25:00Z\"}",
+      "dependencies": ["mf_1"]
+    },
+    {
+      "id": "mf_4",
+      "name": "获取照片列表",
+      "nameEn": "List Photos on Frame",
+      "category": "Photo Management",
+      "method": "GET",
+      "url": "https://api.myframe.ink/v1/frames/{id}/photos",
+      "description": "Retrieve the list of photos currently stored on a frame. Returns metadata including upload method, uploader, and display count.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "limit", "required": false, "type": "integer", "description": "Results per page", "defaultValue": "20" }
+      ],
+      "responseExample": "{\"photos\":[{\"id\":\"photo_abc123\",\"caption\":\"Summer vacation!\",\"upload_method\":\"wechat_miniapp\",\"uploader\":\"Mom\",\"created_at\":\"2026-06-20T14:22:10Z\",\"display_count\":3,\"size_kb\":420}],\"total\":1}",
+      "dependencies": ["mf_1"]
+    },
+    {
+      "id": "mf_5",
+      "name": "删除照片",
+      "nameEn": "Delete Photo",
+      "category": "Photo Management",
+      "method": "DELETE",
+      "url": "https://api.myframe.ink/v1/frames/{id}/photos/{photo_id}",
+      "description": "Remove a specific photo from a frame's storage. The frame will update on its next sync cycle (typically within 30 seconds).",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "photo_id", "required": true, "type": "string", "description": "Photo ID", "defaultValue": "" }
+      ],
+      "responseExample": "{\"success\":true,\"message\":\"Photo photo_abc123 deleted from frame s133-9a2b\"}",
+      "dependencies": ["mf_1", "mf_4"]
+    },
+    {
+      "id": "mf_6",
+      "name": "生成AI艺术",
+      "nameEn": "Generate AI Art",
+      "category": "AI Art",
+      "method": "POST",
+      "url": "https://api.myframe.ink/v1/ai/generate",
+      "description": "Generate AI artwork optimized for E Ink display. Supports multiple art styles. Processing is self-hosted for privacy — images are generated locally on the frame's edge compute module. Available styles: watercolor, oil_painting, sketch, impressionist, pop_art, minimal, abstract.",
+      "params": [
+        { "name": "prompt", "required": true, "type": "string", "description": "Text description of the desired image", "defaultValue": "" },
+        { "name": "style", "required": false, "type": "string", "description": "Art style: watercolor, oil_painting, sketch, impressionist, pop_art, minimal, abstract", "defaultValue": "watercolor" },
+        { "name": "color_palette", "required": false, "type": "string", "description": "Color palette: warm, cool, monochrome, vibrant, pastel", "defaultValue": "warm" },
+        { "name": "target_frames", "required": false, "type": "string", "description": "Comma-separated frame IDs to send the generated art to", "defaultValue": "" }
+      ],
+      "responseExample": "{\"success\":true,\"art_id\":\"art_xyz789\",\"style\":\"watercolor\",\"prompt\":\"Sunset over mountains\",\"generation_time_s\":12.4,\"status\":\"completed\"}",
+      "dependencies": []
+    },
+    {
+      "id": "mf_7",
+      "name": "获取设备日志",
+      "nameEn": "Get Frame Logs",
+      "category": "Device Logs",
+      "method": "GET",
+      "url": "https://api.myframe.ink/v1/frames/{id}/logs",
+      "description": "Retrieve device logs for a specific frame. Includes connection events, photo syncs, battery status, AI art generation, and errors. Logs are retained for 30 days.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "level", "required": false, "type": "string", "description": "Filter by level: info, warn, error, debug", "defaultValue": "" },
+        { "name": "since", "required": false, "type": "string", "description": "ISO 8601 timestamp — return logs after this time", "defaultValue": "" },
+        { "name": "limit", "required": false, "type": "integer", "description": "Number of results (default: 50)", "defaultValue": "50" }
+      ],
+      "responseExample": "{\"logs\":[{\"id\":\"log_a1b2\",\"timestamp\":\"2026-06-20T14:23:45Z\",\"level\":\"info\",\"source\":\"S133-9A2B\",\"message\":\"Photo synced: 3 new images from WeChat Mini Program\"}],\"total\":1}",
+      "dependencies": ["mf_1"]
+    },
+    {
+      "id": "mf_8",
+      "name": "添加家庭成员",
+      "nameEn": "Add Family Member",
+      "category": "Family Management",
+      "method": "POST",
+      "url": "https://api.myframe.ink/v1/frames/{id}/family",
+      "description": "Add a family member to a frame. They will receive an invite and can send photos once accepted. Supports email, phone, and WeChat ID invites.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "name", "required": true, "type": "string", "description": "Family member's display name", "defaultValue": "" },
+        { "name": "email", "required": false, "type": "string", "description": "Email for invite", "defaultValue": "" },
+        { "name": "phone", "required": false, "type": "string", "description": "Phone number for SMS invite", "defaultValue": "" },
+        { "name": "wechat_id", "required": false, "type": "string", "description": "WeChat ID for WeChat invite", "defaultValue": "" },
+        { "name": "role", "required": false, "type": "string", "description": "admin (can manage frame) or member (can send photos only)", "defaultValue": "member" }
+      ],
+      "responseExample": "{\"success\":true,\"member_id\":\"fam_456def\",\"name\":\"Mom\",\"status\":\"invited\",\"invite_link\":\"https://myframe.ink/invite/abc123\"}",
+      "dependencies": ["mf_1"]
+    },
+    {
+      "id": "mf_9",
+      "name": "配置Webhook",
+      "nameEn": "Create Webhook",
+      "category": "Webhooks",
+      "method": "POST",
+      "url": "https://api.myframe.ink/v1/webhooks",
+      "description": "Create a webhook endpoint that receives events from your MyFrame account. Supports multiple event types. Events include: photo.uploaded, frame.online, frame.offline, battery.low, ai.art.generated, family.member.added, photo.deleted, sync.completed.",
+      "params": [
+        { "name": "url", "required": true, "type": "string", "description": "HTTPS endpoint to receive webhook events", "defaultValue": "" },
+        { "name": "events", "required": true, "type": "string[]", "description": "Array of event types to subscribe to", "defaultValue": "" },
+        { "name": "secret", "required": false, "type": "string", "description": "Optional secret for HMAC signature verification", "defaultValue": "" }
+      ],
+      "responseExample": "{\"success\":true,\"webhook_id\":\"wh_789ghi\",\"url\":\"https://api.myapp.com/webhooks/myframe\",\"events\":[\"photo.uploaded\",\"frame.offline\"],\"status\":\"active\"}",
+      "dependencies": []
+    },
+    {
+      "id": "mf_10",
+      "name": "更新固件",
+      "nameEn": "Update Firmware",
+      "category": "Frame Management",
+      "method": "POST",
+      "url": "https://api.myframe.ink/v1/frames/{id}/firmware",
+      "description": "Trigger a firmware update on a frame. The frame will download and install the latest firmware during its next maintenance window. The frame is unavailable for approximately 5 minutes during the update.",
+      "params": [
+        { "name": "id", "required": true, "type": "string", "description": "Frame ID", "defaultValue": "" },
+        { "name": "version", "required": false, "type": "string", "description": "Specific version to install (default: latest stable)", "defaultValue": "" },
+        { "name": "schedule", "required": false, "type": "string", "description": "immediate or next_maintenance", "defaultValue": "next_maintenance" }
+      ],
+      "responseExample": "{\"success\":true,\"current_version\":\"v2.4.0\",\"target_version\":\"v2.4.1\",\"scheduled\":\"next_maintenance\",\"estimated_duration_min\":5}",
+      "dependencies": ["mf_1"]
+    }
+  ]
+}

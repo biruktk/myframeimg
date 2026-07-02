@@ -8,6 +8,7 @@ export type FrameLogEntry = {
   id: string;
   atMs: number;
   direction: FrameLogDirection;
+  source?: "mqtt" | "api" | "audit";
   mac: string;
   frameName: string | null;
   topic: string;
@@ -33,6 +34,7 @@ export function appendFrameLog(
     id: nextId(),
     atMs: partial.atMs ?? Date.now(),
     direction: partial.direction,
+    source: partial.source,
     mac: partial.mac,
     frameName: partial.frameName ?? null,
     topic: partial.topic,
@@ -60,6 +62,7 @@ export type FrameLogQuery = {
   mac?: string;
   name?: string;
   q?: string;
+  source?: string;
   since?: number;
   limit?: number;
 };
@@ -68,11 +71,13 @@ export function getFrameLogs(query: FrameLogQuery = {}): FrameLogEntry[] {
   const macQ = (query.mac ?? "").replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
   const nameQ = (query.name ?? "").trim().toLowerCase();
   const textQ = (query.q ?? "").trim().toLowerCase();
+  const sourceQ = (query.source ?? "").trim().toLowerCase();
   const since = Number(query.since ?? 0) || 0;
   const limit = Math.min(2000, Math.max(1, Number(query.limit ?? 500) || 500));
 
   let out = logs.slice();
   if (since > 0) out = out.filter((e) => e.atMs >= since);
+  if (sourceQ) out = out.filter((e) => (e.source ?? "").toLowerCase() === sourceQ);
   if (macQ) out = out.filter((e) => e.mac.includes(macQ));
   if (nameQ) out = out.filter((e) => (e.frameName ?? "").toLowerCase().includes(nameQ));
   if (textQ) {
@@ -116,6 +121,7 @@ export function seedFrameLogsFromAudit(
     appendFrameLog({
       atMs: row.atMs,
       direction: row.action.includes("send") || row.action.includes("ota") ? "tx" : "rx",
+      source: "audit",
       mac,
       frameName: row.target,
       topic: row.action === "device_send" ? `/inkjoyap/${mac}` : `/device/report/${mac}`,
