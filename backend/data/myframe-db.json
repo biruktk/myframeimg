@@ -408,7 +408,7 @@
       "wifiSsid": null,
       "wifiStatus": "online",
       "firmwareVersion": "unknown",
-      "lastSeenAtMs": 1782629902968,
+      "lastSeenAtMs": 1783013530037,
       "uptimeMs": 0,
       "photoQueueDepth": 0,
       "ota": {
@@ -441,7 +441,7 @@
       "wifiSsid": null,
       "wifiStatus": "online",
       "firmwareVersion": "1.0.0",
-      "lastSeenAtMs": 1782978902302,
+      "lastSeenAtMs": 1783414617643,
       "uptimeMs": 0,
       "photoQueueDepth": 0,
       "ota": {
@@ -452,12 +452,12 @@
     {
       "id": "D0CF13E06D2C",
       "bleMac": "D0CF13E06D2C",
-      "ownerUserId": "usr_apple_1780734865964_e254e434",
+      "ownerUserId": "usr_wx_1780717100339_50da7776",
       "orgId": "org_default",
       "wifiSsid": null,
       "wifiStatus": "online",
       "firmwareVersion": "1.0.0",
-      "lastSeenAtMs": 1782654518225,
+      "lastSeenAtMs": 1783256411822,
       "uptimeMs": 0,
       "photoQueueDepth": 0,
       "ota": {
@@ -508,10 +508,10 @@
       "bluetooth": false
     },
     "capacityBytes": 17179869184,
-    "usedBytes": 503752398,
+    "usedBytes": 578073293,
     "startedAtMs": 1780343910419,
-    "lastPhotoAtMs": 1782978902302,
-    "photoCount": 433
+    "lastPhotoAtMs": 1783414617643,
+    "photoCount": 483
   },
   "settings": {
     "account": {
@@ -536,6 +536,556 @@
     }
   },
   "uploads": [
+    {
+      "id": "1783414617643-358c0a",
+      "filename": "1783414616310_photo_2026-07-07T16-56-52.443092.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783414617643,
+      "checksumSha256": "c4cf28a8f1236cefedfbd463cd89d64168012617bb9c679f6d8fe6c3a6747532",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783414617643
+    },
+    {
+      "id": "1783411953369-85ce7d",
+      "filename": "1783411952188_photo_2026-07-07T16-12-28.161274.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783411953369,
+      "checksumSha256": "dae8f8c1822e060e45051964cd35a34790013bc0b21b5775e49964d923ec5476",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783411953369
+    },
+    {
+      "id": "1783409331908-54072b",
+      "filename": "1783409330656_photo_2026-07-07T15-28-46.788721.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783409331908,
+      "checksumSha256": "5f4eadabc444d5413b59e730e3c90ca650f117c455d8f1be2904bec8a761a9ec",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783409331908
+    },
+    {
+      "id": "1783408230290-fc49de",
+      "filename": "1783408229036_photo_2026-07-07T15-10-24.916333.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783408230290,
+      "checksumSha256": "a1456f46f6ce9dc8a6e8c08bd123aa5de6d727da9a6bb20aaca7493ecc0b49ca",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783408230290
+    },
+    {
+      "id": "1783406399491-7587fb",
+      "filename": "1783406398218_photo_2026-07-07T14-39-54.216156.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783406399491,
+      "checksumSha256": "083f1c053f21a530c8af1c3a9c12bab181bfdde9ea0bd0e22671815a5fbf1e7e",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783406399491
+    },
+    {
+      "id": "1783406276596-3f0975",
+      "filename": "1783406275436_photo_2026-07-07T14-37-51.559025.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783406276596,
+      "checksumSha256": "dae8f8c1822e060e45051964cd35a34790013bc0b21b5775e49964d923ec5476",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783406276596
+    },
+    {
+      "id": "1783404079531-56d476",
+      "filename": "1783404078424_photo_2026-07-07T14-01-14.596155.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783404079531,
+      "checksumSha256": "fe5ad322f738e601490a1c3fc151d8404c8c6a0a2db4c719cb28076e037d2c1e",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783404079531
+    },
+    {
+      "id": "1783401703229-5a6d1a",
+      "filename": "1783401701956_photo_2026-07-07T13-21-38.125751.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783401703229,
+      "checksumSha256": "16a94c03a5d7820f9fff949934abc348e40367fa1090f906e7991892b3fb1e32",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783401703229
+    },
+    {
+      "id": "1783401316015-fd3945",
+      "filename": "1783401314704_photo_2026-07-07T13-15-10.601897.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783401316015,
+      "checksumSha256": "a174ffdd46b2c555a406369207654e9170b853c229417a9c042c44a7e885f884",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783401316015
+    },
+    {
+      "id": "1783334398084-bfd8ed",
+      "filename": "1783334396914_photo_2026-07-06T18-39-52.676850.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783334398084,
+      "checksumSha256": "fe5ad322f738e601490a1c3fc151d8404c8c6a0a2db4c719cb28076e037d2c1e",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783334398084
+    },
+    {
+      "id": "1783333720634-b4ca72",
+      "filename": "1783333719492_photo_2026-07-06T18-28-35.217406.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783333720634,
+      "checksumSha256": "3e0d31a850821c0f9b57df7935d7e876c33ece1f09ee624537ed58f9f726dd65",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783333720634
+    },
+    {
+      "id": "1783333529552-892ced",
+      "filename": "1783333528475_photo_2026-07-06T18-25-11.833006.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783333529552,
+      "checksumSha256": "dae8f8c1822e060e45051964cd35a34790013bc0b21b5775e49964d923ec5476",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783333529552
+    },
+    {
+      "id": "1783327212528-ffd801",
+      "filename": "1783327210949_photo_2026-07-06T16-40-03.474123.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783327212528,
+      "checksumSha256": "6d8884dac6f3c4bf70ae8c3497674c969678dcd6f3c765b5c85936ac01cb4ce3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783327212528
+    },
+    {
+      "id": "1783262559561-bb1bbb",
+      "filename": "1783262558189_slideshow_1783262553725.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262559561,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262559561
+    },
+    {
+      "id": "1783262534769-a0e64c",
+      "filename": "1783262533519_slideshow_1783262528938.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262534769,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262534769
+    },
+    {
+      "id": "1783262512769-e1589b",
+      "filename": "1783262511507_slideshow_1783262507015.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262512769,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262512769
+    },
+    {
+      "id": "1783262491998-30706a",
+      "filename": "1783262490715_slideshow_1783262486244.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262491998,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262491998
+    },
+    {
+      "id": "1783262452248-be5460",
+      "filename": "1783262450870_slideshow_1783262446067.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262452248,
+      "checksumSha256": "3e07259b916caba80600ebb1a695a3c9bfc0f30271975dff091f572f6cd5e583",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262452248
+    },
+    {
+      "id": "1783262430315-24f1c8",
+      "filename": "1783262429058_slideshow_1783262424229.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262430315,
+      "checksumSha256": "bf32b4ffc2ef07857c102346c4dfb875f2e1f20ccae203fc60321873c78805b3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262430315
+    },
+    {
+      "id": "1783262408125-9dee85",
+      "filename": "1783262406841_slideshow_1783262401931.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262408125,
+      "checksumSha256": "71f69f27f02c5d726d624390a17b9db8dd4febb6acf0bd84a606dfe6a19bdf63",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262408125
+    },
+    {
+      "id": "1783262387021-59b765",
+      "filename": "1783262385764_slideshow_1783262303176.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F01680",
+      "atMs": 1783262387021,
+      "checksumSha256": "79782c2070583c75dbd02f48a648051a67a02bb385aa61219811f45ea034c808",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783262387021
+    },
+    {
+      "id": "1783256411822-d67be6",
+      "filename": "1783256410849_1000038402.bin",
+      "bytes": 7268138,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783256411822,
+      "checksumSha256": "a85395092dc7bcf5e16b06271fe27b1859c6746223ea851d3aed73bafef83a81",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783256411822
+    },
+    {
+      "id": "1783256170891-6cc01f",
+      "filename": "1783256170253_1000039066.bin",
+      "bytes": 1230555,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783256170891,
+      "checksumSha256": "0bcef8e0192e312b9afb60574aeec4a95e36ba4c3d8dd2ebc616db6967f5d87c",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783256170891
+    },
+    {
+      "id": "1783255870177-4e202d",
+      "filename": "1783255869383_dji_export_20260704_131500_1783142100978_editor.bin",
+      "bytes": 5815628,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783255870177,
+      "checksumSha256": "f2385ab41cd736cf04195be9a502e7b494a4e92075f61cfd830cd1cd8a698505",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783255870177
+    },
+    {
+      "id": "1783255690034-6f0ff6",
+      "filename": "1783255689180_dji_export_20260704_131500_1783142100978_editor.bin",
+      "bytes": 5815628,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783255690034,
+      "checksumSha256": "f2385ab41cd736cf04195be9a502e7b494a4e92075f61cfd830cd1cd8a698505",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783255690034
+    },
+    {
+      "id": "1783255374810-cd65bd",
+      "filename": "1783255374117_mmexport1783255347737.bin",
+      "bytes": 1270395,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783255374810,
+      "checksumSha256": "4a36e7529d2c49d5245db13fcfc34a7d46d3389887210911c618501967f28876",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783255374810
+    },
+    {
+      "id": "1783254838111-89d103",
+      "filename": "1783254837228_IMG_20260705_201610.bin",
+      "bytes": 3868527,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783254838111,
+      "checksumSha256": "507dc8c4f55e1fd592c857304e7d04a3c3ad9af5add3ea794d10fc32f47443d0",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783254838111
+    },
+    {
+      "id": "1783254748015-ffe8e0",
+      "filename": "1783254735449_photo_2026-07-05T20-32-10.903664.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783254748015,
+      "checksumSha256": "01d7f5172faf40652709a2f55249d71c973cf9038ffa3ccded85c8909fd1a422",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783254748015
+    },
+    {
+      "id": "1783254481073-3b28f4",
+      "filename": "1783254480467_share_cdf4173cdb4866c4100e0a65d1b594df.bin",
+      "bytes": 1325142,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783254481073,
+      "checksumSha256": "c56c50823b91ab69a00e9935c8e74c6f0e7ed442af1ac58bbab25db95933171a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783254481073
+    },
+    {
+      "id": "1783254154076-be9dd1",
+      "filename": "1783254152249_photo_2026-07-05T20-22-28.003838.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783254154076,
+      "checksumSha256": "ca29acf73f570a2159a58e5aaddebf491b94bb8addd476d301674fc0c7c631cc",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783254154076
+    },
+    {
+      "id": "1783253725872-ee132f",
+      "filename": "1783253725288_share_cdf4173cdb4866c4100e0a65d1b594df.bin",
+      "bytes": 1325142,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783253725872,
+      "checksumSha256": "c56c50823b91ab69a00e9935c8e74c6f0e7ed442af1ac58bbab25db95933171a",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783253725872
+    },
+    {
+      "id": "1783253688231-77fb7f",
+      "filename": "1783253687393_IMG_20260703_190542.bin",
+      "bytes": 4485516,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783253688231,
+      "checksumSha256": "36d530ce9833541c95bf2bdd8fea5ff81b2a7d7d885596cb4bb60cf3db782380",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783253688231
+    },
+    {
+      "id": "1783253144611-0ede97",
+      "filename": "1783253142639_IMG_1120.bin",
+      "bytes": 3516064,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783253144611,
+      "checksumSha256": "d2a530ad21ca9463d6dc3d25250318fba2852604fd07fa6200cd60efa3fdf0e7",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783253144611
+    },
+    {
+      "id": "1783252775178-5f03ca",
+      "filename": "1783252770428_photo_2026-07-05T19-58-06.776212.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13E06D2C",
+      "atMs": 1783252775178,
+      "checksumSha256": "4d233f52d9307b5284fadc9d7f2e0009dc09c499b917850383102cf91e959102",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783252775178
+    },
+    {
+      "id": "1783248243624-905116",
+      "filename": "1783248236987_photo_2026-07-05T18-43-33.757317.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783248243624,
+      "checksumSha256": "6d8884dac6f3c4bf70ae8c3497674c969678dcd6f3c765b5c85936ac01cb4ce3",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783248243624
+    },
+    {
+      "id": "1783247881381-fc5d9f",
+      "filename": "1783247867018_photo_2026-07-05T18-37-35.047676.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783247881381,
+      "checksumSha256": "fe5ad322f738e601490a1c3fc151d8404c8c6a0a2db4c719cb28076e037d2c1e",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783247881381
+    },
+    {
+      "id": "1783247616121-c53180",
+      "filename": "1783247614083_photo_2026-07-05T18-30-59.303592.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783247616121,
+      "checksumSha256": "9cd62bced3e25f1b943a881cd30be3758563404565665313ef71f14515eddb59",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783247616121
+    },
+    {
+      "id": "1783247469254-b4d4fd",
+      "filename": "1783247468491_photo_2026-07-05T18-30-59.303592.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783247469254,
+      "checksumSha256": "9cd62bced3e25f1b943a881cd30be3758563404565665313ef71f14515eddb59",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783247469254
+    },
+    {
+      "id": "1783246247284-d3b4a9",
+      "filename": "1783246245993_photo_2026-07-05T18-10-41.500828.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783246247284,
+      "checksumSha256": "9cd62bced3e25f1b943a881cd30be3758563404565665313ef71f14515eddb59",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783246247284
+    },
+    {
+      "id": "1783246175585-3234b2",
+      "filename": "1783246174322_photo_2026-07-05T18-07-05.526484.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783246175585,
+      "checksumSha256": "9cd62bced3e25f1b943a881cd30be3758563404565665313ef71f14515eddb59",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783246175585
+    },
+    {
+      "id": "1783246031206-d7351f",
+      "filename": "1783246029960_photo_2026-07-05T18-07-05.526484.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783246031206,
+      "checksumSha256": "9cd62bced3e25f1b943a881cd30be3758563404565665313ef71f14515eddb59",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783246031206
+    },
+    {
+      "id": "1783245902397-066b8b",
+      "filename": "1783245901124_photo_2026-07-05T18-04-56.728056.bin",
+      "bytes": 960004,
+      "deviceId": "10BDA3C12B96",
+      "atMs": 1783245902397,
+      "checksumSha256": "c4cf28a8f1236cefedfbd463cd89d64168012617bb9c679f6d8fe6c3a6747532",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783245902397
+    },
+    {
+      "id": "1783013530037-2082dc",
+      "filename": "1783013530029_photo_2026-07-02T17-31-47.328Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783013530037,
+      "checksumSha256": "25c6f16566887cf6c9af1c8dd2f82e8571ca82b71b1a7da5fda445c6ff9bc313",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783013530037
+    },
+    {
+      "id": "1783011519954-fe8f06",
+      "filename": "1783011519943_photo_2026-07-02T16-58-35.006Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783011519954,
+      "checksumSha256": "fb06a6deacc96f2406a983bc981d56bf4e181755f3ae1a90164a228ed3f2099d",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783011519954
+    },
+    {
+      "id": "1783010866731-92680f",
+      "filename": "1783010866724_photo_2026-07-02T16-47-41.711Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783010866731,
+      "checksumSha256": "e640442613c3acf038d3e4bf7237c2338480e891fd52d8773d7795efe50bdb1f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783010866731
+    },
+    {
+      "id": "1783010596159-e55ff2",
+      "filename": "1783010596153_photo_2026-07-02T16-43-11.095Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783010596159,
+      "checksumSha256": "3420dfbc608a931edb6ecfad5b8fb0824110d4b19e5be2da5b1b3671dfacad6f",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783010596159
+    },
+    {
+      "id": "1783010419821-802137",
+      "filename": "1783010419814_photo_2026-07-02T16-40-14.918Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783010419821,
+      "checksumSha256": "fb06a6deacc96f2406a983bc981d56bf4e181755f3ae1a90164a228ed3f2099d",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783010419821
+    },
+    {
+      "id": "1783010262094-900918",
+      "filename": "1783010262084_photo_2026-07-02T16-37-37.197Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783010262094,
+      "checksumSha256": "d2c9da10ab2868c3fa83bee847d537a539bacd6c68ce6795c4562e51056f97ee",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783010262094
+    },
+    {
+      "id": "1783003382818-49543a",
+      "filename": "1783003382812_photo_2026-07-02T14-42-40.457Z.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783003382818,
+      "checksumSha256": "f49539d2df9b8f6b6f54e1435bf996ab6231aa94ce27d43f3cf3ad24e14f2115",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783003382818
+    },
+    {
+      "id": "1783002317252-9d00f0",
+      "filename": "1783002315798_photo_2026-07-02T17-25-11.325534.bin",
+      "bytes": 960004,
+      "deviceId": "D0CF13F0161C",
+      "atMs": 1783002317252,
+      "checksumSha256": "f0d3e9c89f02250927ff9c14f4373e0aa06d02b32a43d53ca976e1367495b0cb",
+      "deliveredToFrame": false,
+      "deliveryMode": "mqtt_published_unconfirmed",
+      "deliveryCheckedAtMs": 1783002317252
+    },
     {
       "id": "1782978902302-c353cd",
       "filename": "1782978901173_photo_2026-07-02T15-52-33.302289.bin",
@@ -5325,6 +5875,1028 @@
     }
   },
   "auditLog": [
+    {
+      "id": "audit_1783414617643_8172db",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783414617643,
+      "meta": {
+        "filename": "1783414616310_photo_2026-07-07T16-56-52.443092.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783411953369_fb5716",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783411953369,
+      "meta": {
+        "filename": "1783411952188_photo_2026-07-07T16-12-28.161274.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783409331908_ccbe2a",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783409331908,
+      "meta": {
+        "filename": "1783409330656_photo_2026-07-07T15-28-46.788721.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783408230290_2f6445",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783408230290,
+      "meta": {
+        "filename": "1783408229036_photo_2026-07-07T15-10-24.916333.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783408195311_c28e",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783408195311,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783408192548_cfbe",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783408192548,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783406399491_3f9b4c",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783406399491,
+      "meta": {
+        "filename": "1783406398218_photo_2026-07-07T14-39-54.216156.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783406276596_185d15",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783406276596,
+      "meta": {
+        "filename": "1783406275436_photo_2026-07-07T14-37-51.559025.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783404079531_44f681",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783404079531,
+      "meta": {
+        "filename": "1783404078424_photo_2026-07-07T14-01-14.596155.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783401703229_f491e1",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783401703229,
+      "meta": {
+        "filename": "1783401701956_photo_2026-07-07T13-21-38.125751.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783401316015_3db12f",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783401316015,
+      "meta": {
+        "filename": "1783401314704_photo_2026-07-07T13-15-10.601897.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783334398084_87c156",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783334398084,
+      "meta": {
+        "filename": "1783334396914_photo_2026-07-06T18-39-52.676850.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783334257317_24f9",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783334257317,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783333720634_600802",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783333720634,
+      "meta": {
+        "filename": "1783333719492_photo_2026-07-06T18-28-35.217406.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783333529552_0e4e45",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783333529552,
+      "meta": {
+        "filename": "1783333528475_photo_2026-07-06T18-25-11.833006.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783333368986_fd5a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783333368986,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783333017697_aa66",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783333017697,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783333008744_9aae",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783333008744,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332999467_5ed0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332999467,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332990641_8bf5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332990641,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332980525_287c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332980525,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332970888_09ed",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332970888,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332961779_ad76",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332961779,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332952928_7cc6",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332952928,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332943072_2ac4",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332943072,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332934147_4043",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332934147,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332930587_bec0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332930587,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332927204_76c6",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332927204,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783332924296_2bdf",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783332924296,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783327212528_5d05c4",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783327212528,
+      "meta": {
+        "filename": "1783327210949_photo_2026-07-06T16-40-03.474123.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262559561_deb086",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262559561,
+      "meta": {
+        "filename": "1783262558189_slideshow_1783262553725.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262534769_f21c6e",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262534769,
+      "meta": {
+        "filename": "1783262533519_slideshow_1783262528938.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262512769_a13831",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262512769,
+      "meta": {
+        "filename": "1783262511507_slideshow_1783262507015.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262491998_12c2d4",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262491998,
+      "meta": {
+        "filename": "1783262490715_slideshow_1783262486244.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262452248_d8c0ca",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262452248,
+      "meta": {
+        "filename": "1783262450870_slideshow_1783262446067.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262430315_7e402b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262430315,
+      "meta": {
+        "filename": "1783262429058_slideshow_1783262424229.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262408125_39cb51",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262408125,
+      "meta": {
+        "filename": "1783262406841_slideshow_1783262401931.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783262387021_2ef446",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F01680",
+      "atMs": 1783262387021,
+      "meta": {
+        "filename": "1783262385764_slideshow_1783262303176.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783261222770_f9b8",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783261222770,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783261213074_a8e0",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783261213074,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783261204202_3e3c",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783261204202,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783261193696_9b0a",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783261193696,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783256411822_2de7ff",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783256411822,
+      "meta": {
+        "filename": "1783256410849_1000038402.bin",
+        "bytes": 7268138,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783256170891_96f1b1",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783256170891,
+      "meta": {
+        "filename": "1783256170253_1000039066.bin",
+        "bytes": 1230555,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783255870177_798729",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783255870177,
+      "meta": {
+        "filename": "1783255869383_dji_export_20260704_131500_1783142100978_editor.bin",
+        "bytes": 5815628,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783255690034_cb05b7",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783255690034,
+      "meta": {
+        "filename": "1783255689180_dji_export_20260704_131500_1783142100978_editor.bin",
+        "bytes": 5815628,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783255374810_6f89cc",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783255374810,
+      "meta": {
+        "filename": "1783255374117_mmexport1783255347737.bin",
+        "bytes": 1270395,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783254838111_a8797d",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783254838111,
+      "meta": {
+        "filename": "1783254837228_IMG_20260705_201610.bin",
+        "bytes": 3868527,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783254748015_e4cf98",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783254748015,
+      "meta": {
+        "filename": "1783254735449_photo_2026-07-05T20-32-10.903664.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783254481073_d89260",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783254481073,
+      "meta": {
+        "filename": "1783254480467_share_cdf4173cdb4866c4100e0a65d1b594df.bin",
+        "bytes": 1325142,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783254154076_17a06b",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783254154076,
+      "meta": {
+        "filename": "1783254152249_photo_2026-07-05T20-22-28.003838.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783253725872_3d098a",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783253725872,
+      "meta": {
+        "filename": "1783253725288_share_cdf4173cdb4866c4100e0a65d1b594df.bin",
+        "bytes": 1325142,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783253688231_870c18",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783253688231,
+      "meta": {
+        "filename": "1783253687393_IMG_20260703_190542.bin",
+        "bytes": 4485516,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783253144611_cb2963",
+      "actor": "api_frame_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783253144611,
+      "meta": {
+        "filename": "1783253142639_IMG_1120.bin",
+        "bytes": 3516064,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783252775178_715305",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252775178,
+      "meta": {
+        "filename": "1783252770428_photo_2026-07-05T19-58-06.776212.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783252439217_8ace",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252439217,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1783252412760_ce80",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252412760,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1783252412265_bc55f8",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "firmware_ota_push",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252412265,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1783252411728_ddcb",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252411728,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1783252408814_f808",
+      "actor": "user:usr_wx_1780717100339_50da7776",
+      "action": "add_device",
+      "target": "D0CF13E06D2C",
+      "atMs": 1783252408814,
+      "meta": {
+        "bleMac": "D0CF13E06D2C"
+      }
+    },
+    {
+      "id": "audit_1783248243624_379927",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783248243624,
+      "meta": {
+        "filename": "1783248236987_photo_2026-07-05T18-43-33.757317.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783248177361_67c2",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783248177361,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783248171410_622f",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783248171410,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783247881381_6c86a6",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783247881381,
+      "meta": {
+        "filename": "1783247867018_photo_2026-07-05T18-37-35.047676.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783247616121_59d3bb",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783247616121,
+      "meta": {
+        "filename": "1783247614083_photo_2026-07-05T18-30-59.303592.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783247469254_c89a72",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783247469254,
+      "meta": {
+        "filename": "1783247468491_photo_2026-07-05T18-30-59.303592.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783246247284_d98682",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783246247284,
+      "meta": {
+        "filename": "1783246245993_photo_2026-07-05T18-10-41.500828.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783246175585_3aa727",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783246175585,
+      "meta": {
+        "filename": "1783246174322_photo_2026-07-05T18-07-05.526484.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783246031206_d5699e",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783246031206,
+      "meta": {
+        "filename": "1783246029960_photo_2026-07-05T18-07-05.526484.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783245902397_e021c3",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245902397,
+      "meta": {
+        "filename": "1783245901124_photo_2026-07-05T18-04-56.728056.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783245872932_d2a5",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245872932,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783245864029_8c75",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245864029,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783245863545_d02f76",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "firmware_ota_push",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245863545,
+      "meta": {
+        "version": "1.4.3",
+        "mac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783245863115_9410",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245863115,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783245860549_fe76",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783245860549,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783071507320_3b2b",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783071507320,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783071498341_5c50",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783071498341,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783071489344_cca9",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783071489344,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783071480352_a0eb",
+      "actor": "user:usr_wx_1781947340689_16f90eb2",
+      "action": "add_device",
+      "target": "10BDA3C12B96",
+      "atMs": 1783071480352,
+      "meta": {
+        "bleMac": "10BDA3C12B96"
+      }
+    },
+    {
+      "id": "audit_1783013530037_91b3ee",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783013530037,
+      "meta": {
+        "filename": "1783013530029_photo_2026-07-02T17-31-47.328Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783011519954_95ccec",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783011519954,
+      "meta": {
+        "filename": "1783011519943_photo_2026-07-02T16-58-35.006Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783010866731_c662c5",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783010866731,
+      "meta": {
+        "filename": "1783010866724_photo_2026-07-02T16-47-41.711Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783010596159_30b51f",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783010596159,
+      "meta": {
+        "filename": "1783010596153_photo_2026-07-02T16-43-11.095Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783010419821_e209f6",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783010419821,
+      "meta": {
+        "filename": "1783010419814_photo_2026-07-02T16-40-14.918Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783010262094_9a3409",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783010262094,
+      "meta": {
+        "filename": "1783010262084_photo_2026-07-02T16-37-37.197Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783003382818_5db360",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783003382818,
+      "meta": {
+        "filename": "1783003382812_photo_2026-07-02T14-42-40.457Z.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
+    {
+      "id": "audit_1783002317252_b91cad",
+      "actor": "api_upload",
+      "action": "photo_uploaded",
+      "target": "D0CF13F0161C",
+      "atMs": 1783002317252,
+      "meta": {
+        "filename": "1783002315798_photo_2026-07-02T17-25-11.325534.bin",
+        "bytes": 960004,
+        "deliveredToFrame": false,
+        "deliveryMode": "mqtt_published_unconfirmed"
+      }
+    },
     {
       "id": "audit_1782978902302_08e454",
       "actor": "api_upload",
@@ -16450,6 +18022,16 @@
       ],
       "intervalMinutes": 60,
       "updatedAtMs": 1782974608528
+    },
+    "D0CF13F01680": {
+      "imageIds": [
+        "1783262490715_slideshow_1783262486244.bin",
+        "1783262511507_slideshow_1783262507015.bin",
+        "1783262533519_slideshow_1783262528938.bin",
+        "1783262558189_slideshow_1783262553725.bin"
+      ],
+      "intervalMinutes": 1440,
+      "updatedAtMs": 1783262563095
     }
   },
   "commerceEvents": [],
@@ -17551,6 +19133,12 @@
       "deviceId": "D0CF13E06D2C",
       "ownerUserId": "usr_wx_1780717100339_50da7776",
       "createdAtMs": 1782026955282
+    },
+    {
+      "code": "82GN4CPN",
+      "deviceId": "10BDA3C12B96",
+      "ownerUserId": "usr_wx_1781947340689_16f90eb2",
+      "createdAtMs": 1783410139241
     }
   ]
 }
