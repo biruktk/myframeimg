@@ -6,6 +6,7 @@
  * - 4 bpp, 2 nibbles/byte, **high = first** pixel along each half stream.
  * - Palette indices: 0 black, 1 white, 2 yellow, 3 red, **5** blue, **6** green (4 unused).
  * - **Floyd–Steinberg** dithering after contrast/sharpen preprocessing (Sharp pipeline).
+ * - **Client `.bin` uploads (iOS / Flutter) must never be re-encoded** — store bytes as-is.
  *
  * If you still see **960032** bytes or `4D59464D` (“MYFM”) on disk, the server is running an **old
  * `dist/` build** — run `npm run build` and restart PM2.
@@ -41,6 +42,12 @@ const FS7 = 7 / 16;
 const FS3 = 3 / 16;
 const FS5 = 5 / 16;
 const FS1 = 1 / 16;
+
+/** Match Flutter `ImageProcessorService` XT pre-quantize (myframeapp). */
+const XT_CONTRAST = 1.28;
+const XT_SATURATION = 1.58;
+const XT_BRIGHTNESS = 1.04;
+const XT_SHARPNESS = 1.45;
 
 function clamp255(n: number): number {
   return n < 0 ? 0 : n > 255 ? 255 : n;
@@ -203,21 +210,37 @@ export function isProbablyMyfmBuffer(buf: Buffer): boolean {
   return buf[0] === 0x04 && buf[1] === 0xb0 && buf[2] === 0x06 && buf[3] === 0x40;
 }
 
-/** Raster → XT `.bin` sidecar next to upload (`<stem>.bin`). */
+/**
+ * Store a client-encoded XT `.bin` verbatim (iOS / Flutter TestFlight path).
+ * Never run Sharp or second-pass dither on these bytes.
+ */
+export async function storeClientXtBin(buf: Buffer, uploadDir: string, basename: string): Promise<string> {
+  assertXt13e6Bin(buf);
+  const safe = path.basename(basename).replace(/[^a-zA-Z0-9._-]/g, "_") || "upload.bin";
+  const outName = safe.toLowerCase().endsWith(".bin") ? safe : `${safe}.bin`;
+  const outPath = path.join(uploadDir, outName);
+  await fs.writeFile(outPath, buf);
+  return outName;
+}
+
+/** Raster → XT `.bin` sidecar next to upload (`<stem>.bin`) — only when client did not send `.bin`. */
 export async function writeMyfmSidecar(uploadedAbsPath: string): Promise<string> {
   const meta = await sharp(uploadedAbsPath).metadata();
 
-  const contrast = 1.3;
-  const b = 128 * (1 - contrast);
+  const b = 128 * (1 - XT_CONTRAST);
 
   let pipeline = sharp(uploadedAbsPath).rotate().resize(FRAME_W, FRAME_H, {
     fit: "cover",
     position: "centre",
+    kernel: sharp.kernel.cubic,
   });
   if (meta.hasAlpha) {
     pipeline = pipeline.ensureAlpha().flatten({ background: { r: 255, g: 255, b: 255 } });
   }
-  pipeline = pipeline.linear(contrast, b).sharpen({ sigma: 1 });
+  pipeline = pipeline
+    .modulate({ brightness: XT_BRIGHTNESS, saturation: XT_SATURATION })
+    .linear(XT_CONTRAST, b)
+    .sharpen({ sigma: 1, m1: XT_SHARPNESS, m2: XT_SHARPNESS });
 
   const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
 

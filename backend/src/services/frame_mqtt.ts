@@ -9,8 +9,17 @@ import mqtt from "mqtt";
 export type FrameRecord = {
   lastSeen: number;
   status: "online" | "offline";
+  lastAction?: string;
+  lastResult?: number | string;
+  lastUploadMs?: number;
+  displayed?: boolean;
   config: Record<string, unknown>;
 };
+
+const DEFAULT_MQTT_BROKER_HOST = "128.241.231.234";
+const DEFAULT_MQTT_BROKER_PORT = 1883;
+const DEFAULT_MQTT_USER = "device";
+const DEFAULT_MQTT_PASS = "framepass2026";
 
 const frames = new Map<string, FrameRecord>();
 let mqttClient: mqtt.MqttClient | null = null;
@@ -64,7 +73,10 @@ function handleMessage(topic: string, raw: Buffer) {
     (typeof data.stamac === "string" && data.stamac) ||
     tail;
 
-  const mac = normalizeMac(clientid);
+  const mac =
+    resolveMqttHardwareMac(clientid) ??
+    resolveMqttHardwareMac(tail) ??
+    (normalizeMac(clientid).length === 12 ? normalizeMac(clientid) : null);
   if (!mac) return;
 
   const action = String(data.action ?? "");
@@ -77,10 +89,35 @@ function handleMessage(topic: string, raw: Buffer) {
     } as FrameRecord);
   rec.lastSeen = Date.now();
   rec.status = "online";
+  rec.lastAction = action || rec.lastAction;
+
+  const d = data.data as Record<string, unknown> | undefined;
+  const result =
+    data.result ??
+    data.code ??
+    data.lastResult ??
+    data.displayCode ??
+    d?.result ??
+    d?.code ??
+    d?.displayCode;
+  if (typeof result === "number" || typeof result === "string") {
+    rec.lastResult = result;
+    const n = Number(result);
+    if (n === 113) rec.displayed = true;
+    if (n === 104) rec.displayed = false;
+  }
+
+  if (action === "play_ack" || action === "play") {
+    const uploadMs = Number(data.msgid ?? data.upload_ms ?? data.last_upload_ms);
+    if (Number.isFinite(uploadMs) && uploadMs > 0) {
+      rec.lastUploadMs = uploadMs;
+    } else {
+      rec.lastUploadMs = rec.lastSeen;
+    }
+  }
 
   switch (action) {
     case "login": {
-      const d = data.data as Record<string, unknown> | undefined;
       rec.config = {
         firmwareVersion: d?.ver,
         stationType: d?.statype,
@@ -131,6 +168,70 @@ export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
 }
 
+/** True when the frame published login/heart/play on MQTT recently (not the API broker flag). */
+export function isFrameMqttOnline(macRaw: string, maxAgeMs = 120_000): boolean {
+  const rec = getFrame(macRaw);
+  if (!rec) return false;
+  return Date.now() - rec.lastSeen <= maxAgeMs;
+}
+
+function mqttBrokerDefaults() {
+  const host = String(process.env.FRAME_MQTT_BROKER_HOST ?? DEFAULT_MQTT_BROKER_HOST).trim();
+  const port = Number(process.env.FRAME_MQTT_BROKER_PORT ?? DEFAULT_MQTT_BROKER_PORT) || DEFAULT_MQTT_BROKER_PORT;
+  const usr = String(process.env.FRAME_MQTT_DEVICE_USER ?? DEFAULT_MQTT_USER).trim();
+  const pwd = String(process.env.FRAME_MQTT_DEVICE_PASS ?? DEFAULT_MQTT_PASS).trim();
+  return { host, port, usr, pwd };
+}
+
+function publishJson(topic: string, payload: Record<string, unknown>, retain = false): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!mqttClient?.connected) {
+      reject(new Error("MQTT not connected"));
+      return;
+    }
+    const body = JSON.stringify(payload);
+    mqttDebugTx(topic, body);
+    mqttClient.publish(topic, body, { qos: 1, retain }, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+/** Retained mqtt_config on `/inkjoyap/{MAC}` — frame applies broker settings after Wi‑Fi. */
+export function publishRetainedMqttConfig(macRaw: string, msgid?: string): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  const broker = mqttBrokerDefaults();
+  return publishJson(
+    `/inkjoyap/${mac}`,
+    {
+      msgid: msgid ?? Date.now().toString(),
+      action: "mqtt_config",
+      stamac: mac,
+      data: {
+        host: broker.host,
+        port: broker.port,
+        usr: broker.usr,
+        pwd: broker.pwd,
+      },
+    },
+    true,
+  );
+}
+
+/** Wake/login command so the frame reconnects to Mosquitto after provisioning. */
+export function publishLoginAck(macRaw: string, msgid?: string): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  return publishJson(`/inkjoyap/${mac}`, {
+    msgid: msgid ?? Date.now().toString(),
+    action: "login_ack",
+    stamac: mac,
+    data: { ack: 1 },
+  });
+}
+
 export function listFrames(): Array<FrameRecord & { mac: string; age: number }> {
   const now = Date.now();
   const out: Array<FrameRecord & { mac: string; age: number }> = [];
@@ -141,7 +242,8 @@ export function listFrames(): Array<FrameRecord & { mac: string; age: number }> 
 }
 
 export function getFrame(macRaw: string): (FrameRecord & { mac: string; age: number }) | null {
-  const mac = normalizeMac(macRaw);
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return null;
   const rec = frames.get(mac);
   if (!rec) return null;
   return { mac, ...rec, age: Date.now() - rec.lastSeen };
@@ -161,7 +263,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     }
     const msgid = Date.now().toString();
     let host = "";
-    let port = 443;
+    let port = 80;
     let imgurlForPlay = imageUrl;
     try {
       const u = new URL(imageUrl);
@@ -171,7 +273,21 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
         imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
       }
 
-      /** Plain-HTTP fetch host for ESP32 (no HTTPS); path still comes from `imageUrl` above. */
+      if (
+        u.protocol === "https:" &&
+        String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
+      ) {
+        reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
+        return;
+      }
+
+      /**
+       * ESP32 fetches MYFM `.bin` from the same host/port as `image_url` (nginx :80).
+       * Do NOT override with PUBLIC_MEDIA_BASE_URL when that env points at the Node API (:3001).
+       */
+      host = u.hostname;
+      port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
+    } catch {
       const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
       if (mediaBaseRaw) {
         try {
@@ -179,22 +295,11 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
           host = mu.hostname;
           port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
         } catch {
-          // bad PUBLIC_MEDIA_BASE_URL — fall through to imageUrl host/port
+          host = publicHost ?? "";
         }
+      } else {
+        host = publicHost ?? "";
       }
-      if (!host) {
-        if (
-          u.protocol === "https:" &&
-          String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
-        ) {
-          reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
-          return;
-        }
-        host = u.hostname;
-        port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
-      }
-    } catch {
-      host = publicHost ?? "";
     }
 
     const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());

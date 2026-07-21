@@ -6,7 +6,13 @@ import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
-import { isProbablyMyfmBuffer, writeMyfmSidecar } from "../services/myfm_encode";
+import {
+  assertXt13e6Bin,
+  isProbablyMyfmBuffer,
+  storeClientXtBin,
+  writeMyfmSidecar,
+  XT_BIN_TOTAL_BYTES,
+} from "../services/myfm_encode";
 
 /**
  * POST /api/photo/upload
@@ -52,11 +58,24 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
 
       let mqttBasename = basename;
+      let imageProcessing: "client_passthrough" | "server_myfm_encode" | "stored_raw" = "stored_raw";
+
       if (isProbablyMyfmBuffer(buf)) {
-        mqttBasename = basename;
+        assertXt13e6Bin(buf);
+        mqttBasename = await storeClientXtBin(buf, uploadDir, basename);
+        imageProcessing = "client_passthrough";
+      } else if (ext === ".bin") {
+        res.status(400).json({
+          ok: false,
+          error: "invalid_xt_bin",
+          message: `Upload must be exactly ${XT_BIN_TOTAL_BYTES} bytes with header 04 B0 06 40, or send JPEG/PNG for server encode.`,
+          received_bytes: buf.length,
+        });
+        return;
       } else if (encodeMyfm && looksLikeRaster) {
         try {
           mqttBasename = await writeMyfmSidecar(file.path);
+          imageProcessing = "server_myfm_encode";
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
@@ -191,6 +210,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         delivered_to_frame: deliveredToFrame,
         delivery_mode: deliveryMode,
         image_url: imageUrl,
+        /** `client_passthrough` = exact bytes from iOS/Flutter `.bin`; never re-dithered on VPS. */
+        image_processing: imageProcessing,
       });
     } catch (e) {
       res.status(500).json({
