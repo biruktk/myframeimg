@@ -16,7 +16,7 @@ export type FrameRecord = {
   config: Record<string, unknown>;
 };
 
-const DEFAULT_MQTT_BROKER_HOST = "128.241.231.234";
+const DEFAULT_MQTT_BROKER_HOST = "47.76.164.162";
 const DEFAULT_MQTT_BROKER_PORT = 1883;
 const DEFAULT_MQTT_USER = "device";
 const DEFAULT_MQTT_PASS = "framepass2026";
