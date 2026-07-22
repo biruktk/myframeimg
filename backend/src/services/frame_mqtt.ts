@@ -178,7 +178,7 @@ export function isMqttConnected(): boolean {
 }
 
 /** True when the frame published login/heart/play on MQTT recently (not the API broker flag). */
-export function isFrameMqttOnline(macRaw: string, maxAgeMs = 120_000): boolean {
+export function isFrameMqttOnline(macRaw: string, maxAgeMs = 45_000): boolean {
   const rec = getFrame(macRaw);
   if (!rec) return false;
   return Date.now() - rec.lastSeen <= maxAgeMs;
