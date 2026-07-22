@@ -30,11 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Prefer not committing live `.env` elsewhere; these are explicitly tracked for VPS workflow.
+# Prefer not committing live `.env` elsewhere.
 .env*
 !**/.env.example
 !**/.env*.example
-!backend/.env
 !deploy/vps/.env.prod
 
 # vercel
