@@ -120,6 +120,12 @@ export type MyframeDb = {
     passwordHash?: string;
     /** Google account `sub` from Sign-In (optional). */
     googleSub?: string;
+    /** WeChat Open Platform openid. */
+    wechatOpenId?: string;
+    /** WeChat UnionID (shared across apps). */
+    wechatUnionId?: string;
+    /** Apple Sign-In `sub` (user identifier). */
+    appleSub?: string;
   }>;
   familyGroups: Array<{
     id: string;

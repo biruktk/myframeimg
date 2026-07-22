@@ -18,6 +18,9 @@ import { framePairingRouter } from "./routes/frame_pairing";
 import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
+import { mobileGoogleAuthRouter } from "./routes/mobile_google_auth";
+import { wechatMobileAuthRouter } from "./routes/wechat_mobile_auth";
+import { isGoogleOAuthRedirectConfigured } from "./services/google_oauth_mobile";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
@@ -85,7 +88,7 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "myframe-server" });
+  res.json({ ok: true, service: "myframe-server", googleOAuthRedirect: isGoogleOAuthRedirectConfigured() });
 });
 
 app.get("/", (_req, res) => {
@@ -137,6 +140,8 @@ app.use("/api", settingsRouter);
 // [requireAdminToken] to every request that reaches it.
 app.use("/api", faqRouter);
 app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
+app.use("/api", mobileGoogleAuthRouter);
+app.use("/api", wechatMobileAuthRouter);
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
