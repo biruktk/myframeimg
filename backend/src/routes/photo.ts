@@ -35,6 +35,26 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     limits: { fileSize: 15 * 1024 * 1024 },
   });
 
+  const MAX_UPLOAD_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+  function pruneOldUploads() {
+    const cutoff = Date.now() - MAX_UPLOAD_AGE_MS;
+    db.mutate((draft) => {
+      const keep: typeof draft.uploads = [];
+      for (const u of draft.uploads) {
+        if (u.atMs < cutoff) {
+          try {
+            const p = path.join(uploadDir, path.basename(u.filename));
+            if (fs.existsSync(p)) fs.unlinkSync(p);
+          } catch { /* ignore */ }
+        } else {
+          keep.push(u);
+        }
+      }
+      draft.uploads = keep;
+    });
+  }
+
   router.post("/photo/upload", requirePairingToken, uploadRateLimit, upload.single("file"), async (req, res) => {
     try {
       const file = req.file;
@@ -159,6 +179,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
           filename: mqttBasename,
+          previewFilename: jpegBackupStoredPath || undefined,
           bytes: persistedDiskBytes,
           deviceId: deviceId || draft.device.id,
           atMs: now,
@@ -170,6 +191,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
         }
+        pruneOldUploads();
         draft.auditLog.unshift({
           id: `audit_${now}_${Math.random().toString(16).slice(2, 8)}`,
           actor: "api_upload",
@@ -348,6 +370,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         draft.uploads.unshift({
           id: `${now}-${Math.random().toString(16).slice(2, 8)}`,
           filename: mqttBasename,
+          previewFilename: jpegBackupStoredPath || undefined,
           bytes: persistedDiskBytes,
           deviceId: deviceId || draft.device.id,
           atMs: now,
@@ -359,6 +382,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
         }
+        pruneOldUploads();
         draft.auditLog.unshift({
           id: `audit_${now}_${Math.random().toString(16).slice(2, 8)}`,
           actor: "api_upload",

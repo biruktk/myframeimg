@@ -108,3 +108,31 @@ framePairingRouter.post("/frames/:mac/mqtt-config", requirePairingToken, async (
     });
   }
 });
+
+/** GET /api/frames/:mac/history — recent uploads for a frame (newest first, max 20). */
+framePairingRouter.get("/frames/:mac/history", (req, res) => {
+  const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+  if (!mac) {
+    res.status(400).json({ ok: false, error: "invalid_mac" });
+    return;
+  }
+  const data = db.read();
+  const uploads = data.uploads
+    .filter((u) => resolveMqttHardwareMac(u.deviceId) === mac)
+    .sort((a, b) => b.atMs - a.atMs)
+    .slice(0, 20)
+    .map((u) => ({
+      id: u.id,
+      filename: u.filename,
+      atMs: u.atMs,
+      bytes: u.bytes,
+      checksumSha256: u.checksumSha256,
+      deliveredToFrame: u.deliveredToFrame,
+      deliveryMode: u.deliveryMode,
+      imageUrl: `/frame-media/${encodeURIComponent(u.filename)}`,
+      previewUrl: u.previewFilename
+        ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
+        : undefined,
+    }));
+  res.json({ ok: true, images: uploads });
+});
