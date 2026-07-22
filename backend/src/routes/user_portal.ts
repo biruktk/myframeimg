@@ -74,9 +74,7 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
 
   let onlineDevices = 0;
   const deviceRows = frames.map((f) => {
-    const online =
-      f.wifiStatus === "online" ||
-      (f.lastSeenAtMs != null && now - f.lastSeenAtMs < 600 * 1000);
+    const online = f.wifiStatus !== "never_provisioned";
     if (online) onlineDevices += 1;
     const macKey = normalizeBleKey(f.bleMac);
     const slideshow = data.slideshowsByBleMac?.[macKey];

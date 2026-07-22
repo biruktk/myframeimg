@@ -21,7 +21,7 @@ function frameStatusPayload(macRaw: string) {
   const rec = getFrame(mac);
   const data = db.read();
   const paired = data.frames.find((f) => resolveMqttHardwareMac(f.id) === mac);
-  const frameLive = isFrameMqttOnline(mac);
+  const frameLive = isFrameMqttOnline(mac) || (paired != null && paired.wifiStatus !== "never_provisioned");
   const apiMqtt = isMqttConnected();
   const lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;
 
