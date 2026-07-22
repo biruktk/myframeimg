@@ -24,13 +24,19 @@ function tokenFromRequest(req: Request): string {
   ).trim();
 }
 
+function pairingTokenFromRequest(req: Request): string {
+  const explicitPairingToken = String(req.header("x-pairing-token") ?? "").trim();
+  if (explicitPairingToken) return explicitPairingToken;
+  return (readBearerToken(req) ?? String(req.header("x-admin-token") ?? "")).trim();
+}
+
 export function requirePairingToken(req: Request, res: Response, next: NextFunction) {
   const expected = String(process.env.FRAME_PAIRING_TOKEN ?? "").trim();
   if (!expected) {
     next();
     return;
   }
-  const got = tokenFromRequest(req);
+  const got = pairingTokenFromRequest(req);
   if (!got || !secureEqual(got, expected)) {
     res.status(401).json({ ok: false, error: "unauthorized_pairing_token" });
     return;
