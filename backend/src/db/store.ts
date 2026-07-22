@@ -179,6 +179,7 @@ export type MyframeDb = {
     deviceId: string;
     atMs: number;
     checksumSha256: string;
+    previewFilename?: string;
     deliveredToFrame?: boolean;
     deliveryMode?: string;
     deliveryCheckedAtMs?: number;
