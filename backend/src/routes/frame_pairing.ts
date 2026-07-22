@@ -34,7 +34,7 @@ function frameStatusPayload(macRaw: string) {
     battery: 100,
     wifi: paired?.wifiSsid ?? data.device.room ?? "",
     storage_used_mb: Math.round(data.device.usedBytes / 1024 / 1024),
-    photo_count: paired?.photoQueueDepth ?? data.device.photoCount ?? 0,
+    photo_count: paired?.pendingQueue?.length ?? data.device.photoCount ?? 0,
     /** Frame reported on MQTT recently (login/heart/play). */
     mqtt_connected: frameLive,
     /** API process can publish play/login to Mosquitto. */

@@ -138,7 +138,8 @@ export type MyframeDb = {
     firmwareVersion: string;
     lastSeenAtMs: number | null;
     uptimeMs: number;
-    photoQueueDepth: number;
+    pendingQueue: string[];
+    nextDeliveryAtMs: number | null;
     location?: { lat: number; lng: number };
     ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
   }>;
@@ -333,7 +334,8 @@ function createInitialDb(): MyframeDb {
         firmwareVersion: "1.2.0",
         lastSeenAtMs: null,
         uptimeMs: 0,
-        photoQueueDepth: 0,
+        pendingQueue: [],
+        nextDeliveryAtMs: null,
         ota: { targetVersion: null, status: "idle" },
       },
     ],

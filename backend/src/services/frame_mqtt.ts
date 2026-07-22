@@ -24,6 +24,12 @@ const DEFAULT_MQTT_PASS = "framepass2026";
 const frames = new Map<string, FrameRecord>();
 let mqttClient: mqtt.MqttClient | null = null;
 
+let onPlayAckCb: ((mac: string) => void) | null = null;
+
+export function setPlayAckHandler(cb: (mac: string) => void): void {
+  onPlayAckCb = cb;
+}
+
 export function normalizeMac(mac: string): string {
   return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
 }
@@ -113,6 +119,9 @@ function handleMessage(topic: string, raw: Buffer) {
       rec.lastUploadMs = uploadMs;
     } else {
       rec.lastUploadMs = rec.lastSeen;
+    }
+    if (action === "play_ack" && rec.displayed === true) {
+      if (onPlayAckCb) onPlayAckCb(mac);
     }
   }
 
