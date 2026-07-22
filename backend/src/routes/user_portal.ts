@@ -201,6 +201,29 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
   });
 });
 
+/** GET /api/user/gallery — user's photo history (newest first, max 200). */
+userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+
+  const data = db.read();
+  const frameIds = visibleFrameIdsForUser(auth.userId);
+  const photos = data.uploads
+    .filter((u) => frameIds.includes(u.deviceId))
+    .sort((a, b) => b.atMs - a.atMs)
+    .slice(0, 200)
+    .map((u) => ({
+      id: u.id,
+      url: u.previewFilename
+        ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
+        : `/frame-media/${encodeURIComponent(u.filename)}`,
+      atMs: u.atMs,
+      deviceId: u.deviceId,
+      filename: u.filename,
+    }));
+  res.json({ ok: true, photos });
+});
+
 /** PATCH /api/user/playlists/:id */
 userPortalRouter.patch("/user/playlists/:id", (req: Request, res: Response) => {
   const auth = authUser(req, res);
