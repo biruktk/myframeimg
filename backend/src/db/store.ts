@@ -240,6 +240,8 @@ export type MyframeDb = {
       imageIds: string[];
       intervalMinutes: number;
       updatedAtMs: number;
+      currentIndex: number;
+      nextPlayAtMs: number;
     }
   >;
   commerceEvents: Array<{
