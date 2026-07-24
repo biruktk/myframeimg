@@ -86,6 +86,7 @@ function completeWeChatLogin(profile: {
         subscriptionTier: "free",
         familyGroupId: null,
         status: "active",
+        emailVerified: true,
         createdAtMs: now,
         lastSeenAtMs: now,
         wechatOpenId: profile.openid,

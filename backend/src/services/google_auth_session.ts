@@ -38,6 +38,7 @@ export function completeGoogleLogin(profile: GoogleProfile): GoogleAuthSession |
         subscriptionTier: "free",
         familyGroupId: null,
         status: "active",
+        emailVerified: true,
         createdAtMs: now,
         lastSeenAtMs: now,
         googleSub: profile.sub,

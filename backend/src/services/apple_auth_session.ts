@@ -45,6 +45,7 @@ export function completeAppleLogin(
         subscriptionTier: "free",
         familyGroupId: null,
         status: "active",
+        emailVerified: true,
         createdAtMs: now,
         lastSeenAtMs: now,
         appleSub: profile.sub,

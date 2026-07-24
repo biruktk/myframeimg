@@ -126,6 +126,28 @@ export type MyframeDb = {
     wechatUnionId?: string;
     /** Apple Sign-In `sub` (user identifier). */
     appleSub?: string;
+    /** FCM push notification tokens (registered by mobile apps). */
+    fcmTokens?: string[];
+    /** Email verified flag (undefined = grandfathered as verified). */
+    emailVerified?: boolean;
+  }>;
+  emailVerifications: Array<{
+    id: string;
+    userId: string;
+    email: string;
+    tokenHash: string;
+    expiresAtMs: number;
+    usedAtMs: number | null;
+    createdAtMs: number;
+  }>;
+  passwordResets: Array<{
+    id: string;
+    userId: string;
+    emailHash: string;
+    tokenHash: string;
+    expiresAtMs: number;
+    usedAtMs: number | null;
+    createdAtMs: number;
   }>;
   familyGroups: Array<{
     id: string;
@@ -394,6 +416,8 @@ function createInitialDb(): MyframeDb {
       quick_send_home: { enabled: true, tier: "all" },
       ai_generate: { enabled: true, tier: "pro" },
     },
+    emailVerifications: [],
+    passwordResets: [],
     auditLog: [],
     slideshowsByBleMac: {},
     commerceEvents: [],
@@ -451,6 +475,12 @@ function readDbRaw(): MyframeDb {
   }
   if (!Array.isArray(parsed.orders)) {
     parsed.orders = [];
+  }
+  if (!Array.isArray(parsed.emailVerifications)) {
+    parsed.emailVerifications = [];
+  }
+  if (!Array.isArray(parsed.passwordResets)) {
+    parsed.passwordResets = [];
   }
   if (!parsed.marketingSite || typeof parsed.marketingSite !== "object") {
     parsed.marketingSite = marketingSiteSeed();
