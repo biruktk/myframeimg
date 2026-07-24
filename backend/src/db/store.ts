@@ -290,6 +290,14 @@ export type MyframeDb = {
 
   marketingCms?: MarketingCmsState;
 
+  /** Guest frame photo upload invites (code → deviceId). */
+  frameGuestInvites?: Array<{
+    code: string;
+    deviceId: string;
+    ownerUserId: string | null;
+    createdAtMs: number;
+  }>;
+
   /** E‑commerce orders (marketing checkout — flat file; not a payments processor). */
   orders: Array<{
     id: string;
@@ -489,6 +497,9 @@ function readDbRaw(): MyframeDb {
     parsed.marketingCms = marketingCmsSeed();
   }
   hydrateManageRowIds(parsed);
+  if (!Array.isArray(parsed.frameGuestInvites)) {
+    parsed.frameGuestInvites = [];
+  }
   if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
     parsed.slideshowsByBleMac = {};
   }

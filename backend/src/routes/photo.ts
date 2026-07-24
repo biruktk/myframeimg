@@ -263,19 +263,13 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     }
   });
 
-  router.post("/frames/:mac/upload", requirePairingToken, uploadRateLimit, upload.single("photo"), async (req, res) => {
-    const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
-    if (!mac) {
-      res.status(400).json({ ok: false, error: "invalid_mac" });
-      return;
-    }
+  async function handleFrameUpload(req: express.Request, res: express.Response, deviceId: string) {
     try {
       const file = req.file;
       if (!file) {
         res.status(400).json({ ok: false, error: "missing_photo" });
         return;
       }
-      const deviceId = mac;
       const clientChecksum = String(req.body.checksum ?? "");
       const declaredSize = Number(req.body.size ?? file.size);
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
@@ -460,6 +454,30 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         error: e instanceof Error ? e.message : "upload_failed",
       });
     }
+  }
+
+  router.post("/frames/:mac/upload", requirePairingToken, uploadRateLimit, upload.single("photo"), async (req, res) => {
+    const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+    if (!mac) {
+      res.status(400).json({ ok: false, error: "invalid_mac" });
+      return;
+    }
+    await handleFrameUpload(req, res, mac);
+  });
+
+  router.post("/invite/:code/upload", uploadRateLimit, upload.single("photo"), async (req, res) => {
+    const code = String(req.params.code ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (code.length !== 8) {
+      res.status(400).json({ ok: false, error: "invalid_invite_code" });
+      return;
+    }
+    const { lookupFrameInviteDeviceId } = await import("../services/frame_guest_invite");
+    const deviceId = lookupFrameInviteDeviceId(code);
+    if (!deviceId) {
+      res.status(404).json({ ok: false, error: "invite_not_found" });
+      return;
+    }
+    await handleFrameUpload(req, res, deviceId);
   });
 
   router.get("/photo/delivery-status", requirePairingToken, (req, res) => {
