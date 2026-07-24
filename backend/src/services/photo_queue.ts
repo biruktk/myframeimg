@@ -151,40 +151,43 @@ function processQueue(): void {
       continue;
     }
 
-    processSlideshow(data, frame, now);
   }
+
+  processAllSlideshows(data, now);
 }
 
-function processSlideshow(data: ReturnType<typeof db.read>, frame: typeof data.frames[number], now: number): void {
-  const macKey = normalizeBleKey(frame.bleMac || frame.id);
-  const slideshow = data.slideshowsByBleMac?.[macKey];
-  if (!slideshow || slideshow.imageIds.length === 0) return;
-  if (now < slideshow.nextPlayAtMs) return;
+function processAllSlideshows(data: ReturnType<typeof db.read>, now: number): void {
   if (!isMqttConnected()) return;
+  const sb = data.slideshowsByBleMac;
+  if (!sb) return;
+  for (const [macKey, slideshow] of Object.entries(sb)) {
+    if (!slideshow || slideshow.imageIds.length === 0) continue;
+    if (now < slideshow.nextPlayAtMs) continue;
 
-  const imageId = slideshow.imageIds[slideshow.currentIndex];
-  const upload = data.uploads.find((u) => u.id === imageId) ?? data.uploads.find((u) => u.filename === imageId);
-  if (!upload) {
-    db.mutate((draft) => {
-      const s = draft.slideshowsByBleMac?.[macKey];
-      if (s) s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
-    });
-    return;
+    const imageId = slideshow.imageIds[slideshow.currentIndex];
+    const upload = data.uploads.find((u) => u.id === imageId) ?? data.uploads.find((u) => u.filename === imageId);
+    if (!upload) {
+      db.mutate((draft) => {
+        const s = draft.slideshowsByBleMac?.[macKey];
+        if (s) s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
+      });
+      continue;
+    }
+
+    const imageUrl = `${publicBaseUrl}/frame-media/${encodeURIComponent(upload.filename)}`;
+    publishPlayImage(macKey, imageUrl).then(() => {
+      db.mutate((draft) => {
+        const s = draft.slideshowsByBleMac?.[macKey];
+        if (!s) return;
+        s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
+        s.nextPlayAtMs = Date.now() + s.intervalMinutes * 60 * 1000;
+        const upd = draft.uploads.find((u) => u.id === imageId || u.filename === imageId);
+        if (upd) {
+          upd.deliveredToFrame = true;
+          upd.deliveryMode = "slideshow";
+          upd.deliveryCheckedAtMs = Date.now();
+        }
+      });
+    }).catch(() => {});
   }
-
-  const imageUrl = `${publicBaseUrl}/frame-media/${encodeURIComponent(upload.filename)}`;
-  publishPlayImage(frame.id, imageUrl).then(() => {
-    db.mutate((draft) => {
-      const s = draft.slideshowsByBleMac?.[macKey];
-      if (!s) return;
-      s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
-      s.nextPlayAtMs = Date.now() + s.intervalMinutes * 60 * 1000;
-      const upd = draft.uploads.find((u) => u.id === imageId);
-      if (upd) {
-        upd.deliveredToFrame = true;
-        upd.deliveryMode = "slideshow";
-        upd.deliveryCheckedAtMs = Date.now();
-      }
-    });
-  }).catch(() => {});
 }
