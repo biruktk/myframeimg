@@ -29,9 +29,12 @@
       "familyGroupId": null,
       "status": "active",
       "createdAtMs": 1779008798560,
-      "lastSeenAtMs": 1779008799668,
+      "lastSeenAtMs": 1784822269273,
       "passwordSalt": "ee81d1ed0d8b2d540214caf68732d094",
-      "passwordHash": "f380cef31d34962d7423335a135ae282596cb4c4a1ce9c85c7e3348976934cad8ef7907d8ddddfc770cf279b75754c7052322152ef85b4a165257e2850e79753"
+      "passwordHash": "f380cef31d34962d7423335a135ae282596cb4c4a1ce9c85c7e3348976934cad8ef7907d8ddddfc770cf279b75754c7052322152ef85b4a165257e2850e79753",
+      "fcmTokens": [
+        "test-fcm-token-123"
+      ]
     }
   ],
   "familyGroups": [
@@ -131,6 +134,23 @@
     }
   },
   "auditLog": [
+    {
+      "id": "audit_1784822283791_6108",
+      "actor": "user:usr_test_995fdb0a",
+      "action": "forgot_password_requested",
+      "target": "usr_test_995fdb0a",
+      "atMs": 1784822283791
+    },
+    {
+      "id": "audit_1784822269273_3dc5",
+      "actor": "user:usr_test_995fdb0a",
+      "action": "login",
+      "target": "usr_test_995fdb0a",
+      "atMs": 1784822269273,
+      "meta": {
+        "email": "test@myframe.local"
+      }
+    },
     {
       "id": "audit_1779008799669_591a",
       "actor": "user:usr_test_995fdb0a",
@@ -725,6 +745,17 @@
       "question": "What if upload fails?",
       "answer": "Check Wi‑Fi/Bluetooth and try again. In offline mode, use SD export.",
       "updatedAtMs": 1778331814791
+    }
+  ],
+  "passwordResets": [
+    {
+      "id": "pwreset_1784822283791_efadfa24",
+      "userId": "usr_test_995fdb0a",
+      "emailHash": "16667e3ef633cc93eac5e691fc4a85a05e82e8ffd147bbf90dbb9a10e3c7438e",
+      "tokenHash": "90bd5f6d8780e1809f75b1dd913b2f1760a7cf80bb14d122f866119c34cccb7f",
+      "expiresAtMs": 1784825883791,
+      "usedAtMs": null,
+      "createdAtMs": 1784822283791
     }
   ]
 }

@@ -4,7 +4,7 @@ import { db } from "../db/store";
 import { signUserJwt, verifyUserJwtBearer } from "../services/app_user_jwt";
 import { handleGoogleAuthPost } from "../handlers/google_auth_post";
 import { handleAppleAuthPost } from "../handlers/apple_auth_post";
-import { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangedNotification } from "../services/email_service";
+import { isSmtpConfigured, sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangedNotification } from "../services/email_service";
 
 export const authRouter = Router();
 const TEST_USER_EMAIL = "test@myframe.local";
@@ -60,8 +60,7 @@ authRouter.post("/auth/register", (req, res) => {
   const now = Date.now();
   const { saltHex, hashHex } = hashNewPassword(password);
   const id = `usr_${now}_${crypto.randomBytes(4).toString("hex")}`;
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const smtpAvailable = isSmtpConfigured();
 
   db.mutate((draft) => {
     const fallbackOrgId = draft.organizations[0]?.id ?? "org_default";
@@ -73,21 +72,26 @@ authRouter.post("/auth/register", (req, res) => {
       subscriptionTier: "free",
       familyGroupId: null,
       status: "active",
-      emailVerified: false,
+      emailVerified: !smtpAvailable,
       createdAtMs: now,
       lastSeenAtMs: now,
       passwordSalt: saltHex,
       passwordHash: hashHex,
     });
-    draft.emailVerifications.push({
-      id: `emailver_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
-      userId: id,
-      email,
-      tokenHash,
-      expiresAtMs: Date.now() + 86_400_000,
-      usedAtMs: null,
-      createdAtMs: Date.now(),
-    });
+    if (smtpAvailable) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      draft.emailVerifications.push({
+        id: `emailver_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+        userId: id,
+        email,
+        tokenHash,
+        expiresAtMs: Date.now() + 86_400_000,
+        usedAtMs: null,
+        createdAtMs: Date.now(),
+      });
+      void sendVerificationEmail(email, rawToken);
+    }
     draft.settings.account.name = draft.settings.account.name || name;
     draft.settings.account.email = draft.settings.account.email || email;
     draft.auditLog.unshift({
@@ -100,12 +104,19 @@ authRouter.post("/auth/register", (req, res) => {
     });
   });
 
-  void sendVerificationEmail(email, rawToken);
-
-  res.status(201).json({
-    ok: true,
-    message: "verification_email_sent",
-  });
+  if (smtpAvailable) {
+    res.status(201).json({
+      ok: true,
+      message: "verification_email_sent",
+    });
+  } else {
+    const token = issueToken(id, email);
+    res.status(201).json({
+      ok: true,
+      token,
+      user: { id, email, name },
+    });
+  }
 });
 
 authRouter.post("/auth/login", (req, res) => {

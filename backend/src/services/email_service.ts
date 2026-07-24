@@ -3,6 +3,12 @@ import nodemailer from "nodemailer";
 import { isFirebaseConfigured, sendPushToUser } from "./firebase_admin";
 import { db } from "../db/store";
 
+export function isSmtpConfigured(): boolean {
+  const host = String(process.env.SMTP_HOST ?? "").trim();
+  const user = String(process.env.SMTP_USER ?? "").trim();
+  return !!(host && user);
+}
+
 function makeTransporter(): nodemailer.Transporter | null {
   const host = String(process.env.SMTP_HOST ?? "").trim();
   const port = Number(process.env.SMTP_PORT || 587);
