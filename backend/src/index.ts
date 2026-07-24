@@ -21,6 +21,7 @@ import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
 import { mobileGoogleAuthRouter } from "./routes/mobile_google_auth";
 import { wechatMobileAuthRouter } from "./routes/wechat_mobile_auth";
+import { wechatPhoneRouter } from "./routes/wechat_phone";
 import { isGoogleOAuthRedirectConfigured } from "./services/google_oauth_mobile";
 import { startFrameMqtt } from "./services/frame_mqtt";
 
@@ -144,6 +145,7 @@ app.use("/api", faqRouter);
 app.use("/api", frameCloudRouter(mediaPublicBaseUrl));
 app.use("/api", mobileGoogleAuthRouter);
 app.use("/api", wechatMobileAuthRouter);
+app.use("/api", wechatPhoneRouter);
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
 
