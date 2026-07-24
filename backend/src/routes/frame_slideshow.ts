@@ -57,11 +57,12 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
   const now = Date.now();
   db.mutate((draft) => {
     if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
+    const startIndex = skipPlay && ids.length > 1 ? 1 : 0;
     draft.slideshowsByBleMac[macKey] = {
       imageIds: ids,
       intervalMinutes,
       updatedAtMs: now,
-      currentIndex: 0,
+      currentIndex: startIndex,
       nextPlayAtMs: skipPlay ? now + intervalMinutes * 60 * 1000 : now,
     };
   });
