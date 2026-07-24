@@ -29,10 +29,11 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
     return;
   }
 
-  const body = req.body as { imageIds?: unknown; intervalMinutes?: unknown };
+  const body = req.body as { imageIds?: unknown; intervalMinutes?: unknown; skipPlay?: unknown };
   const rawIds = body.imageIds;
   const ids = Array.isArray(rawIds) ? rawIds.map((x) => String(x ?? "").trim()).filter((x) => x.length > 0) : [];
   const intervalMinutes = Math.round(Number(body.intervalMinutes));
+  const skipPlay = body.skipPlay === true || String(body.skipPlay ?? "").trim() === "true";
 
   if (intervalMinutes < 1 || !isFinite(intervalMinutes)) {
     res.status(422).json({
@@ -61,11 +62,11 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
       intervalMinutes,
       updatedAtMs: now,
       currentIndex: 0,
-      nextPlayAtMs: now,
+      nextPlayAtMs: skipPlay ? now + intervalMinutes * 60 * 1000 : now,
     };
   });
 
-  res.json({ ok: true, macKey, imageIds: ids, intervalMinutes });
+  res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, skipPlay });
 });
 
   return router;

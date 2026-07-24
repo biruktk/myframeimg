@@ -75,6 +75,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const declaredSize = Number(req.body.size ?? file.size);
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
+      const skipPlay = String(req.body.skip_play ?? "").trim() === "true";
 
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -145,33 +146,35 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
       let queued = false;
-      const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
-      if (mqttMacForUpload) {
-        if (!isMqttConnected()) {
-          deliveryMode = "mqtt_disconnected";
-          enqueueUpload(deviceId, uploadId);
-          queued = true;
-        } else if (!isDeliverySlotFree(deviceId)) {
-          deliveryMode = "queued_slot_busy";
-          enqueueUpload(deviceId, uploadId);
-          queued = true;
-        } else {
-          let publicHost = "";
-          try {
-            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
-          } catch {
-            /* ignore */
-          }
-          try {
-            await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
-            deliveredToFrame = true;
-            deliveryMode = "vps_mqtt";
-            scheduleNextDelivery(deviceId);
-          } catch (err) {
-            console.error("[photo] MQTT play publish failed:", err);
-            deliveryMode = "mqtt_publish_failed";
+      if (!skipPlay) {
+        const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
+        if (mqttMacForUpload) {
+          if (!isMqttConnected()) {
+            deliveryMode = "mqtt_disconnected";
             enqueueUpload(deviceId, uploadId);
             queued = true;
+          } else if (!isDeliverySlotFree(deviceId)) {
+            deliveryMode = "queued_slot_busy";
+            enqueueUpload(deviceId, uploadId);
+            queued = true;
+          } else {
+            let publicHost = "";
+            try {
+              publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
+            } catch {
+              /* ignore */
+            }
+            try {
+              await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+              deliveredToFrame = true;
+              deliveryMode = "vps_mqtt";
+              scheduleNextDelivery(deviceId);
+            } catch (err) {
+              console.error("[photo] MQTT play publish failed:", err);
+              deliveryMode = "mqtt_publish_failed";
+              enqueueUpload(deviceId, uploadId);
+              queued = true;
+            }
           }
         }
       }
@@ -274,6 +277,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const declaredSize = Number(req.body.size ?? file.size);
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
+      const skipPlay = String(req.body.skip_play ?? "").trim() === "true";
 
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -343,33 +347,35 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
       let queued = false;
-      const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
-      if (mqttMacForUpload) {
-        if (!isMqttConnected()) {
-          deliveryMode = "mqtt_disconnected";
-          enqueueUpload(deviceId, uploadId);
-          queued = true;
-        } else if (!isDeliverySlotFree(deviceId)) {
-          deliveryMode = "queued_slot_busy";
-          enqueueUpload(deviceId, uploadId);
-          queued = true;
-        } else {
-          let publicHost = "";
-          try {
-            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
-          } catch {
-            /* ignore */
-          }
-          try {
-            await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
-            deliveredToFrame = true;
-            deliveryMode = "vps_mqtt";
-            scheduleNextDelivery(deviceId);
-          } catch (err) {
-            console.error("[photo] MQTT play publish failed:", err);
-            deliveryMode = "mqtt_publish_failed";
+      if (!skipPlay) {
+        const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
+        if (mqttMacForUpload) {
+          if (!isMqttConnected()) {
+            deliveryMode = "mqtt_disconnected";
             enqueueUpload(deviceId, uploadId);
             queued = true;
+          } else if (!isDeliverySlotFree(deviceId)) {
+            deliveryMode = "queued_slot_busy";
+            enqueueUpload(deviceId, uploadId);
+            queued = true;
+          } else {
+            let publicHost = "";
+            try {
+              publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
+            } catch {
+              /* ignore */
+            }
+            try {
+              await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+              deliveredToFrame = true;
+              deliveryMode = "vps_mqtt";
+              scheduleNextDelivery(deviceId);
+            } catch (err) {
+              console.error("[photo] MQTT play publish failed:", err);
+              deliveryMode = "mqtt_publish_failed";
+              enqueueUpload(deviceId, uploadId);
+              queued = true;
+            }
           }
         }
       }

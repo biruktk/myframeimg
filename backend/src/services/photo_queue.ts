@@ -42,12 +42,37 @@ export function scheduleNextDelivery(deviceId: string): void {
   });
 }
 
+function normalizeBleKey(raw: string): string {
+  try {
+    return decodeURIComponent(raw).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+  } catch {
+    return raw.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+  }
+}
+
+function hasActiveSlideshow(data: ReturnType<typeof db.read>, mac: string): boolean {
+  const macKey = normalizeBleKey(mac);
+  const s = data.slideshowsByBleMac?.[macKey];
+  return !!(s && s.imageIds.length > 0);
+}
+
 export function playAckReceived(macRaw: string): void {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return;
   const data = db.read();
   const frame = data.frames.find((f) => resolveMqttHardwareMac(f.id) === mac);
   if (!frame) return;
+
+  if (hasActiveSlideshow(data, mac)) {
+    db.mutate((draft) => {
+      draft.frames = draft.frames.map((f) => {
+        if (f.id !== frame.id) return f;
+        return { ...f, nextDeliveryAtMs: null };
+      });
+    });
+    return;
+  }
+
   const q = frame.pendingQueue || [];
   if (q.length === 0) {
     db.mutate((draft) => {
@@ -127,14 +152,6 @@ function processQueue(): void {
     }
 
     processSlideshow(data, frame, now);
-  }
-}
-
-function normalizeBleKey(raw: string): string {
-  try {
-    return decodeURIComponent(raw).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
-  } catch {
-    return raw.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
   }
 }
 
