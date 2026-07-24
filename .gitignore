@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# Local DB files (generated at runtime)
+data/
+backend/data/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -42,3 +46,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+backend/data/
