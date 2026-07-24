@@ -146,8 +146,9 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
       let queued = false;
+      let mqttMacForUpload: string | null = null;
       if (!skipPlay) {
-        const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
+        mqttMacForUpload = resolveMqttHardwareMac(deviceId);
         if (mqttMacForUpload) {
           if (!isMqttConnected()) {
             deliveryMode = "mqtt_disconnected";
@@ -180,6 +181,9 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       }
 
       db.mutate((draft) => {
+        if (mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
+          delete draft.slideshowsByBleMac[mqttMacForUpload];
+        }
         draft.device.connected = true;
         draft.device.transport.wifi = transport === "wifi" || draft.device.transport.wifi;
         draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
@@ -347,8 +351,9 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       let deliveredToFrame = false;
       let deliveryMode = "stored_only";
       let queued = false;
+      let mqttMacForUpload: string | null = null;
       if (!skipPlay) {
-        const mqttMacForUpload = resolveMqttHardwareMac(deviceId);
+        mqttMacForUpload = resolveMqttHardwareMac(deviceId);
         if (mqttMacForUpload) {
           if (!isMqttConnected()) {
             deliveryMode = "mqtt_disconnected";
@@ -381,6 +386,9 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       }
 
       db.mutate((draft) => {
+        if (mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
+          delete draft.slideshowsByBleMac[mqttMacForUpload];
+        }
         draft.device.connected = true;
         draft.device.transport.wifi = transport === "wifi" || draft.device.transport.wifi;
         draft.device.transport.bluetooth = transport === "bluetooth" || draft.device.transport.bluetooth;
