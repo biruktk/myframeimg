@@ -163,7 +163,7 @@ function processSlideshow(data: ReturnType<typeof db.read>, frame: typeof data.f
   if (!isMqttConnected()) return;
 
   const imageId = slideshow.imageIds[slideshow.currentIndex];
-  const upload = data.uploads.find((u) => u.id === imageId);
+  const upload = data.uploads.find((u) => u.id === imageId) ?? data.uploads.find((u) => u.filename === imageId);
   if (!upload) {
     db.mutate((draft) => {
       const s = draft.slideshowsByBleMac?.[macKey];
