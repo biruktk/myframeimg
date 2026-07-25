@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db/store";
 import { requirePairingToken } from "../middleware/security";
+import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import {
   getFrame,
   isFrameMqttOnline,
@@ -117,8 +118,12 @@ framePairingRouter.get("/frames/:mac/history", (req, res) => {
     return;
   }
   const data = db.read();
-  const uploads = data.uploads
-    .filter((u) => resolveMqttHardwareMac(u.deviceId) === mac)
+  const authed = verifyUserJwtBearer(req);
+  let filtered = data.uploads.filter((u) => resolveMqttHardwareMac(u.deviceId) === mac);
+  if (authed?.userId) {
+    filtered = filtered.filter((u) => u.uploaderUserId === authed.userId);
+  }
+  const uploads = filtered
     .sort((a, b) => b.atMs - a.atMs)
     .slice(0, 20)
     .map((u) => ({

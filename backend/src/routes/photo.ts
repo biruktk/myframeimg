@@ -5,6 +5,7 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
+import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import {
   enqueueUpload,
@@ -213,6 +214,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           deliveredToFrame,
           deliveryMode,
           deliveryCheckedAtMs: now,
+          uploaderUserId: verifyUserJwtBearer(req)?.userId,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
@@ -418,6 +420,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           deliveredToFrame,
           deliveryMode,
           deliveryCheckedAtMs: now,
+          uploaderUserId: verifyUserJwtBearer(req)?.userId,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);

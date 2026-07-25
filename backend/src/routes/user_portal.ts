@@ -208,7 +208,7 @@ userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
   const data = db.read();
   const frameIds = visibleFrameIdsForUser(auth.userId);
   const photos = data.uploads
-    .filter((u) => frameIds.includes(u.deviceId))
+    .filter((u) => frameIds.includes(u.deviceId) && u.uploaderUserId === auth.userId)
     .sort((a, b) => b.atMs - a.atMs)
     .slice(0, 200)
     .map((u) => ({

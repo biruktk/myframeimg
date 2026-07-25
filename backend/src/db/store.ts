@@ -213,6 +213,7 @@ export type MyframeDb = {
     deliveredToFrame?: boolean;
     deliveryMode?: string;
     deliveryCheckedAtMs?: number;
+    uploaderUserId?: string;
   }>;
   playlists: Array<{
     id: string;
