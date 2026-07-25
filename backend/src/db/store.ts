@@ -171,6 +171,8 @@ export type MyframeDb = {
     nextDeliveryAtMs: number | null;
     location?: { lat: number; lng: number };
     ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
+    sleepConfig?: { enabled: boolean; startTime: string; endTime: string };
+    stationMac?: string;
   }>;
   device: {
     id: string;
@@ -251,6 +253,7 @@ export type MyframeDb = {
     atMs: number;
     meta?: Record<string, unknown>;
   }>;
+  sleepConfigs?: Record<string, { enabled: boolean; startTime: string; endTime: string }>;
   faqs: Array<{
     id: string;
     question: string;
@@ -430,6 +433,7 @@ function createInitialDb(): MyframeDb {
     emailVerifications: [],
     passwordResets: [],
     auditLog: [],
+    sleepConfigs: {},
     slideshowsByBleMac: {},
     commerceEvents: [],
     notifySubscribers: [],
@@ -483,6 +487,9 @@ function readDbRaw(): MyframeDb {
   }
   if (!Array.isArray(parsed.notifySubscribers)) {
     parsed.notifySubscribers = [];
+  }
+  if (!parsed.sleepConfigs || typeof parsed.sleepConfigs !== "object") {
+    parsed.sleepConfigs = {};
   }
   if (!Array.isArray(parsed.orders)) {
     parsed.orders = [];

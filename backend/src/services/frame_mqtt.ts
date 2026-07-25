@@ -5,6 +5,7 @@
 
 import crypto from "crypto";
 import mqtt from "mqtt";
+import { db } from "../db/store";
 
 export type FrameRecord = {
   lastSeen: number;
@@ -13,6 +14,9 @@ export type FrameRecord = {
   lastResult?: number | string;
   lastUploadMs?: number;
   displayed?: boolean;
+  battery?: number;
+  storageTotal?: number;
+  storageUsed?: number;
   config: Record<string, unknown>;
 };
 
@@ -113,6 +117,16 @@ function handleMessage(topic: string, raw: Buffer) {
     if (n === 104) rec.displayed = false;
   }
 
+  if (d && typeof d === "object") {
+    var bat = Number(d.battery);
+    if (Number.isFinite(bat) && bat >= 0) rec.battery = bat;
+    var tfSize = Number(d.tfsize);
+    if (Number.isFinite(tfSize) && tfSize > 0) rec.storageTotal = tfSize;
+    var tfUsed = Number(d.tfused);
+    if (Number.isFinite(tfUsed) && tfUsed >= 0) rec.storageUsed = tfUsed;
+  }
+
+
   if (action === "play_ack" || action === "play") {
     const uploadMs = Number(data.msgid ?? data.upload_ms ?? data.last_upload_ms);
     if (Number.isFinite(uploadMs) && uploadMs > 0) {
@@ -132,6 +146,14 @@ function handleMessage(topic: string, raw: Buffer) {
         stationType: d?.statype,
         stamac: data.stamac,
       };
+      
+      if (mac.length === 12) {
+        db.mutate(function(draft) {
+          var prefix = mac.slice(0, 10);
+          var match = draft.frames.find(function(f) { return normalizeMac(f.bleMac).startsWith(prefix) && !f.stationMac; });
+          if (match) match.stationMac = mac;
+        });
+      }
       break;
     }
     default:
@@ -338,5 +360,39 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       if (err) reject(err);
       else resolve();
     });
+  });
+}
+
+/** Publish an MQTT action command (sleep/wake) to /inkjoyap/{MAC}. */
+export function publishMqttAction(macRaw: string, action: string, msgid?: string): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  return publishJson(`/inkjoyap/${mac}`, {
+    msgid: msgid ?? Date.now().toString(),
+    action: action,
+    stamac: mac,
+  });
+}
+
+/** Send sleep schedule to the frame via ntp config. */
+export function publishSleepConfig(
+  macRaw: string,
+  config: { enabled: boolean; startTime: string; endTime: string },
+  msgid?: string,
+): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  // retained so frame receives on reconnection
+  return publishJson("/inkjoyap/" + mac, {
+    msgid: msgid ?? Date.now().toString(),
+    action: "config",
+    stamac: mac,
+    data: {
+      ntp: {
+        enable: config.enabled ? 1 : 0,
+        sleep_start: config.startTime,
+        sleep_end: config.endTime,
+      },
+    },
   });
 }

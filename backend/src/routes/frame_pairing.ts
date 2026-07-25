@@ -13,32 +13,48 @@ import {
 
 export const framePairingRouter = Router();
 
+function isInSleepWindow(paired: { sleepConfig?: { enabled: boolean; startTime: string; endTime: string } } | undefined): boolean {
+  if (!paired?.sleepConfig?.enabled) return false;
+  var now = new Date();
+  var curMin = now.getHours() * 60 + now.getMinutes();
+  var startParts = paired.sleepConfig.startTime.split(":").map(Number);
+  var endParts = paired.sleepConfig.endTime.split(":").map(Number);
+  if (startParts.length < 2 || endParts.length < 2) return false;
+  var startMin = startParts[0] * 60 + startParts[1];
+  var endMin = endParts[0] * 60 + endParts[1];
+  if (startMin <= endMin) return curMin >= startMin && curMin < endMin;
+  return curMin >= startMin || curMin < endMin;
+}
+
 function frameStatusPayload(macRaw: string) {
-  const mac = resolveMqttHardwareMac(macRaw);
+  var mac = resolveMqttHardwareMac(macRaw);
   if (!mac) {
-    return { ok: false as const, error: "invalid_mac" };
+    return { ok: false, error: "invalid_mac" };
   }
 
-  const rec = getFrame(mac);
-  const data = db.read();
-  const paired = data.frames.find((f) => resolveMqttHardwareMac(f.id) === mac);
-  const frameLive = isFrameMqttOnline(mac) || (paired != null && paired.wifiStatus !== "never_provisioned");
-  const apiMqtt = isMqttConnected();
-  const lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;
+  var rec = getFrame(mac);
+  var data = db.read();
+  var paired = data.frames.find(
+    function(f) { return [f.id, f.bleMac].some(function(id) { return resolveMqttHardwareMac(id) === mac; }); },
+  );
+  var frameLive = isFrameMqttOnline(mac) || (paired != null && paired.wifiStatus !== "never_provisioned");
+  var sleeping = isInSleepWindow(paired);
+  var apiMqtt = isMqttConnected();
+  var lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;
 
   return {
-    ok: true as const,
+    ok: true,
     device_id: mac,
     online: frameLive,
-    status: frameLive ? "online" : "offline",
+    sleeping: sleeping,
+    status: sleeping ? "sleeping" : frameLive ? "online" : "offline",
     app_paired: !!paired,
-    battery: 100,
+    battery: rec?.battery ?? 100,
     wifi: paired?.wifiSsid ?? data.device.room ?? "",
-    storage_used_mb: Math.round(data.device.usedBytes / 1024 / 1024),
+    storage_used_mb: rec?.storageUsed ?? Math.round(data.device.usedBytes / 1024 / 1024),
+    storage_total_mb: rec?.storageTotal ?? 32000,
     photo_count: paired?.pendingQueue?.length ?? data.device.photoCount ?? 0,
-    /** Frame reported on MQTT recently (login/heart/play). */
     mqtt_connected: frameLive,
-    /** API process can publish play/login to Mosquitto. */
     api_mqtt_connected: apiMqtt,
     frame_mqtt_live: frameLive,
     last_seen_ms: lastSeen,
@@ -51,9 +67,8 @@ function frameStatusPayload(macRaw: string) {
   };
 }
 
-/** GET /api/frames/:mac/status — live MQTT presence for apps (WeChat + iOS). */
-framePairingRouter.get("/frames/:mac/status", (req, res) => {
-  const payload = frameStatusPayload(String(req.params.mac ?? ""));
+framePairingRouter.get("/frames/:mac/status", function(req, res) {
+  var payload = frameStatusPayload(String(req.params.mac ?? ""));
   if (!payload.ok) {
     res.status(400).json(payload);
     return;
@@ -61,20 +76,19 @@ framePairingRouter.get("/frames/:mac/status", (req, res) => {
   res.json(payload);
 });
 
-/** POST /api/frames/:mac/login-ack — publish wake/login on `/inkjoyap/{MAC}`. */
-framePairingRouter.post("/frames/:mac/login-ack", requirePairingToken, async (req, res) => {
-  const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+framePairingRouter.post("/frames/:mac/login-ack", requirePairingToken, async function(req, res) {
+  var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
   if (!mac) {
     res.status(400).json({ ok: false, error: "invalid_mac" });
     return;
   }
-  const body = (req.body ?? {}) as { msgid?: string; stamac?: string };
-  const msgid = String(body.msgid ?? Date.now());
+  var body = (req.body ?? {}) as { msgid?: string; stamac?: string };
+  var msgid = String(body.msgid ?? Date.now());
   try {
     await publishLoginAck(mac, msgid);
     res.json({ ok: true, stamac: mac, msgid });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "mqtt_publish_failed";
+    var message = err instanceof Error ? err.message : "mqtt_publish_failed";
     res.status(isMqttConnected() ? 502 : 503).json({
       ok: false,
       error: message,
@@ -83,15 +97,14 @@ framePairingRouter.post("/frames/:mac/login-ack", requirePairingToken, async (re
   }
 });
 
-/** POST /api/frames/:mac/mqtt-config — retained broker JSON on `/inkjoyap/{MAC}`. */
-framePairingRouter.post("/frames/:mac/mqtt-config", requirePairingToken, async (req, res) => {
-  const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+framePairingRouter.post("/frames/:mac/mqtt-config", requirePairingToken, async function(req, res) {
+  var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
   if (!mac) {
     res.status(400).json({ ok: false, error: "invalid_mac" });
     return;
   }
-  const body = (req.body ?? {}) as { msgid?: string };
-  const msgid = String(body.msgid ?? Date.now());
+  var body = (req.body ?? {}) as { msgid?: string };
+  var msgid = String(body.msgid ?? Date.now());
   try {
     await publishRetainedMqttConfig(mac, msgid);
     res.json({
@@ -101,7 +114,7 @@ framePairingRouter.post("/frames/:mac/mqtt-config", requirePairingToken, async (
       delivery_mode: "vps_mqtt_config_retain",
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "mqtt_publish_failed";
+    var message = err instanceof Error ? err.message : "mqtt_publish_failed";
     res.status(isMqttConnected() ? 502 : 503).json({
       ok: false,
       error: message,
@@ -110,23 +123,23 @@ framePairingRouter.post("/frames/:mac/mqtt-config", requirePairingToken, async (
   }
 });
 
-/** GET /api/frames/:mac/history — recent uploads for a frame (newest first, max 20). */
-framePairingRouter.get("/frames/:mac/history", (req, res) => {
-  const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+framePairingRouter.get("/frames/:mac/history", function(req, res) {
+  var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
   if (!mac) {
     res.status(400).json({ ok: false, error: "invalid_mac" });
     return;
   }
-  const data = db.read();
-  const authed = verifyUserJwtBearer(req);
-  let filtered = data.uploads.filter((u) => resolveMqttHardwareMac(u.deviceId) === mac);
-  if (authed?.userId) {
-    filtered = filtered.filter((u) => u.uploaderUserId === authed.userId);
+  var data = db.read();
+  var authed = verifyUserJwtBearer(req);
+  var filtered = data.uploads.filter(function(u) { return resolveMqttHardwareMac(u.deviceId) === mac; });
+  var authedId = authed?.userId;
+  if (authedId) {
+    filtered = filtered.filter(function(u) { return u.uploaderUserId === authedId; });
   }
-  const uploads = filtered
-    .sort((a, b) => b.atMs - a.atMs)
+  var uploads = filtered
+    .sort(function(a, b) { return b.atMs - a.atMs; })
     .slice(0, 20)
-    .map((u) => ({
+    .map(function(u) { return {
       id: u.id,
       filename: u.filename,
       atMs: u.atMs,
@@ -134,10 +147,10 @@ framePairingRouter.get("/frames/:mac/history", (req, res) => {
       checksumSha256: u.checksumSha256,
       deliveredToFrame: u.deliveredToFrame,
       deliveryMode: u.deliveryMode,
-      imageUrl: `/frame-media/${encodeURIComponent(u.filename)}`,
+      imageUrl: "/frame-media/" + encodeURIComponent(u.filename),
       previewUrl: u.previewFilename
-        ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
+        ? "/frame-media/" + encodeURIComponent(u.previewFilename)
         : undefined,
-    }));
+    }; });
   res.json({ ok: true, images: uploads });
 });
