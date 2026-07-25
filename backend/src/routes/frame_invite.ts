@@ -87,6 +87,35 @@ export function frameInviteRouter() {
     });
   });
 
+  /** POST /api/invite/:code/bind-account — guest binds frame to their account after invite. */
+  router.post("/invite/:code/bind-account", (req, res) => {
+    const auth = authUser(req, res);
+    if (!auth) return;
+    const code = String(req.params.code ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (code.length !== 8) {
+      res.status(400).json({ ok: false, error: "invalid_invite_code" });
+      return;
+    }
+    const data = db.read();
+    const invite = data.frameGuestInvites?.find((r) => r.code === code);
+    if (!invite) {
+      res.status(404).json({ ok: false, error: "invite_not_found" });
+      return;
+    }
+    const frame = data.frames.find((f) => f.id === invite.deviceId);
+    if (!frame) {
+      res.status(404).json({ ok: false, error: "frame_not_found" });
+      return;
+    }
+    if (frame.sharedToUserIds.includes(auth.userId)) {
+      res.json({ ok: true, success: true, frameMac: frame.bleMac, frameName: frame.id, alreadyBound: true });
+      return;
+    }
+    frame.sharedToUserIds.push(auth.userId);
+    db.write(data);
+    res.json({ ok: true, success: true, frameMac: frame.bleMac, frameName: frame.id, alreadyBound: false });
+  });
+
   /** GET /api/invite/:code/qr — PNG QR code for invite. */
   router.get("/invite/:code/qr", async (req, res) => {
     try {

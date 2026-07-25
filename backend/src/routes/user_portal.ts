@@ -25,6 +25,7 @@ function visibleFrameIdsForUser(userId: string): string[] {
   const ids = new Set<string>();
   for (const f of data.frames) {
     if (f.ownerUserId === userId) ids.add(f.id);
+    if (f.sharedToUserIds?.includes(userId)) ids.add(f.id);
   }
   if (user?.familyGroupId) {
     const g = data.familyGroups.find((fg) => fg.id === user.familyGroupId);

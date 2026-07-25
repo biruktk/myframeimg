@@ -160,6 +160,7 @@ export type MyframeDb = {
     id: string;
     bleMac: string;
     ownerUserId: string;
+    sharedToUserIds: string[];
     orgId?: string;
     wifiSsid: string | null;
     wifiStatus: "online" | "offline" | "never_provisioned";
@@ -366,6 +367,7 @@ function createInitialDb(): MyframeDb {
         id: "YX-133P-001",
         bleMac: "D0:CF:13:F0:16:1E",
         ownerUserId: "usr_1",
+        sharedToUserIds: [],
         orgId: defaultOrgId,
         wifiSsid: null,
         wifiStatus: "never_provisioned",
