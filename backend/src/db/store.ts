@@ -120,10 +120,14 @@ export type MyframeDb = {
     passwordHash?: string;
     /** Google account `sub` from Sign-In (optional). */
     googleSub?: string;
-    /** WeChat Open Platform openid. */
+    /** WeChat Mini Program openid (optional). */
     wechatOpenId?: string;
+    /** WeChat mobile app (iOS/Android) openid (optional). */
+    iosOpenId?: string;
     /** WeChat UnionID (shared across apps). */
     wechatUnionId?: string;
+    /** E.164 phone number (from WeChat getPhoneNumber). */
+    phone?: string;
     /** Apple Sign-In `sub` (user identifier). */
     appleSub?: string;
     /** FCM push notification tokens (registered by mobile apps). */

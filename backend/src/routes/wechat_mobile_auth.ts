@@ -12,8 +12,8 @@ function env(name: string): string {
 }
 
 function wechatConfig(): { appid: string; secret: string } | null {
-  const appid = env("WECHAT_APPID") || env("WECHAT_MOBILE_APPID") || env("WECHAT_MINI_APPID");
-  const secret = env("WECHAT_APPSECRET") || env("WECHAT_MOBILE_APPSECRET") || env("WECHAT_MINI_APPSECRET");
+  const appid = env("WECHAT_APPID") || env("WECHAT_MOBILE_APPID");
+  const secret = env("WECHAT_APPSECRET") || env("WECHAT_MOBILE_APPSECRET");
   if (!appid || !secret) return null;
   return { appid, secret };
 }
@@ -69,9 +69,10 @@ function completeWeChatLogin(profile: {
   const email = fallbackEmail(profile.unionid || profile.openid);
   const name = String(profile.nickname ?? "").trim() || "WeChat User";
   const data = db.read();
+
   let user =
     data.users.find((u) => profile.unionid && u.wechatUnionId === profile.unionid) ??
-    data.users.find((u) => u.wechatOpenId === profile.openid) ??
+    data.users.find((u) => u.iosOpenId === profile.openid) ??
     data.users.find((u) => u.email.toLowerCase() === email);
 
   if (!user) {
@@ -86,16 +87,15 @@ function completeWeChatLogin(profile: {
         subscriptionTier: "free",
         familyGroupId: null,
         status: "active",
-        emailVerified: true,
         createdAtMs: now,
         lastSeenAtMs: now,
-        wechatOpenId: profile.openid,
+        iosOpenId: profile.openid,
         wechatUnionId: profile.unionid,
       });
       draft.auditLog.unshift({
         id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
         actor: `user:${id}`,
-        action: "register_wechat",
+        action: "register_wechat_mobile",
         target: id,
         atMs: now,
         meta: { unionid: profile.unionid ?? null },
@@ -113,7 +113,7 @@ function completeWeChatLogin(profile: {
               ...u,
               name: u.name?.trim() ? u.name : name,
               lastSeenAtMs: now,
-              wechatOpenId: u.wechatOpenId ?? profile.openid,
+              iosOpenId: u.iosOpenId ?? profile.openid,
               wechatUnionId: u.wechatUnionId ?? profile.unionid,
             }
           : u,
@@ -121,7 +121,7 @@ function completeWeChatLogin(profile: {
       draft.auditLog.unshift({
         id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
         actor: `user:${user!.id}`,
-        action: "login_wechat",
+        action: "login_wechat_mobile",
         target: user!.id,
         atMs: now,
         meta: { unionid: profile.unionid ?? null },

@@ -1,11 +1,36 @@
 import crypto from "crypto";
 import express from "express";
-
 import { db } from "../db/store";
 import { signUserJwt } from "../services/app_user_jwt";
 
 export const wechatPhoneRouter = express.Router();
+
 wechatPhoneRouter.use(express.json({ limit: "256kb" }));
+
+type WechatTokenResponse = {
+  access_token?: string;
+  expires_in?: number;
+  errcode?: number;
+  errmsg?: string;
+};
+
+type WechatSessionResponse = {
+  openid?: string;
+  unionid?: string;
+  session_key?: string;
+  errcode?: number;
+  errmsg?: string;
+};
+
+type WechatPhoneResponse = {
+  errcode?: number;
+  errmsg?: string;
+  phone_info?: {
+    phoneNumber?: string;
+    purePhoneNumber?: string;
+    countryCode?: string;
+  };
+};
 
 function env(name: string): string {
   return String(process.env[name] ?? "").trim();
@@ -28,9 +53,9 @@ function maskPhone(phone: string): string {
   return digits.slice(0, 3) + "****" + digits.slice(-4);
 }
 
-async function fetchJson(url: string, init?: RequestInit): Promise<Record<string, unknown>> {
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
-  return (await response.json()) as Record<string, unknown>;
+  return (await response.json()) as T;
 }
 
 async function getAccessToken(appid: string, secret: string): Promise<string> {
@@ -38,87 +63,87 @@ async function getAccessToken(appid: string, secret: string): Promise<string> {
   url.searchParams.set("grant_type", "client_credential");
   url.searchParams.set("appid", appid);
   url.searchParams.set("secret", secret);
-  const data = await fetchJson(url.toString());
+  const data = await fetchJson<WechatTokenResponse>(url.toString());
   if (!data.access_token) {
-    throw new Error(
-      `wechat_access_token_failed:${data.errcode ?? "unknown"}:${data.errmsg ?? ""}`,
-    );
+    throw new Error("wechat_access_token_failed:" + (data.errcode ?? "unknown") + ":" + (data.errmsg ?? ""));
   }
-  return data.access_token as string;
+  return data.access_token;
 }
 
-async function getOpenId(
-  appid: string,
-  secret: string,
-  loginCode: string,
-): Promise<Record<string, unknown>> {
+async function getOpenId(appid: string, secret: string, loginCode: string): Promise<WechatSessionResponse> {
   if (!loginCode) return {};
   const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
   url.searchParams.set("appid", appid);
   url.searchParams.set("secret", secret);
   url.searchParams.set("js_code", loginCode);
   url.searchParams.set("grant_type", "authorization_code");
-  const data = await fetchJson(url.toString());
+  const data = await fetchJson<WechatSessionResponse>(url.toString());
   if (data.errcode) {
-    throw new Error(
-      `wechat_session_failed:${data.errcode}:${data.errmsg ?? ""}`,
-    );
+    throw new Error("wechat_session_failed:" + data.errcode + ":" + (data.errmsg ?? ""));
   }
   return data;
 }
 
-async function getPhoneNumber(
-  accessToken: string,
-  phoneCode: string,
-): Promise<{ purePhoneNumber?: string; phoneNumber?: string }> {
-  const url =
-    `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${encodeURIComponent(accessToken)}`;
-  const data = await fetchJson(url, {
+async function getPhoneNumber(accessToken: string, phoneCode: string): Promise<WechatPhoneResponse["phone_info"]> {
+  const url = "https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=" + encodeURIComponent(accessToken);
+  const data = await fetchJson<WechatPhoneResponse>(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ code: phoneCode }),
   });
   if (data.errcode && data.errcode !== 0) {
-    throw new Error(
-      `wechat_phone_failed:${data.errcode}:${data.errmsg ?? ""}`,
-    );
+    throw new Error("wechat_phone_failed:" + data.errcode + ":" + (data.errmsg ?? ""));
   }
-  if (!data.phone_info || (!(data.phone_info as Record<string, unknown>).purePhoneNumber && !(data.phone_info as Record<string, unknown>).phoneNumber)) {
+  if (!data.phone_info?.purePhoneNumber && !data.phone_info?.phoneNumber) {
     throw new Error("wechat_phone_missing");
   }
-  return data.phone_info as { purePhoneNumber?: string; phoneNumber?: string };
+  return data.phone_info;
 }
 
 function upsertWechatPhoneUser(
   phone: string,
-  openid?: string,
+  openid: string | undefined,
+  unionid: string | undefined,
 ): { id: string; email: string; name: string } {
   const normalizedPhone = phone.replace(/\D/g, "") || phone;
   const phoneHash = hash(normalizedPhone);
-  const email = `wechat_${phoneHash.slice(0, 20)}@wechat.myframe.local`;
+  const email = "wechat_" + phoneHash.slice(0, 20) + "@wechat.myframe.local";
   const now = Date.now();
   const data = db.read();
-  const existing = data.users.find((u) => u.email.toLowerCase() === email);
+
+  let existing =
+    data.users.find((u) => unionid && u.wechatUnionId === unionid) ??
+    data.users.find((u) => openid && u.wechatOpenId === openid) ??
+    data.users.find((u) => u.phone === normalizedPhone) ??
+    data.users.find((u) => u.email.toLowerCase() === email);
 
   if (existing) {
     db.mutate((draft) => {
       draft.users = draft.users.map((u) =>
-        u.id === existing.id ? { ...u, lastSeenAtMs: now } : u,
+        u.id === existing!.id
+          ? {
+              ...u,
+              lastSeenAtMs: now,
+              wechatOpenId: u.wechatOpenId || openid,
+              wechatUnionId: u.wechatUnionId || unionid,
+              phone: u.phone || normalizedPhone,
+            }
+          : u,
       );
       draft.auditLog.unshift({
-        id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
-        actor: `user:${existing.id}`,
+        id: "audit_" + now + "_" + crypto.randomBytes(2).toString("hex"),
+        actor: "user:" + existing!.id,
         action: "wechat_phone_login",
-        target: existing.id,
+        target: existing!.id,
         atMs: now,
-        meta: { openid: openid ?? null },
+        meta: { openid: openid || null, unionid: unionid || null },
       });
     });
     return { id: existing.id, email: existing.email, name: existing.name };
   }
 
-  const id = `usr_wx_${phoneHash.slice(0, 12)}_${crypto.randomBytes(3).toString("hex")}`;
-  const name = `WeChat ${maskPhone(normalizedPhone)}`;
+  const id = "usr_wx_" + phoneHash.slice(0, 12) + "_" + crypto.randomBytes(3).toString("hex");
+  const name = "WeChat " + maskPhone(normalizedPhone);
   db.mutate((draft) => {
     const fallbackOrgId = draft.organizations[0]?.id ?? "org_default";
     draft.users.push({
@@ -131,14 +156,17 @@ function upsertWechatPhoneUser(
       status: "active",
       createdAtMs: now,
       lastSeenAtMs: now,
+      wechatOpenId: openid,
+      wechatUnionId: unionid,
+      phone: normalizedPhone,
     });
     draft.auditLog.unshift({
-      id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
-      actor: `user:${id}`,
+      id: "audit_" + now + "_" + crypto.randomBytes(2).toString("hex"),
+      actor: "user:" + id,
       action: "wechat_phone_register",
       target: id,
       atMs: now,
-      meta: { openid: openid ?? null },
+      meta: { openid: openid || null, unionid: unionid || null },
     });
   });
   return { id, email, name };
@@ -154,7 +182,6 @@ wechatPhoneRouter.post("/wechat/phone-login", async (req, res) => {
 
     const loginCode = String(req.body?.loginCode ?? req.body?.code ?? "").trim();
     const phoneCode = String(req.body?.phoneCode ?? req.body?.phone_code ?? "").trim();
-
     if (!phoneCode) {
       res.status(400).json({ ok: false, error: "phone_code_required" });
       return;
@@ -164,7 +191,7 @@ wechatPhoneRouter.post("/wechat/phone-login", async (req, res) => {
     const session = await getOpenId(config.appid, config.secret, loginCode);
     const phoneInfo = await getPhoneNumber(accessToken, phoneCode);
     const phone = String(phoneInfo?.purePhoneNumber || phoneInfo?.phoneNumber || "");
-    const user = upsertWechatPhoneUser(phone, session.openid as string | undefined);
+    const user = upsertWechatPhoneUser(phone, session.openid, session.unionid);
     const token = signUserJwt(user.id, user.email);
 
     res.json({
