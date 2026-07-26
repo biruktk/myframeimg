@@ -7,9 +7,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
   try {
     const { code } = await params;
     const body = await req.blob();
-    const ct = req.headers.get("content-type") ?? "multipart/form-data";
+    const ct = req.headers.get("content-type") ?? "image/jpeg";
     const pairingToken = req.headers.get("x-pairing-token") ?? "";
-    const apiUrl = `${getMyframeApiBase()}/api/invite/${encodeURIComponent(code)}/upload`;
+    const apiUrl = `${getMyframeApiBase()}/api/invite/${encodeURIComponent(code)}/upload-raw`;
     const headers: Record<string, string> = {
       "content-type": ct,
       accept: "application/json",

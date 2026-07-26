@@ -497,6 +497,42 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     await handleFrameUpload(req, res, deviceId);
   });
 
+  router.post("/invite/:code/upload-raw", express.raw({ type: "*", limit: "15mb" }), uploadRateLimit, async (req, res) => {
+    const code = String(req.params.code ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (code.length !== 8) {
+      res.status(400).json({ ok: false, error: "invalid_invite_code" });
+      return;
+    }
+    const buf = req.body as Buffer | undefined | null;
+    if (!buf || !Buffer.isBuffer(buf) || buf.length === 0) {
+      res.status(400).json({ ok: false, error: "missing_photo_data" });
+      return;
+    }
+    const { lookupFrameInviteDeviceId } = await import("../services/frame_guest_invite");
+    const deviceId = lookupFrameInviteDeviceId(code);
+    if (!deviceId) {
+      res.status(404).json({ ok: false, error: "invite_not_found" });
+      return;
+    }
+    const ext = ".jpg";
+    const filename = `${Date.now()}_guest_upload${ext}`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, buf);
+    req.file = {
+      fieldname: "photo",
+      originalname: filename,
+      encoding: "7bit",
+      mimetype: req.headers["content-type"] ?? "image/jpeg",
+      destination: uploadDir,
+      filename,
+      path: filePath,
+      size: buf.length,
+      stream: fs.createReadStream(filePath),
+      buffer: buf,
+    } as Express.Multer.File;
+    await handleFrameUpload(req, res, deviceId);
+  });
+
   router.get("/photo/delivery-status", requirePairingToken, (req, res) => {
     const checksum = String(req.query.checksum ?? "").trim().toLowerCase();
     const deviceId = String(req.query.device_id ?? "").trim();

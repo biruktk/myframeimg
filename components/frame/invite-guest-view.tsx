@@ -15,9 +15,10 @@ type Props = {
 };
 
 const API_BASE =
-  typeof window !== "undefined" && window.location.hostname === "myframe.ink"
-    ? "https://myframe.ink"
-    : "http://128.241.231.234:3001";
+  typeof window !== "undefined" &&
+  ["myframe.ink", "www.myframe.ink", "localhost"].includes(window.location.hostname)
+    ? ""
+    : "http://47.76.164.162:3001";
 
 export function InviteGuestView({ code }: Props) {
   const [info, setInfo] = useState<InviteInfo | null>(null);
@@ -56,16 +57,46 @@ export function InviteGuestView({ code }: Props) {
       setUploading(true);
       setError(null);
       setMessage(null);
-      try {
+      const tryUpload = async (): Promise<{ ok?: boolean; error?: string; delivered_to_frame?: boolean }> => {
         const form = new FormData();
         form.append("photo", file, file.name || "photo.jpg");
         const res = await fetch(`${API_BASE}/api/invite/${encodeURIComponent(code)}/upload`, {
           method: "POST",
           body: form,
         });
-        const data = (await res.json()) as { ok?: boolean; error?: string; delivered_to_frame?: boolean };
-        if (!res.ok || !data.ok) {
-          setError(data.error || "Upload failed. Please try again.");
+        if (res.ok) return res.json();
+        throw new Error("formdata_failed");
+      };
+      const tryUploadRaw = (): Promise<{ ok?: boolean; error?: string; delivered_to_frame?: boolean }> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const arrayBuffer = reader.result as ArrayBuffer;
+            const blob = new Blob([arrayBuffer], { type: file.type || "image/jpeg" });
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `${API_BASE}/api/invite/${encodeURIComponent(code)}/upload-raw`);
+            xhr.setRequestHeader("Content-Type", file.type || "image/jpeg");
+            xhr.onload = () => {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch {
+                resolve({ ok: false, error: "Upload failed. Please try again." });
+              }
+            };
+            xhr.onerror = () => reject(new Error("xhr_failed"));
+            xhr.send(blob);
+          };
+          reader.onerror = () => reject(new Error("reader_failed"));
+          reader.readAsArrayBuffer(file);
+        });
+      };
+      try {
+        let data = await tryUpload().catch(() => null);
+        if (!data || !data.ok) {
+          data = await tryUploadRaw();
+        }
+        if (!data || !data.ok) {
+          setError(data?.error || "Upload failed. Please try again.");
           return;
         }
         setMessage(
