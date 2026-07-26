@@ -49,7 +49,7 @@ function frameStatusPayload(macRaw: string) {
     sleeping: sleeping,
     status: sleeping ? "sleeping" : frameLive ? "online" : "offline",
     app_paired: !!paired,
-    battery: rec?.battery ?? 100,
+    battery: rec?.battery ?? paired?.battery ?? 100,
     wifi: paired?.wifiSsid ?? data.device.room ?? "",
     storage_used_mb: rec?.storageUsed ?? Math.round(data.device.usedBytes / 1024 / 1024),
     storage_total_mb: rec?.storageTotal ?? 32000,

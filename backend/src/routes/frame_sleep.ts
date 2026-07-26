@@ -39,7 +39,7 @@ export function frameSleepRouter(): Router {
     }
     res.json({
       ok: true,
-      sleepConfig: frame.sleepConfig || { enabled: false, startTime: "23:00", endTime: "07:00" },
+      sleepConfig: frame.sleepConfig || { enabled: true, startTime: "23:00", endTime: "07:00" },
     });
   });
 

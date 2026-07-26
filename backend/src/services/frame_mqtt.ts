@@ -4,6 +4,7 @@
  */
 
 import crypto from "crypto";
+import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
 import { db } from "../db/store";
 
@@ -138,6 +139,40 @@ function handleMessage(topic: string, raw: Buffer) {
       if (onPlayAckCb) onPlayAckCb(mac);
     }
   }
+  db.mutate((draft) => {
+    const prefix10 = mac.slice(0, 10);
+    let match = draft.frames.find(
+      (f) => normalizeMac(f.bleMac).startsWith(prefix10) || normalizeMac(f.stationMac ?? "") === mac,
+    );
+    if (!match) {
+      match = {
+        id: mac.toLowerCase(),
+        bleMac: mac,
+        ownerUserId: "",
+        sharedToUserIds: [],
+        wifiSsid: null,
+        wifiStatus: "online",
+        firmwareVersion: "0.0.0",
+        lastSeenAtMs: Date.now(),
+        uptimeMs: 0,
+        pendingQueue: [],
+        nextDeliveryAtMs: null,
+        ota: { targetVersion: null, status: "idle" },
+      };
+      draft.frames.push(match);
+    }
+    match.wifiStatus = "online";
+    match.lastSeenAtMs = Date.now();
+    if (!match.stationMac) match.stationMac = mac;
+    if (d && typeof d === "object") {
+      const bat = Number(d.battery);
+      if (Number.isFinite(bat) && bat >= 0) match.battery = bat;
+      const fv = normalizeFirmwareVersion(String(d.version ?? d.ver ?? ""));
+      if (fv && fv !== "0.0.0") match.firmwareVersion = fv;
+      if (d.wifi_name && typeof d.wifi_name === "string") match.wifiSsid = d.wifi_name;
+    }
+  });
+
 
   switch (action) {
     case "login": {

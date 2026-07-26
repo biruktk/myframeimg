@@ -177,6 +177,7 @@ export type MyframeDb = {
     ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
     sleepConfig?: { enabled: boolean; startTime: string; endTime: string };
     stationMac?: string;
+    battery?: number;
   }>;
   device: {
     id: string;
