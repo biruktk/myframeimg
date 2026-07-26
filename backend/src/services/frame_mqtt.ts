@@ -39,19 +39,23 @@ export function normalizeMac(mac: string): string {
   return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
 }
 
-/** 12‑hex Wi‑Fi MAC for `/inkjoyap/{MAC}` and `play` payloads; strips BLE names like `IJ_D0CF13F0161C`. */
+/** Resolve any device identifier to its 12‑hex station (MQTT) MAC.
+ *  - If `raw` is already a 12‑hex string, return it.
+ *  - Otherwise try to look up the frame in the DB by its BLE MAC or ID
+ *    and return the stored `stationMac` (the Wi‑Fi MAC used for MQTT).
+ */
 export function resolveMqttHardwareMac(raw: string): string | null {
-  let s = raw.trim();
-  if (!s) return null;
-  const low = s.toLowerCase();
-  if (low.startsWith("ij_") || low.startsWith("ij-")) s = s.slice(3).trim();
+  const m = String(raw ?? "").trim();
+  if (!m) return null;
+  if (/^[A-F0-9]{12}$/i.test(m)) return m.toUpperCase();
 
-  let h = normalizeMac(s);
-  if (!h) return null;
-  // If app sent `IJ_` as prefix merged into hex, keep only the trailing EUI‑48 (12 hex).
-  if (h.length > 12) h = h.slice(-12);
-  if (h.length !== 12 || !/^[0-9A-F]{12}$/i.test(h)) return null;
-  return h.toUpperCase();
+  const data = db.read();
+  const norm = normalizeMac(m);
+  const match = data.frames.find(function (f) {
+    return normalizeMac(f.bleMac) === norm || normalizeMac(f.id) === norm;
+  });
+  if (match?.stationMac) return match.stationMac;
+  return m.toUpperCase();
 }
 
 function mqttDebugRx(topic: string, raw: Buffer) {

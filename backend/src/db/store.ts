@@ -178,6 +178,9 @@ export type MyframeDb = {
     sleepConfig?: { enabled: boolean; startTime: string; endTime: string };
     stationMac?: string;
     battery?: number;
+    storageUsed?: number;
+    storageTotal?: number;
+    photoQueueDepth?: number;
   }>;
   device: {
     id: string;
