@@ -497,7 +497,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     await handleFrameUpload(req, res, deviceId);
   });
 
-  router.post("/invite/:code/upload-raw", express.raw({ type: "*", limit: "15mb" }), uploadRateLimit, async (req, res) => {
+  router.post("/invite/:code/upload-raw", express.raw({ type: "*/*", limit: "15mb" }), uploadRateLimit, async (req, res) => {
     const code = String(req.params.code ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (code.length !== 8) {
       res.status(400).json({ ok: false, error: "invalid_invite_code" });
