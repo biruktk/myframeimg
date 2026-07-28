@@ -70,7 +70,7 @@ export async function sendPasswordResetEmail(email: string, rawToken: string): P
   const baseUrl = publicBaseUrl();
 
   const appDeepLink = `myframe://auth/reset-password#token=${rawToken}`;
-  const webFallbackUrl = `${baseUrl}/auth/reset-password?token=${rawToken}`;
+  const webFallbackUrl = `${baseUrl}/api/auth/reset-password?token=${rawToken}`;
 
   const subject = "MyFrame – Reset your password";
 

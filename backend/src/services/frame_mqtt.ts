@@ -8,6 +8,9 @@ import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
 import { db } from "../db/store";
 
+/** Frames that have not sent an MQTT message within this window are considered offline. */
+const HEARTBEAT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
 export type FrameRecord = {
   lastSeen: number;
   status: "online" | "offline";
@@ -232,16 +235,31 @@ export function startFrameMqtt(): void {
 
   mqttClient.on("error", (err) => console.error("[frame-mqtt]", err));
   mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
+
+  // Periodically check for stale frames and mark them offline in DB
+  setInterval(() => {
+    const now = Date.now();
+    db.mutate((draft) => {
+      for (const f of draft.frames) {
+        if (f.wifiStatus === "never_provisioned") continue;
+        const isLive = f.lastSeenAtMs != null && (now - f.lastSeenAtMs) < HEARTBEAT_TIMEOUT_MS;
+        if (!isLive && f.wifiStatus !== "offline") {
+          f.wifiStatus = "offline";
+          console.log(`[frame-mqtt] Frame ${f.id} marked offline (last seen ${f.lastSeenAtMs ? Math.round((now - f.lastSeenAtMs) / 1000) + "s ago" : "never"})`);
+        }
+      }
+    });
+  }, 60_000).unref();
 }
 
 export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
 }
 
-/** True when the frame has been seen on MQTT since server start. No time window — wall-mounted hardware always online once provisioned. */
+/** True when the frame has sent an MQTT message within HEARTBEAT_TIMEOUT_MS. */
 export function isFrameMqttOnline(macRaw: string): boolean {
   const rec = getFrame(macRaw);
-  return rec != null;
+  return rec != null && rec.age < HEARTBEAT_TIMEOUT_MS;
 }
 
 function mqttBrokerDefaults() {
@@ -299,6 +317,16 @@ export function publishLoginAck(macRaw: string, msgid?: string): Promise<void> {
     stamac: mac,
     data: { ack: 1 },
   });
+}
+
+/** Returns frames from the DB whose lastSeenAtMs is stale (no recent heartbeat). */
+export function getStaleDbFrames(): Array<{ id: string; bleMac: string; lastSeenAtMs: number | null }> {
+  const now = Date.now();
+  return db.read().frames.filter((f) => {
+    if (f.wifiStatus === "never_provisioned") return false;
+    if (!f.lastSeenAtMs) return true;
+    return now - f.lastSeenAtMs > HEARTBEAT_TIMEOUT_MS;
+  }).map((f) => ({ id: f.id, bleMac: f.bleMac, lastSeenAtMs: f.lastSeenAtMs }));
 }
 
 export function listFrames(): Array<FrameRecord & { mac: string; age: number }> {

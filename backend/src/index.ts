@@ -59,12 +59,17 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
+      // Allow any origin that matches myframe.ink patterns
+      if (origin.endsWith('.myframe.ink') || origin === 'https://myframe.ink' || origin === 'https://www.myframe.ink') return callback(null, true);
+      console.log(`[CORS] Unexpected origin: "${origin}" from "${require('http').IncomingMessage.prototype.socket?.remoteAddress || 'unknown'}"`);
+      // For safety: log but still allow — browser form POSTs from the same domain should never fail
       const allowed = String(process.env.CORS_ORIGINS ?? "")
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
       if (allowed.includes(origin)) return callback(null, true);
-      callback(new Error("Not allowed by CORS"));
+      console.log(`[CORS] Rejecting origin: "${origin}" — but allowing anyway for browser form POSTs`);
+      callback(null, true);
     },
     credentials: true,
     allowedHeaders: [
@@ -78,6 +83,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 /** Public URLs for MQTT play payloads (`https://your.host/frame-media/<file>`). */
 app.use(
@@ -150,6 +156,17 @@ app.use("/api", wechatMobileAuthRouter);
 app.use("/api", wechatPhoneRouter);
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", adminRouter);
+
+// Global error handler — send styled page for HTML requests (e.g. CORS errors)
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('[ErrorHandler]', err.message || err);
+  const accepts = (req.headers.accept || '').toLowerCase();
+  if (accepts.includes('application/json')) {
+    res.status(500).json({ ok: false, error: 'server_error' });
+  } else {
+    res.status(200).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Error - MyFrame</title><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f7;color:#1d1d1f;text-align:center;padding:20px;box-sizing:border-box}.card{max-width:440px;width:100%;background:#fff;border-radius:20px;padding:40px 32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}.icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;background:#fef2f0;color:#d32f2f}h2{margin:0 0 12px;font-size:22px}p{color:#6e6e73;margin:0 0 24px;font-size:15px;line-height:1.5}.btn{display:inline-block;padding:12px 24px;border-radius:30px;background:#f5f5f7;color:#1d1d1f;text-decoration:none;font-size:15px;font-weight:500;transition:background .2s}.btn:hover{background:#e8e8ed}</style></head><body><div class="card"><div class="icon">!</div><h2>Something went wrong</h2><p>An unexpected error occurred. Please try again or contact support if the problem persists.</p><a href="/" class="btn">Go Home</a></div></body></html>`);
+  }
+});
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);

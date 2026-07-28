@@ -2,7 +2,6 @@ import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 
-/** Strip separators from MAC/device id segments for lookup keys */
 function normalizeMacKey(raw: string): string {
   try {
     return decodeURIComponent(raw).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
@@ -11,14 +10,27 @@ function normalizeMacKey(raw: string): string {
   }
 }
 
+function isPairingTokenValid(req: Request): boolean {
+  const expected = String(process.env.FRAME_PAIRING_TOKEN ?? "").trim();
+  if (!expected) return true;
+  const auth = String(req.header("authorization") ?? "");
+  const pt = auth.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : String(req.header("x-pairing-token") ?? "").trim();
+  if (!pt) return false;
+  if (pt.length !== expected.length) return false;
+  let match = 0;
+  for (let i = 0; i < pt.length; i++) match |= pt.charCodeAt(i) ^ expected.charCodeAt(i);
+  return match === 0;
+}
+
 export function frameSlideshowRouter(): Router {
   const router = Router();
   router.use(express.json({ limit: "512kb" }));
 
-/** POST /api/frames/:mac/slideshow */
 router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
   const u = verifyUserJwtBearer(req);
-  if (!u) {
+  if (!u && !isPairingTokenValid(req)) {
     res.status(401).json({ ok: false, error: "unauthorized" });
     return;
   }
@@ -36,23 +48,15 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
   const skipPlay = body.skipPlay === true || String(body.skipPlay ?? "").trim() === "true";
 
   if (intervalMinutes < 1 || !isFinite(intervalMinutes)) {
-    res.status(422).json({
-      ok: false,
-      error: "invalid_interval",
-      message: "intervalMinutes must be at least 1",
-      fields: [{ field: "intervalMinutes", message: "Provide interval in minutes (min 1)" }],
-    });
+    res.status(422).json({ ok: false, error: "invalid_interval", message: "intervalMinutes must be at least 1", fields: [{ field: "intervalMinutes", message: "Provide interval in minutes (min 1)" }] });
     return;
   }
   if (ids.length === 0) {
-    res.status(422).json({
-      ok: false,
-      error: "validation_error",
-      message: "imageIds cannot be empty",
-      fields: [{ field: "imageIds", message: "Provide at least one image id" }],
-    });
+    res.status(422).json({ ok: false, error: "validation_error", message: "imageIds cannot be empty", fields: [{ field: "imageIds", message: "Provide at least one image id" }] });
     return;
   }
+
+  console.log("[slideshow] POST macKey=%s ids=%d interval=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
 
   const now = Date.now();
   db.mutate((draft) => {

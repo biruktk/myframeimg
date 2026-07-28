@@ -37,7 +37,9 @@ function frameStatusPayload(macRaw: string) {
   var paired = data.frames.find(
     function(f) { return [f.id, f.bleMac].some(function(id) { return resolveMqttHardwareMac(id) === mac; }); },
   );
-  var frameLive = isFrameMqttOnline(mac) || (paired != null && paired.wifiStatus !== "never_provisioned");
+  const HEARTBEAT_TIMEOUT = 2 * 60 * 1000;
+  var dbAlive = paired != null && paired.wifiStatus !== "never_provisioned" && paired.lastSeenAtMs != null && (Date.now() - paired.lastSeenAtMs) < HEARTBEAT_TIMEOUT;
+  var frameLive = isFrameMqttOnline(mac) || dbAlive;
   var sleeping = isInSleepWindow(paired);
   var apiMqtt = isMqttConnected();
   var lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;

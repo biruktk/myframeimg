@@ -100,3 +100,38 @@ export async function sendPushToUser(
     });
   }
 }
+
+export function sendPushToFrameSubscribers(
+  frameDeviceId: string,
+  title: string,
+  body: string,
+  excludeUserId?: string,
+): void {
+  const data = db.read();
+  const frame = data.frames.find(
+    (f) => f.id === frameDeviceId || f.bleMac === frameDeviceId,
+  );
+  if (!frame) return;
+
+  const userIds = new Set<string>();
+  userIds.add(frame.ownerUserId);
+  for (const uid of frame.sharedToUserIds ?? []) {
+    userIds.add(uid);
+  }
+  const owner = data.users.find((u) => u.id === frame.ownerUserId);
+  if (owner?.familyGroupId) {
+    const group = data.familyGroups?.find((g) => g.id === owner.familyGroupId);
+    if (group) {
+      for (const m of group.members) {
+        userIds.add(m.userId);
+      }
+    }
+  }
+  if (excludeUserId) userIds.delete(excludeUserId);
+
+  for (const uid of userIds) {
+    sendPushToUser(uid, title, body).catch((e) =>
+      console.error(`[push] sendPushToUser ${uid} failed:`, e),
+    );
+  }
+}

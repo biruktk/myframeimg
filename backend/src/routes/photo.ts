@@ -7,6 +7,7 @@ import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { sendPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
   initQueue,
@@ -234,6 +235,14 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           },
         });
       });
+
+      // Notify frame subscribers about the new photo
+      sendPushToFrameSubscribers(
+        deviceId || db.read().device.id,
+        "New Photo Uploaded",
+        `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
+        verifyUserJwtBearer(req)?.userId,
+      );
 
       res.json({
         ok: true,
