@@ -41,10 +41,22 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
     return;
   }
 
-  const body = req.body as { imageIds?: unknown; intervalMinutes?: unknown; skipPlay?: unknown };
+  const body = req.body as {
+    imageIds?: unknown;
+    intervalMinutes?: unknown;
+    strategy?: unknown;
+    begintime?: unknown;
+    endtime?: unknown;
+    idle?: unknown;
+    skipPlay?: unknown;
+  };
   const rawIds = body.imageIds;
   const ids = Array.isArray(rawIds) ? rawIds.map((x) => String(x ?? "").trim()).filter((x) => x.length > 0) : [];
   const intervalMinutes = Math.round(Number(body.intervalMinutes));
+  const strategy = Math.round(Number(body.strategy ?? 1));
+  const begintime = String(body.begintime ?? "").trim();
+  const endtime = String(body.endtime ?? "").trim();
+  const idle = Math.round(Number(body.idle ?? 0));
   const skipPlay = body.skipPlay === true || String(body.skipPlay ?? "").trim() === "true";
 
   if (intervalMinutes < 1 || !isFinite(intervalMinutes)) {
@@ -56,7 +68,7 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
     return;
   }
 
-  console.log("[slideshow] POST macKey=%s ids=%d interval=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
+  console.log("[slideshow] POST macKey=%s ids=%d interval=%d strategy=%s idle=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, strategy === 2 ? "random" : "sequential", idle, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
 
   const now = Date.now();
   db.mutate((draft) => {
@@ -65,13 +77,17 @@ router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
     draft.slideshowsByBleMac[macKey] = {
       imageIds: ids,
       intervalMinutes,
+      strategy,
+      begintime,
+      endtime,
+      idle,
       updatedAtMs: now,
       currentIndex: startIndex,
       nextPlayAtMs: skipPlay ? now + intervalMinutes * 60 * 1000 : now,
     };
   });
 
-  res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, skipPlay });
+  res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy, begintime, endtime, idle, skipPlay });
 });
 
   return router;

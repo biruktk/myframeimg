@@ -274,6 +274,10 @@ export type MyframeDb = {
     {
       imageIds: string[];
       intervalMinutes: number;
+      strategy?: number;
+      begintime?: string;
+      endtime?: string;
+      idle?: number;
       updatedAtMs: number;
       currentIndex: number;
       nextPlayAtMs: number;

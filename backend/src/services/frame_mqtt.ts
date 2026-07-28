@@ -463,3 +463,39 @@ export function publishSleepConfig(
     },
   });
 }
+
+export function publishStrategyCommand(
+  macRaw: string,
+  config: {
+    strategy: number;
+    intervalMinutes: number;
+    begintime: string;
+    endtime: string;
+    idle: number;
+    host?: string;
+  },
+  msgid?: string,
+): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "");
+  const port = process.env.PUBLIC_BASE_URL?.startsWith("https") ? 443 : 80;
+  return publishJson("/inkjoyap/" + mac, {
+    msgid: msgid ?? Date.now().toString(),
+    action: "strategy",
+    stamac: mac,
+    data: {
+      idle: config.idle,
+      strategy: config.strategy,
+      host,
+      port,
+      path: "/frame-media/",
+      updatetype: "2",
+      begintime: config.begintime,
+      endtime: config.endtime,
+      intervalminutes: config.intervalMinutes,
+      updatedays: 0,
+      updatetimelist: [] as string[],
+    },
+  });
+}

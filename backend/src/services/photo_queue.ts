@@ -162,9 +162,26 @@ function processAllSlideshows(data: ReturnType<typeof db.read>, now: number): vo
   if (!sb) return;
   for (const [macKey, slideshow] of Object.entries(sb)) {
     if (!slideshow || slideshow.imageIds.length === 0) continue;
+
+    // Check expiration
+    if (slideshow.endtime && now > Number(slideshow.endtime)) {
+      console.log(`[slideshow] ${macKey} expired at ${slideshow.endtime}, removing`);
+      delete sb[macKey];
+      db.mutate(() => {});
+      continue;
+    }
+
     if (now < slideshow.nextPlayAtMs) continue;
 
-    const imageId = slideshow.imageIds[slideshow.currentIndex];
+    // Select next image: random or sequential
+    let nextIndex: number;
+    if (slideshow.strategy === 2) {
+      nextIndex = Math.floor(Math.random() * slideshow.imageIds.length);
+    } else {
+      nextIndex = (slideshow.currentIndex + 1) % slideshow.imageIds.length;
+    }
+
+    const imageId = slideshow.imageIds[nextIndex];
     const upload = data.uploads.find((u) => u.id === imageId) ?? data.uploads.find((u) => u.filename === imageId);
     if (!upload) {
       db.mutate((draft) => {
@@ -179,7 +196,7 @@ function processAllSlideshows(data: ReturnType<typeof db.read>, now: number): vo
       db.mutate((draft) => {
         const s = draft.slideshowsByBleMac?.[macKey];
         if (!s) return;
-        s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
+        s.currentIndex = nextIndex;
         s.nextPlayAtMs = Date.now() + s.intervalMinutes * 60 * 1000;
         const upd = draft.uploads.find((u) => u.id === imageId || u.filename === imageId);
         if (upd) {
