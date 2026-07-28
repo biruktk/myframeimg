@@ -52,17 +52,38 @@ function initFirebase(): App {
   return _app;
 }
 
+/** Strip separators so D0:CF:13… and D0CF13… compare equal. */
+export function normalizeDeviceKey(value: string): string {
+  return String(value ?? "").replace(/[^a-fA-F0-9]/gi, "").toLowerCase();
+}
+
+function findFrameForDevice(frameDeviceId: string) {
+  const data = db.read();
+  const raw = String(frameDeviceId ?? "").trim();
+  if (!raw) return undefined;
+  const norm = normalizeDeviceKey(raw);
+  return data.frames.find((f) => {
+    if (f.id === raw || f.bleMac === raw) return true;
+    if (norm && normalizeDeviceKey(f.id) === norm) return true;
+    if (norm && normalizeDeviceKey(f.bleMac ?? "") === norm) return true;
+    return false;
+  });
+}
+
 export async function sendPushToUser(
   userId: string,
   title: string,
   body: string,
 ): Promise<void> {
-  if (!isFirebaseConfigured()) return;
+  if (!userId || !isFirebaseConfigured()) return;
 
   const data = db.read();
   const user = data.users.find((u) => u.id === userId);
   const tokens = user?.fcmTokens ?? [];
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) {
+    console.warn(`[push] user ${userId} has no fcmTokens`);
+    return;
+  }
 
   const messaging = getMessaging(initFirebase());
   const results = await Promise.allSettled(
@@ -71,11 +92,11 @@ export async function sendPushToUser(
         token,
         notification: { title, body },
         apns: {
-          payload: { aps: { sound: "default" } },
+          payload: { aps: { sound: "default", badge: 1 } },
         },
         android: {
           priority: "high",
-          notification: { channelId: "security_alerts" },
+          notification: { channelId: "myframe_uploads" },
         },
       }),
     ),
@@ -83,8 +104,14 @@ export async function sendPushToUser(
 
   const invalidTokens = new Set<string>();
   results.forEach((r, i) => {
-    if (r.status === "rejected" && String(r.reason).includes("registration-token-not-registered")) {
-      invalidTokens.add(tokens[i]);
+    if (r.status === "rejected") {
+      console.error(`[push] token send failed for ${userId}:`, r.reason);
+      const msg = String(r.reason ?? "");
+      if (msg.includes("registration-token-not-registered") || msg.includes("invalid-registration-token")) {
+        invalidTokens.add(tokens[i]);
+      }
+    } else {
+      console.log(`[push] sent to ${userId} ok`);
     }
   });
 
@@ -101,33 +128,59 @@ export async function sendPushToUser(
   }
 }
 
+export type FramePushOptions = {
+  /** Always notify this user (e.g. the uploader), even if frame lookup fails. */
+  alsoNotifyUserId?: string;
+  /** Optional exclusion (legacy). Prefer omitting so uploaders get notified. */
+  excludeUserId?: string;
+};
+
+/**
+ * Notify frame owner, shared users, family members, and optionally the uploader.
+ * Device ids are matched with/without colon separators (D0CF13… ≡ D0:CF:13:…).
+ */
 export function sendPushToFrameSubscribers(
   frameDeviceId: string,
   title: string,
   body: string,
-  excludeUserId?: string,
+  options?: string | FramePushOptions,
 ): void {
-  const data = db.read();
-  const frame = data.frames.find(
-    (f) => f.id === frameDeviceId || f.bleMac === frameDeviceId,
-  );
-  if (!frame) return;
+  const opts: FramePushOptions =
+    typeof options === "string" ? { excludeUserId: options } : options ?? {};
 
+  const data = db.read();
+  const frame = findFrameForDevice(frameDeviceId);
   const userIds = new Set<string>();
-  userIds.add(frame.ownerUserId);
-  for (const uid of frame.sharedToUserIds ?? []) {
-    userIds.add(uid);
+
+  if (frame?.ownerUserId) userIds.add(frame.ownerUserId);
+  for (const uid of frame?.sharedToUserIds ?? []) {
+    if (uid) userIds.add(uid);
   }
-  const owner = data.users.find((u) => u.id === frame.ownerUserId);
+  const owner = frame?.ownerUserId
+    ? data.users.find((u) => u.id === frame.ownerUserId)
+    : undefined;
   if (owner?.familyGroupId) {
     const group = data.familyGroups?.find((g) => g.id === owner.familyGroupId);
     if (group) {
       for (const m of group.members) {
-        userIds.add(m.userId);
+        if (m.userId) userIds.add(m.userId);
       }
     }
   }
-  if (excludeUserId) userIds.delete(excludeUserId);
+  if (opts.alsoNotifyUserId) userIds.add(opts.alsoNotifyUserId);
+  if (opts.excludeUserId) userIds.delete(opts.excludeUserId);
+  userIds.delete("");
+
+  if (userIds.size === 0) {
+    console.warn(
+      `[push] no recipients for device=${frameDeviceId} frameFound=${Boolean(frame)}`,
+    );
+    return;
+  }
+
+  console.log(
+    `[push] device=${frameDeviceId} frame=${frame?.id ?? "none"} recipients=${[...userIds].join(",")}`,
+  );
 
   for (const uid of userIds) {
     sendPushToUser(uid, title, body).catch((e) =>

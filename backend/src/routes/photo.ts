@@ -236,13 +236,16 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         });
       });
 
-      // Notify frame subscribers about the new photo
-      sendPushToFrameSubscribers(
-        deviceId || db.read().device.id,
-        "New Photo Uploaded",
-        `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
-        verifyUserJwtBearer(req)?.userId,
-      );
+      // Notify frame subscribers + uploader (MAC-normalized lookup on server)
+      {
+        const uploaderId = verifyUserJwtBearer(req)?.userId;
+        sendPushToFrameSubscribers(
+          deviceId || db.read().device.id,
+          "New Photo Uploaded",
+          `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
+          { alsoNotifyUserId: uploaderId },
+        );
+      }
 
       res.json({
         ok: true,
@@ -449,6 +452,16 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           },
         });
       });
+
+      {
+        const uploaderId = verifyUserJwtBearer(req)?.userId;
+        sendPushToFrameSubscribers(
+          deviceId || db.read().device.id,
+          "New Photo Uploaded",
+          `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
+          { alsoNotifyUserId: uploaderId },
+        );
+      }
 
       res.json({
         ok: true,
