@@ -56,10 +56,8 @@ export async function proxy(request: NextRequest) {
   const manualLocale = readManualLocale(request);
 
   if (firstSegment && isLocale(firstSegment)) {
-    if (manualLocale) {
-      return NextResponse.next();
-    }
     const geo = await lookupGeoFromRequest(request);
+    // Forced countries (e.g. Ethiopia → es) always win over a prior manual cookie.
     if (
       geo.forceLocale &&
       isLocale(geo.recommendedLanguage) &&
@@ -70,7 +68,12 @@ export async function proxy(request: NextRequest) {
       redirectUrl.pathname = rest
         ? `/${geo.recommendedLanguage}/${rest}`
         : `/${geo.recommendedLanguage}`;
-      return withLocaleCookie(NextResponse.redirect(redirectUrl), geo.recommendedLanguage, false);
+      const response = NextResponse.redirect(redirectUrl);
+      response.cookies.set(MANUAL_LOCALE_COOKIE, "", { path: "/", maxAge: 0 });
+      return withLocaleCookie(response, geo.recommendedLanguage, false);
+    }
+    if (manualLocale) {
+      return NextResponse.next();
     }
     return NextResponse.next();
   }

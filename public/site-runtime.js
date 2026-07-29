@@ -194,12 +194,16 @@
 
   // IP-forced locale (Spanish-default countries including Ethiopia) —
   // always redirect when forced country locale differs from URL locale.
-  // This keeps country-based defaults authoritative.
+  // This keeps country-based defaults authoritative over prior manual picks.
   if (
     geo.forceLocale &&
     langCodes.includes(geo.recommendedLanguage) &&
     explicitPathLang !== geo.recommendedLanguage
   ) {
+    try {
+      localStorage.removeItem('myframeLangManual');
+      document.cookie = 'myframe_lang_manual=; path=/; max-age=0; SameSite=Lax';
+    } catch (_) {}
     persistLang(geo.recommendedLanguage, false);
     location.replace(`/${geo.recommendedLanguage}${location.search || ''}${location.hash || ''}`);
     return;
