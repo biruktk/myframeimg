@@ -8,8 +8,16 @@ import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
 import { db } from "../db/store";
 
-/** Frames that have not sent an MQTT message within this window are considered offline. */
-const HEARTBEAT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+/**
+ * Frame firmware (0.5.x) emits MQTT `heart` about every ~10 minutes and often
+ * reconnects (`login`) on the same cadence. A 2-minute offline TTL caused constant
+ * false-offlines while Wi-Fi was still up (wake-on-send still worked via MQTT).
+ *
+ * Grace = 3 missed hearts + buffer.
+ */
+export const FRAME_HEART_INTERVAL_MS = 10 * 60 * 1000; // observed ~10 min
+export const HEARTBEAT_ONLINE_MS = Math.round(FRAME_HEART_INTERVAL_MS * 1.5); // 15 min — fresh
+export const HEARTBEAT_TIMEOUT_MS = FRAME_HEART_INTERVAL_MS * 3; // 30 min — still reachable
 
 export type FrameRecord = {
   lastSeen: number;
@@ -236,16 +244,19 @@ export function startFrameMqtt(): void {
   mqttClient.on("error", (err) => console.error("[frame-mqtt]", err));
   mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
 
-  // Periodically check for stale frames and mark them offline in DB
+  // Mark DB offline only after full grace (3 missed hearts), not after a single gap.
   setInterval(() => {
     const now = Date.now();
     db.mutate((draft) => {
       for (const f of draft.frames) {
         if (f.wifiStatus === "never_provisioned") continue;
-        const isLive = f.lastSeenAtMs != null && (now - f.lastSeenAtMs) < HEARTBEAT_TIMEOUT_MS;
+        const age = f.lastSeenAtMs != null ? now - f.lastSeenAtMs : null;
+        const isLive = age != null && age < HEARTBEAT_TIMEOUT_MS;
         if (!isLive && f.wifiStatus !== "offline") {
           f.wifiStatus = "offline";
-          console.log(`[frame-mqtt] Frame ${f.id} marked offline (last seen ${f.lastSeenAtMs ? Math.round((now - f.lastSeenAtMs) / 1000) + "s ago" : "never"})`);
+          console.log(`[frame-mqtt] Frame ${f.id} marked offline (last seen ${age != null ? Math.round(age / 1000) + "s ago" : "never"}; grace=${HEARTBEAT_TIMEOUT_MS / 1000}s)`);
+        } else if (isLive && f.wifiStatus === "offline") {
+          f.wifiStatus = "online";
         }
       }
     });
@@ -256,10 +267,27 @@ export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
 }
 
-/** True when the frame has sent an MQTT message within HEARTBEAT_TIMEOUT_MS. */
+/** True when the frame has been heard within the reachable grace window. */
 export function isFrameMqttOnline(macRaw: string): boolean {
   const rec = getFrame(macRaw);
   return rec != null && rec.age < HEARTBEAT_TIMEOUT_MS;
+}
+
+/** Fresh heart (within ONLINE window). */
+export function isFrameMqttFresh(macRaw: string): boolean {
+  const rec = getFrame(macRaw);
+  return rec != null && rec.age < HEARTBEAT_ONLINE_MS;
+}
+
+export type FramePresence = "online" | "idle" | "sleeping" | "offline";
+
+/** Classify presence from last-seen age + optional scheduled sleep. */
+export function classifyFramePresence(ageMs: number | null | undefined, sleeping = false): FramePresence {
+  if (sleeping) return "sleeping";
+  if (ageMs == null || !Number.isFinite(ageMs) || ageMs < 0) return "offline";
+  if (ageMs < HEARTBEAT_ONLINE_MS) return "online";
+  if (ageMs < HEARTBEAT_TIMEOUT_MS) return "idle";
+  return "offline";
 }
 
 function mqttBrokerDefaults() {

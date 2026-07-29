@@ -3,9 +3,14 @@ import { db } from "../db/store";
 import { requirePairingToken } from "../middleware/security";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import {
+  classifyFramePresence,
+  FRAME_HEART_INTERVAL_MS,
   getFrame,
+  HEARTBEAT_ONLINE_MS,
+  HEARTBEAT_TIMEOUT_MS,
   isFrameMqttOnline,
   isMqttConnected,
+  normalizeMac,
   publishLoginAck,
   publishRetainedMqttConfig,
   resolveMqttHardwareMac,
@@ -34,33 +39,54 @@ function frameStatusPayload(macRaw: string) {
 
   var rec = getFrame(mac);
   var data = db.read();
-  var paired = data.frames.find(
-    function(f) { return [f.id, f.bleMac].some(function(id) { return resolveMqttHardwareMac(id) === mac; }); },
-  );
-  const HEARTBEAT_TIMEOUT = 2 * 60 * 1000;
-  var dbAlive = paired != null && paired.wifiStatus !== "never_provisioned" && paired.lastSeenAtMs != null && (Date.now() - paired.lastSeenAtMs) < HEARTBEAT_TIMEOUT;
-  var frameLive = isFrameMqttOnline(mac) || dbAlive;
-  var sleeping = isInSleepWindow(paired);
-  var apiMqtt = isMqttConnected();
+  var macNorm = normalizeMac(mac);
+  var paired = data.frames.find(function (f) {
+    var ids = [f.id, f.bleMac, f.stationMac ?? ""];
+    return ids.some(function (id) {
+      if (!id) return false;
+      if (resolveMqttHardwareMac(id) === mac) return true;
+      return normalizeMac(id) === macNorm || normalizeMac(id).slice(0, 10) === macNorm.slice(0, 10);
+    });
+  });
+
+  var now = Date.now();
   var lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;
+  var ageMs = lastSeen > 0 ? now - lastSeen : null;
+  var memAlive = isFrameMqttOnline(mac);
+  var dbAlive =
+    paired != null &&
+    paired.wifiStatus !== "never_provisioned" &&
+    paired.lastSeenAtMs != null &&
+    now - paired.lastSeenAtMs < HEARTBEAT_TIMEOUT_MS;
+  var frameReachable = memAlive || dbAlive;
+  var sleeping = isInSleepWindow(paired);
+  var presence = classifyFramePresence(ageMs, sleeping);
+  // App "online" means reachable (fresh or idle within grace), not only last 2 minutes.
+  var onlineForApp = presence !== "offline";
+  var apiMqtt = isMqttConnected();
 
   return {
     ok: true,
     device_id: mac,
-    online: frameLive,
+    online: onlineForApp,
     sleeping: sleeping,
-    status: sleeping ? "sleeping" : frameLive ? "online" : "offline",
+    status: presence,
+    reachable: frameReachable || presence === "idle" || presence === "online",
     app_paired: !!paired,
     battery: rec?.battery ?? paired?.battery ?? 100,
     wifi: paired?.wifiSsid ?? data.device.room ?? "",
     storage_used_mb: rec?.storageUsed ?? paired?.storageUsed ?? Math.round(data.device.usedBytes / 1024 / 1024),
     storage_total_mb: rec?.storageTotal ?? paired?.storageTotal ?? 32000,
     photo_count: paired?.pendingQueue?.length ?? paired?.photoQueueDepth ?? data.device.photoCount ?? 0,
-    mqtt_connected: frameLive,
+    mqtt_connected: frameReachable,
     api_mqtt_connected: apiMqtt,
-    frame_mqtt_live: frameLive,
+    frame_mqtt_live: frameReachable,
     last_seen_ms: lastSeen,
     last_upload_ms: rec?.lastUploadMs ?? lastSeen,
+    heartbeat_age_ms: ageMs,
+    heartbeat_interval_ms: FRAME_HEART_INTERVAL_MS,
+    online_grace_ms: HEARTBEAT_ONLINE_MS,
+    offline_grace_ms: HEARTBEAT_TIMEOUT_MS,
     result: rec?.lastResult ?? null,
     lastResult: rec?.lastResult ?? null,
     displayCode: rec?.lastResult ?? null,
