@@ -183,7 +183,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       }
 
       db.mutate((draft) => {
-        if (mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
+        if (!skipPlay && mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
           delete draft.slideshowsByBleMac[mqttMacForUpload];
         }
         draft.device.connected = true;
@@ -400,7 +400,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       }
 
       db.mutate((draft) => {
-        if (mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
+        if (!skipPlay && mqttMacForUpload && draft.slideshowsByBleMac?.[mqttMacForUpload]) {
           delete draft.slideshowsByBleMac[mqttMacForUpload];
         }
         draft.device.connected = true;
