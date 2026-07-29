@@ -1,9 +1,18 @@
 import { notFound } from "next/navigation";
 import { InviteGuestView } from "@/components/frame/invite-guest-view";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n";
+import { isLocale, type Locale } from "@/lib/i18n";
 
 type Props = {
   params: Promise<{ locale: string; code: string }>;
+};
+
+const invalidCopy: Record<Locale, { title: string; body: string }> = {
+  en: { title: "Invalid invite link", body: "This invite code is not valid." },
+  zh: { title: "无效的邀请链接", body: "此邀请码无效。" },
+  es: { title: "Enlace de invitación inválido", body: "Este código de invitación no es válido." },
+  fr: { title: "Lien d'invitation invalide", body: "Ce code d'invitation n'est pas valide." },
+  de: { title: "Ungültiger Einladungslink", body: "Dieser Einladungscode ist ungültig." },
+  ja: { title: "無効な招待リンク", body: "この招待コードは無効です。" },
 };
 
 export default async function InviteGuestPage({ params }: Props) {
@@ -17,13 +26,14 @@ export default async function InviteGuestPage({ params }: Props) {
     .replace(/[^A-Z0-9]/g, "");
 
   if (code.length !== 8) {
+    const t = invalidCopy[locale] ?? invalidCopy.en;
     return (
-      <main style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
-        <h1>Invalid invite link</h1>
-        <p lang={locale}>This invite code is not valid.</p>
+      <main lang={locale} style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+        <h1>{t.title}</h1>
+        <p>{t.body}</p>
       </main>
     );
   }
 
-  return <InviteGuestView code={code} />;
+  return <InviteGuestView code={code} locale={locale} />;
 }

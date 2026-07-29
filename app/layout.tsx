@@ -13,13 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://myframe.ink"),
   title: "MyFrame — Paper-like photo frame",
   description:
     "Smart photo frame: AI art, family sharing, live sync. Design aligned with ra/ui references.",
   icons: {
-    icon: "/assets/myframe-logo-final.svg",
-    shortcut: "/assets/myframe-logo-final.svg",
-    apple: "/assets/myframe-logo-icon.png",
+    icon: [{ url: "/icon.png", type: "image/png" }, { url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+    apple: "/apple-icon.png",
   },
 };
 

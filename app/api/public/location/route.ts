@@ -1,33 +1,34 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-import { getMyframeApiBase } from "@/lib/backend-url";
+import { geoLocationFallback, lookupGeoFromRequest } from "@/lib/geo-location";
+import { shippingEstimateForCountry } from "@/lib/shipping-estimate";
 
-const LOCATION_FALLBACK = {
-  ok: true,
-  recommendedLanguage: "en",
-  recommendedCurrency: "USD",
-  country: "",
-  city: "",
-};
+export const dynamic = "force-dynamic";
 
-export async function GET() {
+/** Edge geo lookup — uses nginx X-Forwarded-For on https://myframe.ink (no backend hop required). */
+export async function GET(request: NextRequest) {
+  const acceptLanguage = request.headers.get("accept-language") ?? "";
+
   try {
-    const res = await fetch(`${getMyframeApiBase()}/api/public/location`, { cache: "no-store" });
-    if (res.ok) {
-      const text = await res.text();
-      return new NextResponse(text, {
-        status: res.status,
-        headers: {
-          "content-type": res.headers.get("content-type") ?? "application/json",
-          "cache-control": "no-store",
-        },
-      });
-    }
+    const geo = await lookupGeoFromRequest(request);
+    const shipping = shippingEstimateForCountry(geo.countryCode || "US");
+    return NextResponse.json(
+      { ...geo, shipping },
+      {
+        status: 200,
+        headers: { "cache-control": "no-store, no-cache, must-revalidate" },
+      },
+    );
   } catch (e) {
-    console.warn("[api/public/location] upstream unreachable; serving stub", e);
+    console.warn("[api/public/location] geo lookup failed", e);
+    const fallback = geoLocationFallback(acceptLanguage);
+    return NextResponse.json(
+      { ...fallback, shipping: shippingEstimateForCountry(fallback.countryCode || "US") },
+      {
+        status: 200,
+        headers: { "cache-control": "no-store" },
+      },
+    );
   }
-  return NextResponse.json(LOCATION_FALLBACK, {
-    status: 200,
-    headers: { "cache-control": "no-store" },
-  });
 }

@@ -12,6 +12,7 @@ type Props = {
   translated?: Record<string, string>;
   logoSrc?: string;
   languages?: LangRow[];
+  downloadLinks?: Partial<Record<"ios" | "android" | "miniApp" | "apk", string>>;
 };
 
 type DownloadCopy = {
@@ -33,9 +34,9 @@ const appStoreSearchUrl = "https://apps.apple.com/us/search?term=MyFrame";
 const playStoreSearchUrl = "https://play.google.com/store/search?q=MyFrame&c=apps";
 
 const heroScreens = [
-  { src: "/assets/myframe-app-home.jpg", alt: "MyFrame home app screen" },
-  { src: "/assets/myframe-app-send.jpg", alt: "MyFrame send photo app screen" },
-  { src: "/assets/myframe-app-playlist.jpg", alt: "MyFrame playlist app screen" },
+  { src: "/assets/myframe-app-home.png", alt: "MyFrame home app screen" },
+  { src: "/assets/myframe-app-send.png", alt: "MyFrame send photo app screen" },
+  { src: "/assets/myframe-app-gallery.png", alt: "MyFrame gallery app screen" },
 ];
 
 const downloadCopy: Record<Locale, DownloadCopy> = {
@@ -173,15 +174,30 @@ const downloadCopy: Record<Locale, DownloadCopy> = {
   },
 };
 
-function StoreBadges({ label }: { label: string }) {
+function DownloadOptions({
+  links,
+  label,
+}: {
+  links: Partial<Record<"ios" | "android" | "miniApp" | "apk", string>>;
+  label: string;
+}) {
+  const items = [
+    { key: "ios", icon: "fab fa-apple", title: "iOS", body: "App Store", href: links.ios || appStoreSearchUrl },
+    { key: "android", icon: "fab fa-google-play", title: "Android", body: "Google Play", href: links.android || playStoreSearchUrl },
+    { key: "miniApp", icon: "fas fa-qrcode", title: "Mini App", body: "WeChat / mini app", href: links.miniApp || "#" },
+    { key: "apk", icon: "fas fa-download", title: "APK", body: "Direct install file", href: links.apk || "#" },
+  ];
   return (
-    <div className="download-badges" aria-label={label}>
-      <a href={appStoreSearchUrl} target="_blank" rel="noopener noreferrer">
-        <Image src="/assets/app-store-badge.svg" alt="Download on the App Store" width={180} height={54} />
-      </a>
-      <a href={playStoreSearchUrl} target="_blank" rel="noopener noreferrer">
-        <Image src="/assets/google-play-badge.png" alt="Get it on Google Play" width={646} height={250} />
-      </a>
+    <div className="download-options" aria-label={label}>
+      {items.map((item) => (
+        <a className="download-option" href={item.href} key={item.key}>
+          <i className={item.icon} aria-hidden="true" />
+          <span>
+            <strong>{item.title}</strong>
+            <small>{item.body}</small>
+          </span>
+        </a>
+      ))}
     </div>
   );
 }
@@ -210,6 +226,7 @@ export function DownloadAppLanding({
   translated = {},
   logoSrc = "/assets/myframe-logo-final.svg",
   languages = [],
+  downloadLinks = {},
 }: Props) {
   const copy = downloadCopy[locale] ?? downloadCopy.en;
 
@@ -232,7 +249,7 @@ export function DownloadAppLanding({
               <span>{copy.titleLine2}</span>
             </h1>
             <p>{copy.lead}</p>
-            <StoreBadges label={copy.badgeLabel} />
+            <DownloadOptions links={downloadLinks} label={copy.badgeLabel} />
           </div>
 
           <div className="hero-phone-row" aria-label="MyFrame app screens">
@@ -250,7 +267,7 @@ export function DownloadAppLanding({
 
         <section className="download-section download-features">
           <div className="feature-phone-wrap">
-            <PhoneShot src="/assets/myframe-app-family.jpg" alt="MyFrame family sharing app screen" />
+            <PhoneShot src="/assets/myframe-app-family.png" alt="MyFrame family sharing app screen" />
           </div>
 
           <div className="download-copy">
@@ -275,11 +292,11 @@ export function DownloadAppLanding({
             <span className="download-kicker">{copy.ctaKicker}</span>
             <h2>{copy.ctaTitle}</h2>
             <p>{copy.ctaLead}</p>
-            <StoreBadges label={copy.badgeLabel} />
+            <DownloadOptions links={downloadLinks} label={copy.badgeLabel} />
           </div>
 
           <div className="cta-phone-wrap">
-            <PhoneShot src="/assets/myframe-app-settings.jpg" alt="MyFrame settings app screen" />
+            <PhoneShot src="/assets/myframe-app-settings.png" alt="MyFrame settings app screen" />
           </div>
         </section>
       </main>

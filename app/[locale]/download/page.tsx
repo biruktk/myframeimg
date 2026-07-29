@@ -13,10 +13,13 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : defaultLocale;
+  const site = await fetchMarketingPublicSite();
+  const translated = locale === defaultLocale ? {} : site?.translations?.[locale] ?? {};
 
   return {
-    title: "Download MyFrame App | MyFrame",
+    title: translated.downloadPageTitle || "Download MyFrame App | MyFrame",
     description:
+      translated.downloadPageDescription ||
       "Download the MyFrame app for iPhone and Android to pair your frame, invite family, send photos, and manage albums.",
     alternates: {
       canonical: locale === defaultLocale ? "/download" : `/${locale}/download`,
@@ -39,6 +42,12 @@ export default async function LocalizedDownloadPage({ params }: Props) {
       translated={translated}
       logoSrc={site?.basic?.headerLogo?.trim() || "/assets/myframe-logo-final.svg"}
       languages={site?.languages ?? []}
+      downloadLinks={{
+        ios: site?.media?.appStoreUrl,
+        android: site?.media?.googlePlayUrl,
+        miniApp: site?.media?.miniAppUrl,
+        apk: site?.media?.apkDownloadUrl,
+      }}
     />
   );
 }

@@ -9,3 +9,13 @@ export const localeNativeNames: Record<Locale, string> = {
   de: "Deutsch",
   ja: "日本語",
 };
+
+/** Flag emoji for language switcher dropdown */
+export const localeFlags: Record<Locale, string> = {
+  en: "🇺🇸",
+  zh: "🇨🇳",
+  es: "🇪🇸",
+  fr: "🇫🇷",
+  de: "🇩🇪",
+  ja: "🇯🇵",
+};

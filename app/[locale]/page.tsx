@@ -3,6 +3,7 @@ import path from "path";
 
 import { MarketingHomeClient } from "@/components/marketing/marketing-home-client";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n";
+import { organizationJsonLd, webSiteJsonLd } from "@/lib/seo";
 
 import "../marketing-globals.css";
 
@@ -16,7 +17,18 @@ function loadHomeMarkup(): string {
 export default async function LocaleHomePage({ params }: Props) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : defaultLocale;
-  void locale;
   const html = loadHomeMarkup();
-  return <MarketingHomeClient markupHtml={html} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd(locale)) }}
+      />
+      <MarketingHomeClient markupHtml={html} />
+    </>
+  );
 }

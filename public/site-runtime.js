@@ -1,3 +1,114 @@
+/**
+ * Custom language dropdown for static marketing pages (home, checkout).
+ */
+(function (global) {
+  var FLAGS = { en: "🇺🇸", zh: "🇨🇳", es: "🇪🇸", fr: "🇫🇷", de: "🇩🇪", ja: "🇯🇵" };
+
+  function escLang(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function labelFor(lang) {
+    return lang.native_name || lang.name || lang.code;
+  }
+
+  function closeAll(except) {
+    document.querySelectorAll(".lang-switcher.open").forEach(function (node) {
+      if (node !== except) {
+        node.classList.remove("open");
+        var btn = node.querySelector(".lang-switcher-btn");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  function mountLanguageSwitcher(mount, languages, currentCode, onSelect) {
+    if (!mount || !languages.length) return false;
+    var current =
+      languages.find(function (l) {
+        return l.code === currentCode;
+      }) || languages[0];
+
+    mount.className = "lang-switcher";
+    mount.innerHTML =
+      '<button type="button" class="lang-switcher-btn" aria-haspopup="listbox" aria-expanded="false">' +
+      '<span class="lang-switcher-flag">' +
+      escLang(FLAGS[current.code] || "🌐") +
+      "</span>" +
+      '<span class="lang-switcher-label">' +
+      escLang(labelFor(current)) +
+      "</span>" +
+      '<i class="fas fa-chevron-down lang-switcher-chevron" aria-hidden="true"></i>' +
+      "</button>" +
+      '<div class="lang-switcher-panel" role="listbox" aria-label="Language">' +
+      languages
+        .map(function (lang) {
+          var selected = lang.code === current.code;
+          return (
+            '<button type="button" class="lang-switcher-option' +
+            (selected ? " is-selected" : "") +
+            '" role="option" data-code="' +
+            escLang(lang.code) +
+            '" aria-selected="' +
+            (selected ? "true" : "false") +
+            '">' +
+            '<span class="lang-switcher-option-flag">' +
+            escLang(FLAGS[lang.code] || "🌐") +
+            "</span>" +
+            '<span class="lang-switcher-option-text">' +
+            "<strong>" +
+            escLang(labelFor(lang)) +
+            "</strong>" +
+            (lang.name && lang.name !== labelFor(lang)
+              ? "<small>" + escLang(lang.name) + "</small>"
+              : "") +
+            "</span>" +
+            (selected ? '<i class="fas fa-check lang-switcher-check" aria-hidden="true"></i>' : "") +
+            "</button>"
+          );
+        })
+        .join("") +
+      "</div>";
+
+    var btn = mount.querySelector(".lang-switcher-btn");
+    var panel = mount.querySelector(".lang-switcher-panel");
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = mount.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) closeAll(mount);
+    });
+
+    panel.querySelectorAll(".lang-switcher-option").forEach(function (option) {
+      option.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var code = option.getAttribute("data-code");
+        mount.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+        if (code && code !== currentCode && typeof onSelect === "function") onSelect(code);
+      });
+    });
+    return true;
+  }
+
+  if (!global.__myframeLangSwitcherBound) {
+    global.__myframeLangSwitcherBound = true;
+    document.addEventListener("click", function () {
+      closeAll(null);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAll(null);
+    });
+  }
+
+  global.mountLanguageSwitcher = mountLanguageSwitcher;
+})(window);
+
 (async function () {
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   /** 502 payloads can be `{ ok: false }` JSON (truthy) — previously we cleared `.nav-links` with empty menus. */
@@ -23,6 +134,19 @@
         status +
         '). Keeping static homepage nav/footer markup. Tip: run the API from web/backend (`npm run dev`, default http://127.0.0.1:3001) or rely on Next’s bundled fallback if configured.'
     );
+    const pathLang = location.pathname.split('/').filter(Boolean)[0];
+    const saved = (() => { try { return localStorage.getItem('myframeLang'); } catch (_) { return null; } })();
+    const current = ['en', 'zh', 'es', 'fr', 'de', 'ja'].includes(pathLang) ? pathLang : (saved || 'en');
+    ['languageSelect', 'mobileLanguageSelect'].forEach((id) => {
+      const select = document.getElementById(id);
+      if (!select || select.__myframeLangBound) return;
+      select.value = current;
+      select.__myframeLangBound = true;
+      select.addEventListener('change', () => {
+        try { localStorage.setItem('myframeLang', select.value); } catch (_) {}
+        location.href = select.value === 'en' ? '/' : `/${select.value}`;
+      });
+    });
     return;
   }
 
@@ -33,35 +157,61 @@
   const watchVideoUrl = String(media.watchVideoUrl || '').trim() || 'https://youtu.be/_8bVyx_Jiv8';
   const languages = json.languages || [];
   const locRes = await fetch('/api/public/location', { credentials: 'same-origin' }).catch(() => null);
-  let geo = { recommendedLanguage: 'en', recommendedCurrency: 'USD' };
+  let geo = { recommendedLanguage: 'en', recommendedCurrency: 'USD', forceLocale: false };
   if (locRes && locRes.ok) {
     try {
       const parsed = await locRes.json();
       if (parsed && typeof parsed === 'object' && parsed.ok !== false) geo = parsed;
     } catch (_) {}
   }
-  const currentLang = resolveLanguage(languages, geo.recommendedLanguage);
 
-  // Persist language preference (path / IP / saved) so future visits skip the lookup
-  // and the server can serve the right language directly via the myframe_lang cookie.
   const langCodes = languages.map((item) => item.code);
   const pathFirstSegment = location.pathname.split('/').filter(Boolean)[0];
   const explicitPathLang = langCodes.includes(pathFirstSegment) ? pathFirstSegment : '';
   const savedLangPref = (() => { try { return localStorage.getItem('myframeLang'); } catch (_) { return null; } })();
+  const manualLangPref = (() => {
+    try {
+      if (localStorage.getItem('myframeLangManual') === '1') return true;
+      return document.cookie.split(';').some((part) => part.trim().startsWith('myframe_lang_manual=1'));
+    } catch (_) {
+      return false;
+    }
+  })();
 
-  function persistLang(code) {
+  function persistLang(code, manual) {
     if (!langCodes.includes(code)) return;
     try { localStorage.setItem('myframeLang', code); } catch (_) {}
+    if (manual) {
+      try { localStorage.setItem('myframeLangManual', '1'); } catch (_) {}
+    }
     try {
       document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      if (manual) {
+        document.cookie = 'myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax';
+      }
     } catch (_) {}
   }
+
+  // IP-forced locale (Spanish-default countries including Ethiopia) —
+  // always redirect when forced country locale differs from URL locale.
+  // This keeps country-based defaults authoritative.
+  if (
+    geo.forceLocale &&
+    langCodes.includes(geo.recommendedLanguage) &&
+    explicitPathLang !== geo.recommendedLanguage
+  ) {
+    persistLang(geo.recommendedLanguage, false);
+    location.replace(`/${geo.recommendedLanguage}${location.search || ''}${location.hash || ''}`);
+    return;
+  }
+
+  const currentLang = resolveLanguage(languages, geo.recommendedLanguage);
 
   // First-time visitor on the homepage with an IP-detected non-English language —
   // auto-redirect to /{lang} so the URL matches the content. The dropdown still lets
   // them switch back; manual choices are respected on the next visit.
   if (!explicitPathLang && !savedLangPref && currentLang !== 'en' && langCodes.includes(currentLang)) {
-    persistLang(currentLang);
+    persistLang(currentLang, false);
     location.replace(`/${currentLang}${location.search || ''}${location.hash || ''}`);
     return;
   }
@@ -70,7 +220,7 @@
   // the English fallback — otherwise a saved 'en' would block future IP-based
   // detection if the user later browses through a different country (e.g. via VPN).
   if (explicitPathLang) {
-    persistLang(explicitPathLang);
+    persistLang(explicitPathLang, manualLangPref);
   }
   const currentCurrency = resolveCurrency(json.currencies || [], geo.recommendedCurrency, currentLang);
   const translated = currentLang === 'en' ? {} : (json.translations || {})[currentLang] || {};
@@ -143,6 +293,7 @@
   setText('#specs .section-label', view.specsLabel);
   setText('#specs .section-title', view.specsTitle);
   setText('#specs .section-desc', view.specsDescription);
+  setText('#pricing .section-label', view.pricingLabel);
   setText('#pricing .section-title', view.pricingTitle);
   setText('#pricing .section-desc', view.pricingDescription);
   setSpecsAside(view);
@@ -156,40 +307,140 @@
   renderFeatures(json.features || [], translatedFeatures);
   renderProducts(json.products || [], translated, currentCurrency, json.currencies || []);
   renderSpecs(translated);
-  renderFooter({ ...footer, footerText: translated.footerText || footer.footerText }, json.footerLinks || [], json.socials || [], currentLang, localizedPages, translated);
+  renderFooter({ ...footer, footerText: translated.footerText || footer.footerText, copyrightText: translated.copyrightText || footer.copyrightText }, json.footerLinks || [], json.socials || [], currentLang, localizedPages, translated);
   applyFooterLoginAnchors(currentLang, translated);
+  applyNotifyModalCopy(view);
+  applyProductPlaceholder(view);
+  applyAccessibilityLabels(view);
   window.myframeCatalog = Object.fromEntries((json.products || []).map((p) => [p.sku, { id: p.id, price: Number(p.price), desc: p.description, name: p.name, currency: p.currency }]));
   localStorage.setItem('myframeCurrency', currentCurrency);
   updateCartBadge();
 
+  function onLanguageChange(code) {
+    try { localStorage.setItem('myframeLang', code); } catch (_) {}
+    try { localStorage.setItem('myframeLangManual', '1'); } catch (_) {}
+    try { localStorage.setItem('myframeCurrency', currencyForLanguage(code)); } catch (_) {}
+    try {
+      document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = 'myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax';
+    } catch (_) {}
+    location.href = code === 'en' ? '/' : `/${code}`;
+  }
+
+  function wireLanguageSelect(select, activeLanguages, lang, onSelect) {
+    if (!select) return;
+    if (activeLanguages.length) {
+      select.innerHTML = activeLanguages
+        .map((item) => `<option value="${esc(item.code)}" ${item.code === lang ? 'selected' : ''}>${esc(item.native_name || item.name || item.code)}</option>`)
+        .join('');
+    }
+    select.value = lang;
+    if (select.__myframeLangBound) return;
+    select.__myframeLangBound = true;
+    select.addEventListener('change', () => {
+      if (typeof onSelect === 'function') onSelect(select.value);
+    });
+  }
+
+  function mountLanguageControl(mount, select, activeLanguages, lang) {
+    const applySelect = () => wireLanguageSelect(select, activeLanguages, lang, onLanguageChange);
+    if (mount && window.mountLanguageSwitcher && mountLanguageSwitcher(mount, activeLanguages, lang, onLanguageChange)) {
+      return;
+    }
+    applySelect();
+    if (!mount || !window.mountLanguageSwitcher) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (mountLanguageSwitcher(mount, activeLanguages, lang, onLanguageChange) || tries >= 30) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+  }
+
   function renderNav(menus, activeLanguages, lang) {
     const nav = document.querySelector('.nav-links');
+    const mount = document.getElementById('languageSwitcher');
     const select = document.getElementById('languageSelect');
     const cta = document.querySelector('.nav-cta');
     const logo = document.querySelector('.nav-logo');
+    const APPLICATION_URLS = new Set(['download', 'download-app', 'page/download-app', '/page/download-app']);
+    const visibleMenus = menus.filter((item) => !APPLICATION_URLS.has(item.url) && !/application/i.test(item.label));
     if (nav) {
-      nav.innerHTML = menus.map((item) => {
+      nav.innerHTML = visibleMenus.map((item) => {
         const isCart = /cart/i.test(item.label) || /cart-checkout/.test(item.url);
         return `<a href="${esc(localizeMenuUrl(item.url, currentLang))}" target="${esc(item.target || '_self')}" class="${isCart ? 'nav-cart-link' : ''}">${esc(translateMenuLabel(item))}${isCart ? ' <span id="navCartBadge" class="cart-badge">0</span>' : ''}</a>`;
       }).join('');
     }
     if (logo) logo.href = lang === 'en' ? '/' : `/${lang}`;
     if (cta) {
-      cta.innerHTML = `<i class="fas fa-gift"></i> ${esc(view.buyForGift || 'Buy for Gift')}`;
+      const giftLabel = view.buyForGift || 'Buy for Gift';
+      cta.setAttribute('aria-label', giftLabel);
+      cta.setAttribute('title', giftLabel);
+      cta.innerHTML = `<i class="fas fa-gift"></i><span>${esc(giftLabel)}</span>`;
       cta.href = lang === 'en' ? `/cart-checkout.html?add=YX-133P` : `/${lang}/cart?add=YX-133P`;
     }
-    if (select) {
-      select.innerHTML = activeLanguages.map((item) => `<option value="${esc(item.code)}" ${item.code === lang ? 'selected' : ''}>${esc(item.native_name || item.name)}</option>`).join('');
-      select.addEventListener('change', () => {
-        try { localStorage.setItem('myframeLang', select.value); } catch (_) {}
-        try { localStorage.setItem('myframeCurrency', currencyForLanguage(select.value)); } catch (_) {}
-        try {
-          document.cookie = `myframe_lang=${select.value}; path=/; max-age=31536000; SameSite=Lax`;
-        } catch (_) {}
-        location.href = select.value === 'en' ? '/' : `/${select.value}`;
-      });
-    }
+    mountLanguageControl(mount, select, activeLanguages, lang);
+    mountLanguageControl(
+      document.getElementById('mobileLanguageSwitcher'),
+      document.getElementById('mobileLanguageSelect'),
+      activeLanguages,
+      lang,
+    );
+    syncMobileMenuLinks(visibleMenus, lang);
     updateCartBadge();
+  }
+
+  function syncMobileMenuLinks(visibleMenus, lang) {
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (!mobileMenu) return;
+    visibleMenus.forEach((item) => {
+      const href = localizeMenuUrl(item.url, lang);
+      mobileMenu.querySelectorAll(`a[href="${item.url}"], a[href="${href}"]`).forEach((anchor) => {
+        anchor.setAttribute('href', href);
+        const isCart = /cart/i.test(item.label) || /cart-checkout/.test(item.url);
+        if (isCart) {
+          anchor.innerHTML = `${esc(translateMenuLabel(item))} <span id="mobileNavCartBadge" class="cart-badge">0</span>`;
+        } else {
+          anchor.textContent = translateMenuLabel(item);
+        }
+      });
+    });
+  }
+
+  function applyNotifyModalCopy(data) {
+    const modal = document.getElementById('notifyModal');
+    if (!modal) return;
+    const title = modal.querySelector('h3');
+    const intro = modal.querySelector('p');
+    const nameInput = modal.querySelector('input[name="name"]');
+    const emailInput = modal.querySelector('input[name="email"]');
+    const submitBtn = modal.querySelector('button[type="submit"]');
+    if (title && data.notifyModalTitle) title.textContent = data.notifyModalTitle;
+    if (intro && data.notifyModalIntro) {
+      intro.innerHTML = `${esc(data.notifyModalIntro)} <strong id="notifyProductTitle">${esc(intro.querySelector('#notifyProductTitle')?.textContent || 'this product')}</strong>${data.notifyModalIntroSuffix ? esc(data.notifyModalIntroSuffix) : '.'}`;
+    }
+    if (nameInput && data.notifyNamePlaceholder) nameInput.setAttribute('placeholder', data.notifyNamePlaceholder);
+    if (emailInput && data.notifyEmailPlaceholder) emailInput.setAttribute('placeholder', data.notifyEmailPlaceholder);
+    if (submitBtn && data.notifySubmitButton) submitBtn.textContent = data.notifySubmitButton;
+  }
+
+  function applyProductPlaceholder(data) {
+    const placeholder = document.querySelector('#productShowcaseMedia .product-placeholder');
+    if (!placeholder) return;
+    const brand = placeholder.querySelector('strong');
+    const label = placeholder.querySelector('span');
+    if (brand && data.productBrandName) brand.textContent = data.productBrandName;
+    if (label && data.productLabel) label.textContent = data.productLabel;
+  }
+
+  function applyAccessibilityLabels(data) {
+    const prev = document.querySelector('[data-hero-prev]');
+    const next = document.querySelector('[data-hero-next]');
+    const menuToggle = document.getElementById('mobileMenuToggle');
+    if (prev && data.heroPrevAria) prev.setAttribute('aria-label', data.heroPrevAria);
+    if (next && data.heroNextAria) next.setAttribute('aria-label', data.heroNextAria);
+    if (menuToggle && data.openMenuAria) menuToggle.setAttribute('aria-label', data.openMenuAria);
   }
 
   function setFamilySteps(data) {
@@ -321,7 +572,8 @@
           ? `type="button" data-notify-sku="${esc(p.sku)}" data-notify-name="${esc(p.name)}" onclick="window.openNotifyModal && window.openNotifyModal(this.dataset.notifySku, this.dataset.notifyName)"`
           : `type="button" onclick="window.location.href='${esc(target)}'"`;
         const badge = p.badge && /available/i.test(String(p.badge)) ? `<div class="pricing-badge">${esc(translateBadge(p.badge))}</div>` : '';
-        const period = p.sku === 'YX-6' || p.sku === 'YX-6P' ? '6" E-ink display' : (translatedView.oneTimePurchase || 'One-time purchase');
+        const defaultPeriod = p.sku === 'YX-6' || p.sku === 'YX-6P' ? '6" E-ink display' : 'One-time purchase';
+        const period = translatedView[`product${index + 1}Period`] || (p.sku === 'YX-133P' ? translatedView.oneTimePurchase : '') || defaultPeriod;
         const priceLabel = p.sku === 'YX-6P' ? (translatedView.badgeComingSoon || 'Coming Soon') : formatPrice(Number(p.price), currencyCode, currencies);
         return `<div class="pricing-card ${p.badge && /available/i.test(p.badge) ? 'featured' : ''}">${badge}<h3 class="pricing-name">${esc(p.name)}</h3><p class="pricing-desc">${esc(translatedDesc)}</p><div class="pricing-price">${esc(priceLabel)}</div><p class="pricing-period">${esc(period)}</p><ul class="pricing-features">${translatedFeatures.map((f) => `<li><i class="fas fa-check"></i> ${esc(f)}</li>`).join('')}</ul><button class="pricing-btn ${p.badge && /available/i.test(p.badge) ? 'pricing-btn-primary' : 'pricing-btn-secondary'}" ${action}>${esc(translatedButton)}</button></div>`;
       }).join('');
@@ -415,10 +667,20 @@
   function resolveLanguage(activeLanguages, recommended) {
     const pathLang = location.pathname.split('/').filter(Boolean)[0];
     const codes = activeLanguages.map((lang) => lang.code);
-    if (codes.includes(pathLang)) return pathLang;
+    const manual = (() => {
+      try {
+        if (localStorage.getItem('myframeLangManual') === '1') return true;
+        return document.cookie.split(';').some((part) => part.trim().startsWith('myframe_lang_manual=1'));
+      } catch (_) {
+        return false;
+      }
+    })();
+    if (codes.includes(pathLang) && manual) return pathLang;
     const saved = localStorage.getItem('myframeLang');
-    if (codes.includes(saved)) return saved;
+    if (manual && codes.includes(saved)) return saved;
     if (codes.includes(recommended)) return recommended;
+    if (codes.includes(pathLang)) return pathLang;
+    if (codes.includes(saved)) return saved;
     return 'en';
   }
 
@@ -459,6 +721,7 @@
     if (item.url === '#product') return view.menuProduct || item.label;
     if (item.url === '#pricing') return view.menuPricing || item.label;
     if (item.url === '#family') return view.menuFamilies || item.label;
+    if (['download', 'download-app', 'page/download-app', '/page/download-app'].includes(item.url)) return view.menuApplication || view.footerDownloadApp || item.label;
     return item.label;
   }
 
@@ -540,7 +803,12 @@
     if (!notifyModal || !notifyForm) return;
     notifyState.sku = sku || '';
     notifyState.productName = productName || '';
-    if (notifyTitle) notifyTitle.textContent = productName || 'this product';
+    const intro = notifyModal.querySelector('p');
+    if (intro && view.notifyModalIntro) {
+      intro.innerHTML = `${esc(view.notifyModalIntro)} <strong id="notifyProductTitle">${esc(productName || 'this product')}</strong>${view.notifyModalIntroSuffix ? esc(view.notifyModalIntroSuffix) : '.'}`;
+    } else if (notifyTitle) {
+      notifyTitle.textContent = productName || 'this product';
+    }
     notifyForm.reset();
     if (notifySuccess) notifySuccess.style.display = 'none';
     if (notifyError) notifyError.style.display = 'none';

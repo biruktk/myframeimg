@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { CartNavLink } from "@/components/marketing/cart-nav-link";
+import { LanguageSwitcher } from "@/components/marketing/language-switcher";
 import { defaultLocale, type Locale } from "@/lib/i18n";
+import { filterMarketingMenus } from "@/lib/marketing-menu-filter";
 import { localizeMarketingMenuHref } from "@/lib/marketing-menu-href";
 import { translateMarketingMenuLabel } from "@/lib/marketing-menu-label";
 import type { MarketingMenuItem } from "@/lib/marketing-public-site-server";
@@ -22,7 +24,7 @@ type Props = {
 export function MarketingContentNav({ locale, menus, translated, logoSrc, languages }: Props) {
   const pathname = usePathname() || "";
   const home = locale === defaultLocale ? `/${defaultLocale}` : `/${locale}`;
-  const sorted = [...menus].sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
+  const sorted = filterMarketingMenus([...menus]).sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
   const langOptions = languages.length ? languages : [{ code: "en", native_name: "English" }];
 
   function hrefForLocale(next: string): string {
@@ -66,22 +68,29 @@ export function MarketingContentNav({ locale, menus, translated, logoSrc, langua
           })}
         </div>
         <div className="nav-right">
-          <select
-            className="nav-lang"
-            value={locale}
-            onChange={(e) => {
-              window.location.href = hrefForLocale(e.target.value);
+          <LanguageSwitcher
+            locale={locale}
+            languages={langOptions}
+            onChange={(code) => {
+              try {
+                localStorage.setItem("myframeLang", code);
+                localStorage.setItem("myframeLangManual", "1");
+                document.cookie = `myframe_lang=${code}; path=/; max-age=31536000; SameSite=Lax`;
+                document.cookie = "myframe_lang_manual=1; path=/; max-age=31536000; SameSite=Lax";
+              } catch {
+                /* ignore */
+              }
+              window.location.href = hrefForLocale(code);
             }}
-            aria-label="Language"
+          />
+          <Link
+            className="nav-cta"
+            href={localizeMarketingMenuHref("/cart-checkout.html?add=YX-133P", locale)}
+            aria-label={translated.buyForGift ?? "Buy for Gift"}
+            title={translated.buyForGift ?? "Buy for Gift"}
           >
-            {langOptions.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.native_name || l.name || l.code}
-              </option>
-            ))}
-          </select>
-          <Link className="nav-cta" href={localizeMarketingMenuHref("/cart-checkout.html?add=YX-133P", locale)}>
-            <i className="fas fa-gift" /> {translated.buyForGift ?? "Buy for Gift"}
+            <i className="fas fa-gift" />
+            <span>{translated.buyForGift ?? "Buy for Gift"}</span>
           </Link>
         </div>
       </div>

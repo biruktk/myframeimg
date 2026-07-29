@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
-export default function LocaleOrderSuccessBridge() {
+function OrderSuccessBridgeInner() {
   const { locale } = useParams<{ locale: string }>();
   const sp = useSearchParams();
 
@@ -17,5 +17,19 @@ export default function LocaleOrderSuccessBridge() {
     <main className="flex min-h-screen items-center justify-center bg-white p-8 text-gray-600">
       Loading…
     </main>
+  );
+}
+
+export default function LocaleOrderSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-white p-8 text-gray-600">
+          Loading…
+        </main>
+      }
+    >
+      <OrderSuccessBridgeInner />
+    </Suspense>
   );
 }

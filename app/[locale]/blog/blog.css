@@ -38,7 +38,7 @@
 .blog-page-main {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 72px 24px 96px;
+  padding: 58px 24px 72px;
 }
 
 .blog-eyebrow {
@@ -51,14 +51,14 @@
 }
 
 .blog-title {
-  font-size: 54px;
+  font-size: 46px;
   line-height: 1.08;
   letter-spacing: -0.03em;
   margin-bottom: 18px;
 }
 
 .blog-lede {
-  font-size: 22px;
+  font-size: 19px;
   color: #666;
   line-height: 1.5;
   margin-bottom: 28px;

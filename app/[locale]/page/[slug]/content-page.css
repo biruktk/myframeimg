@@ -5,7 +5,7 @@
 .content-page-main {
   width: min(1080px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 132px 0 100px;
+  padding: 108px 0 80px;
 }
 
 .content-page-card {
@@ -37,7 +37,7 @@
 }
 
 .content-page-title {
-  font-size: clamp(2.4rem, 3.6vw, 3.45rem);
+  font-size: clamp(2.1rem, 3.2vw, 3rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink);
