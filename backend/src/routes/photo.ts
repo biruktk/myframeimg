@@ -17,6 +17,7 @@ import {
 import {
   assertXt13e6Bin,
   isProbablyMyfmBuffer,
+  looksLikeRasterBuffer,
   storeClientXtBin,
   writeMyfmSidecar,
   XT_BIN_TOTAL_BYTES,
@@ -84,11 +85,20 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const basename = path.basename(file.path);
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
-      const looksLikeRaster =
-        [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
+      const looksLikeRaster = looksLikeRasterBuffer(buf, ext);
 
       let mqttBasename = basename;
       let imageProcessing: "client_passthrough" | "server_myfm_encode" | "stored_raw" = "stored_raw";
+
+      if (!buf.length) {
+        res.status(400).json({
+          ok: false,
+          error: "empty_upload",
+          message:
+            "Uploaded file is empty (0 bytes). On iPhone: grant Full Photos access and wait for iCloud download, then retry.",
+        });
+        return;
+      }
 
       if (isProbablyMyfmBuffer(buf)) {
         assertXt13e6Bin(buf);
@@ -109,12 +119,14 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
-          res.status(503).json({
+          const empty = detail.includes("empty_image_upload");
+          res.status(empty ? 400 : 503).json({
             ok: false,
-            error: "myfm_encode_failed",
+            error: empty ? "empty_upload" : "myfm_encode_failed",
             message: detail,
-            hint:
-              "XT ePaper / ESP32 only renders MYFM .bin. Fix sharp/libvips on the server, ensure FRAME_MYFM_ENCODE=1, and rebuild. JPEG/PNG is never sent to MQTT.",
+            hint: empty
+              ? "iPhone sent 0 bytes — Full Photos access + fully downloaded photo required."
+              : "Server normalizes HEIC/PNG/WebP to sRGB JPEG then encodes XT .bin. If this persists, the file may be corrupt.",
           });
           return;
         }
@@ -302,11 +314,20 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const basename = path.basename(file.path);
       const ext = path.extname(basename).toLowerCase();
       const encodeMyfm = String(process.env.FRAME_MYFM_ENCODE ?? "1").trim() !== "0";
-      const looksLikeRaster =
-        [".jpg", ".jpeg", ".png", ".webp"].includes(ext) || (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8);
+      const looksLikeRaster = looksLikeRasterBuffer(buf, ext);
 
       let mqttBasename = basename;
       let imageProcessing: "client_passthrough" | "server_myfm_encode" | "stored_raw" = "stored_raw";
+
+      if (!buf.length) {
+        res.status(400).json({
+          ok: false,
+          error: "empty_upload",
+          message:
+            "Uploaded file is empty (0 bytes). On iPhone: grant Full Photos access and wait for iCloud download, then retry.",
+        });
+        return;
+      }
 
       if (isProbablyMyfmBuffer(buf)) {
         assertXt13e6Bin(buf);
@@ -327,12 +348,14 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         } catch (err) {
           const detail = err instanceof Error ? err.message : String(err);
           console.error("[photo] MYFM encode failed:", detail);
-          res.status(503).json({
+          const empty = detail.includes("empty_image_upload");
+          res.status(empty ? 400 : 503).json({
             ok: false,
-            error: "myfm_encode_failed",
+            error: empty ? "empty_upload" : "myfm_encode_failed",
             message: detail,
-            hint:
-              "XT ePaper / ESP32 only renders MYFM .bin. Fix sharp/libvips on the server, ensure FRAME_MYFM_ENCODE=1, and rebuild. JPEG/PNG is never sent to MQTT.",
+            hint: empty
+              ? "iPhone sent 0 bytes — Full Photos access + fully downloaded photo required."
+              : "Server normalizes HEIC/PNG/WebP to sRGB JPEG then encodes XT .bin. If this persists, the file may be corrupt.",
           });
           return;
         }

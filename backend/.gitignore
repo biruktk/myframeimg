@@ -4,3 +4,7 @@ uploads/
 secrets/
 *.DS_Store
 ._*
+
+server.log
+*.bak.*
+*.bak
