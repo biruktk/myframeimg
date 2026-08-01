@@ -1,4 +1,7 @@
 import express, { Request, Response, Router } from "express";
+import fs from "fs";
+import path from "path";
+import multer from "multer";
 import { db } from "../db/store";
 import type { AuthedUser } from "../services/app_user_jwt";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
@@ -41,8 +44,46 @@ function playlistEditableByUser(plId: string, userId: string): boolean {
   const vis = new Set(visibleFrameIdsForUser(userId));
   const pl = data.playlists.find((p) => p.id === plId);
   if (!pl || pl.system) return false;
+  // Account gallery albums are owned by the creating user (may have no frames).
+  if (pl.ownerUserId && pl.ownerUserId === userId) return true;
+  if (!pl.assignedFrameIds.length && !pl.ownerUserId) {
+    // Legacy orphan albums: allow the requesting user to claim/edit.
+    return true;
+  }
   return pl.assignedFrameIds.some((fid) => vis.has(fid));
 }
+
+
+/** GET /api/frames — frames accessible to the authenticated user (own + shared + family). */
+userPortalRouter.get("/frames", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const data = db.read();
+  const user = data.users.find((u) => u.id === auth.userId);
+  const ids = new Set<string>();
+  for (const f of data.frames) {
+    if (f.ownerUserId === auth.userId) ids.add(f.id);
+    if (Array.isArray(f.sharedToUserIds) && f.sharedToUserIds.includes(auth.userId)) ids.add(f.id);
+  }
+  if (user?.familyGroupId) {
+    const g = data.familyGroups.find((fg) => fg.id === user.familyGroupId);
+    if (g) for (const fid of g.frameIds) ids.add(fid);
+  }
+  const frames = data.frames
+    .filter((f) => ids.has(f.id))
+    .map((f) => ({
+      id: f.id,
+      bleMac: f.bleMac,
+      name: f.id,
+      wifiSsid: f.wifiSsid,
+      wifiStatus: f.wifiStatus,
+      firmwareVersion: f.firmwareVersion,
+      lastSeenAtMs: f.lastSeenAtMs,
+      uptimeMs: f.uptimeMs,
+      familyId: user?.familyGroupId ?? null,
+    }));
+  res.json({ ok: true, frames });
+});
 
 /** GET /api/user/dashboard */
 userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
@@ -207,20 +248,47 @@ userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
   if (!auth) return;
 
   const data = db.read();
-  const frameIds = visibleFrameIdsForUser(auth.userId);
+  // Match by uploader OR by visible frame MAC/id (uploads store STA MAC, frames may use id/bleMac).
+  const visible = data.frames.filter((f) => visibleFrameIdsForUser(auth.userId).includes(f.id));
+  const macKeys = new Set<string>();
+  for (const f of visible) {
+    for (const raw of [f.id, f.bleMac, f.stationMac ?? ""]) {
+      const hex = String(raw).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+      if (hex.length >= 12) {
+        const n = hex.length === 12 ? hex : hex.slice(-12);
+        macKeys.add(n);
+        try {
+          const v = BigInt("0x" + n);
+          macKeys.add((v - 2n).toString(16).toUpperCase().padStart(12, "0"));
+          macKeys.add((v + 2n).toString(16).toUpperCase().padStart(12, "0"));
+        } catch { /* ignore */ }
+      }
+      macKeys.add(String(raw));
+    }
+  }
   const photos = data.uploads
-    .filter((u) => frameIds.includes(u.deviceId) && u.uploaderUserId === auth.userId)
+    .filter((u) => {
+      if (u.uploaderUserId === auth.userId) return true;
+      const d = String(u.deviceId || "");
+      const hex = d.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+      const n = hex.length >= 12 ? (hex.length === 12 ? hex : hex.slice(-12)) : "";
+      return macKeys.has(d) || (n && macKeys.has(n));
+    })
     .sort((a, b) => b.atMs - a.atMs)
     .slice(0, 200)
-    .map((u) => ({
-      id: u.id,
-      url: u.previewFilename
+    .map((u) => {
+      const path = u.previewFilename
         ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
-        : `/frame-media/${encodeURIComponent(u.filename)}`,
-      atMs: u.atMs,
-      deviceId: u.deviceId,
-      filename: u.filename,
-    }));
+        : `/frame-media/${encodeURIComponent(u.filename)}`;
+      const base = String(process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
+      return {
+        id: u.id,
+        url: base ? `${base}${path}` : path,
+        atMs: u.atMs,
+        deviceId: u.deviceId,
+        filename: u.filename,
+      };
+    });
   res.json({ ok: true, photos });
 });
 
@@ -247,8 +315,14 @@ userPortalRouter.patch("/user/playlists/:id", (req: Request, res: Response) => {
         ...(title !== undefined && title.length > 0 ? { title } : {}),
         ...(scheduleRule !== undefined ? { scheduleRule } : {}),
         ...(photoIds !== undefined ? { photoIds } : {}),
+        ...(p.ownerUserId ? {} : { ownerUserId: auth.userId }),
       };
     });
+    const u = draft.users.find((x) => x.id === auth.userId);
+    if (u) {
+      u.syncVersion = (u.syncVersion ?? 0) + 1;
+      u.syncUpdatedAtMs = Date.now();
+    }
   });
   if (!updated) {
     res.status(404).json({ ok: false, error: "playlist_not_found" });
@@ -256,4 +330,130 @@ userPortalRouter.patch("/user/playlists/:id", (req: Request, res: Response) => {
   }
   const pl = next.playlists.find((p) => p.id === id);
   res.json({ ok: true, playlist: pl });
+});
+
+
+
+/** POST /api/user/gallery — account gallery sync (NO cast to frame). */
+const galleryUploadDir = path.resolve(
+  process.cwd(),
+  process.env.UPLOAD_DIR || "uploads",
+);
+if (!fs.existsSync(galleryUploadDir)) {
+  fs.mkdirSync(galleryUploadDir, { recursive: true });
+}
+const galleryUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, galleryUploadDir),
+    filename: (_req, file, cb) => {
+      const safe = String(file.originalname || "photo.jpg").replace(/[^\w.\-]+/g, "_");
+      cb(null, `gallery_${Date.now()}_${safe}`);
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+userPortalRouter.post(
+  "/user/gallery",
+  galleryUpload.single("file"),
+  (req: Request, res: Response) => {
+    const auth = authUser(req, res);
+    if (!auth) return;
+    const file = (req as any).file as { filename?: string; size?: number } | undefined;
+    if (!file) {
+      res.status(400).json({ ok: false, error: "missing_file" });
+      return;
+    }
+    const now = Date.now();
+    const uploadId = `gal_${now}_${Math.random().toString(16).slice(2, 10)}`;
+    const deviceId = String(req.body?.device_id ?? "").trim() || null;
+    const filename = path.basename(file.filename || "photo.jpg");
+    db.mutate((draft) => {
+      draft.uploads.unshift({
+        id: uploadId,
+        filename,
+        previewFilename: filename,
+        bytes: file.size || 0,
+        deviceId: deviceId || "gallery",
+        atMs: now,
+        checksumSha256: "",
+        deliveredToFrame: false,
+        deliveryMode: "gallery_sync",
+        deliveryCheckedAtMs: now,
+        uploaderUserId: auth.userId,
+      });
+      if (draft.uploads.length > 2000) {
+        draft.uploads = draft.uploads.slice(0, 2000);
+      }
+      const u = draft.users.find((x) => x.id === auth.userId);
+      if (u) {
+        u.syncVersion = (u.syncVersion ?? 0) + 1;
+        u.syncUpdatedAtMs = Date.now();
+      }
+    });
+    const mediaBase = String(
+      process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL || "",
+    ).replace(/\/$/, "");
+    const rel = `/frame-media/${encodeURIComponent(filename)}`;
+    res.json({
+      ok: true,
+      id: uploadId,
+      photo_id: uploadId,
+      url: mediaBase ? `${mediaBase}${rel}` : rel,
+      atMs: now,
+    });
+  },
+);
+
+/** POST /api/user/playlists — create album/playlist for account sync. */
+userPortalRouter.post("/user/playlists", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const title = String(req.body?.title ?? req.body?.name ?? "Album").trim() || "Album";
+  const assignedFrameId = String(req.body?.assignedFrameId ?? "").trim();
+  const id = `pl_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  const playlist = {
+    id,
+    title,
+    photoIds: [] as string[],
+    scheduleRule: null as string | null,
+    assignedFrameIds: assignedFrameId ? [assignedFrameId] : ([] as string[]),
+    system: false,
+    ownerUserId: auth.userId,
+  };
+  db.mutate((draft) => {
+    draft.playlists.push(playlist);
+    const u = draft.users.find((x) => x.id === auth.userId);
+    if (u) {
+      u.syncVersion = (u.syncVersion ?? 0) + 1;
+      u.syncUpdatedAtMs = Date.now();
+    }
+  });
+  res.json({ ok: true, playlist });
+});
+
+/** GET /api/v1/user/albums — album list for Flutter AlbumCloudSync. */
+userPortalRouter.get("/v1/user/albums", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const data = db.read();
+  const albums = data.playlists
+    .filter((p) => {
+      if (p.system) return false;
+      if (p.ownerUserId) return p.ownerUserId === auth.userId;
+      // Legacy: include unowned playlists assigned to this user's frames, or orphans.
+      const vis = new Set(visibleFrameIdsForUser(auth.userId));
+      if (p.assignedFrameIds.some((fid) => vis.has(fid))) return true;
+      return !p.assignedFrameIds.length;
+    })
+    .map((p) => ({
+      id: p.id,
+      name: p.title,
+      title: p.title,
+      photo_ids: Array.isArray(p.photoIds) ? p.photoIds : [],
+      photoIds: Array.isArray(p.photoIds) ? p.photoIds : [],
+      photo_count: Array.isArray(p.photoIds) ? p.photoIds.length : 0,
+      frame_ids: Array.isArray(p.assignedFrameIds) ? p.assignedFrameIds : [],
+    }));
+  res.json({ ok: true, albums });
 });

@@ -20,6 +20,8 @@ import { frameSleepRouter } from "./routes/frame_sleep";
 import { enterpriseRouter } from "./routes/enterprise";
 import { publicSiteRouter } from "./routes/public_site";
 import { userPortalRouter } from "./routes/user_portal";
+import { userProfileRouter } from "./routes/user_profile";
+import { syncTransitRouter, startTransitCleanupJob } from "./routes/sync_transit";
 import { mobileGoogleAuthRouter } from "./routes/mobile_google_auth";
 import { wechatMobileAuthRouter } from "./routes/wechat_mobile_auth";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
@@ -139,6 +141,8 @@ app.use("/api", publicSiteRouter);
 app.use("/api", deviceRouter);
 app.use("/api", authRouter);
 app.use("/api", userPortalRouter);
+app.use("/api", userProfileRouter);
+app.use("/api", syncTransitRouter);
 app.use("/api", familyRouter);
 app.use("/api", frameSlideshowRouter());
 app.use("/api", framePairingRouter);
@@ -170,6 +174,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 app.listen(port, () => {
   console.log(`MyFrame API http://0.0.0.0:${port}`);
+  startTransitCleanupJob();
   console.log(`Upload dir: ${uploadDir}`);
   console.log(`PUBLIC_BASE_URL: ${publicBaseUrl}`);
   if (mediaPublicBaseUrl !== publicBaseUrl) {

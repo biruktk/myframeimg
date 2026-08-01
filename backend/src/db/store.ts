@@ -134,6 +134,21 @@ export type MyframeDb = {
     fcmTokens?: string[];
     /** Email verified flag (undefined = grandfathered as verified). */
     emailVerified?: boolean;
+    /** Monotonic account sync version (metadata-only cloud state). */
+    syncVersion?: number;
+    syncUpdatedAtMs?: number;
+    /** Synced UI preferences (language/theme/notifications). */
+    syncConfigurations?: {
+      language?: string;
+      theme?: string;
+      push_notifications_enabled?: boolean;
+      display_preferences?: {
+        auto_slideshow?: boolean;
+        interval_seconds?: number;
+      };
+    };
+    /** Preferred active frame id / MAC among bound_frames. */
+    primaryFrameId?: string | null;
   }>;
   emailVerifications: Array<{
     id: string;
@@ -167,6 +182,7 @@ export type MyframeDb = {
     sharedToUserIds: string[];
     orgId?: string;
     wifiSsid: string | null;
+    displayName?: string | null;
     wifiStatus: "online" | "offline" | "never_provisioned";
     firmwareVersion: string;
     lastSeenAtMs: number | null;
@@ -232,6 +248,8 @@ export type MyframeDb = {
     scheduleRule: string | null;
     assignedFrameIds: string[];
     system: boolean;
+    /** Account owner for gallery albums (may have empty assignedFrameIds). */
+    ownerUserId?: string | null;
   }>;
   notifications: Array<{
     id: string;
@@ -260,6 +278,17 @@ export type MyframeDb = {
     target: string;
     atMs: number;
     meta?: Record<string, unknown>;
+  }>;
+  /** Ephemeral cross-device media packages (TTL ≤ 2h; deleted after download). */
+  syncTransitPackages?: Array<{
+    id: string;
+    userId: string;
+    filename: string;
+    storedName: string;
+    bytes: number;
+    createdAtMs: number;
+    expiresAtMs: number;
+    consumedAtMs: number | null;
   }>;
   sleepConfigs?: Record<string, { enabled: boolean; startTime: string; endTime: string }>;
   faqs: Array<{
@@ -503,6 +532,10 @@ function readDbRaw(): MyframeDb {
   if (!parsed.sleepConfigs || typeof parsed.sleepConfigs !== "object") {
     parsed.sleepConfigs = {};
   }
+  if (!Array.isArray(parsed.syncTransitPackages)) {
+    parsed.syncTransitPackages = [];
+  }
+
   if (!Array.isArray(parsed.orders)) {
     parsed.orders = [];
   }
