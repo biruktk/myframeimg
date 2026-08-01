@@ -5,6 +5,12 @@ import multer from "multer";
 import { db } from "../db/store";
 import type { AuthedUser } from "../services/app_user_jwt";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
+import {
+  stopPlaybackForDeletedPlaylist,
+  stopPlaybackIfSlideshowEmpty,
+  mediaTokensFromIds,
+  stopPlaybackForMacKeys,
+} from "../services/slideshow_stop";
 
 export const userPortalRouter = Router();
 userPortalRouter.use(express.json({ limit: "256kb" }));
@@ -435,10 +441,9 @@ userPortalRouter.post("/user/playlists", (req: Request, res: Response) => {
 /** GET /api/v1/user/albums — album list for Flutter AlbumCloudSync. */
 
 /**
- * Account-only deletes.
- * Removes gallery media / albums from this user's cloud state so other phones
- * resync. Does NOT MQTT the frame, stop slideshow, or free TF card space —
- * cast/TF content is separate from account gallery.
+ * Account deletes + frame stop (client requirement).
+ * Playlist/album DELETE syncs cloud state AND notifies frames playing that
+ * content to stop (clear slideshowsByBleMac + MQTT stop/strategy idle).
  */
 function bumpUserSync(draft: ReturnType<typeof db.read>, userId: string) {
   const u = draft.users.find((x) => x.id === userId);
@@ -454,7 +459,7 @@ function userOwnsUpload(uploadId: string, userId: string): boolean {
   return !!(u && u.uploaderUserId === userId);
 }
 
-function deleteOwnedUpload(authUserId: string, uploadId: string): { ok: boolean; error?: string } {
+async function deleteOwnedUpload(authUserId: string, uploadId: string): Promise<{ ok: boolean; error?: string }> {
   const id = String(uploadId || "").trim();
   if (!id) return { ok: false, error: "missing_id" };
   if (!userOwnsUpload(id, authUserId)) {
@@ -464,21 +469,34 @@ function deleteOwnedUpload(authUserId: string, uploadId: string): { ok: boolean;
   }
   let filename: string | null = null;
   let preview: string | null = null;
+  const touchedMacs: string[] = [];
+  const tokens = mediaTokensFromIds([id]);
   db.mutate((draft) => {
     const match = draft.uploads.find((x) => x.id === id);
     if (!match || match.uploaderUserId !== authUserId) return;
     filename = match.filename || null;
     preview = match.previewFilename || null;
     draft.uploads = draft.uploads.filter((x) => x.id !== id);
-    // Strip id from account playlists (metadata only — no frame notify).
     for (const pl of draft.playlists) {
       if (!Array.isArray(pl.photoIds) || !pl.photoIds.includes(id)) continue;
       if (pl.ownerUserId && pl.ownerUserId !== authUserId) continue;
       pl.photoIds = pl.photoIds.filter((pid) => pid !== id);
     }
+    const slides = draft.slideshowsByBleMac || {};
+    for (const key of Object.keys(slides)) {
+      const s = slides[key];
+      if (!s?.imageIds?.length) continue;
+      const nextIds = s.imageIds.filter((pid: string) => {
+        const base = String(pid).split("/").pop() || String(pid);
+        return !tokens.has(String(pid)) && !tokens.has(base);
+      });
+      if (nextIds.length === s.imageIds.length) continue;
+      slides[key] = { ...s, imageIds: nextIds };
+      touchedMacs.push(key);
+    }
+    draft.slideshowsByBleMac = slides;
     bumpUserSync(draft, authUserId);
   });
-  // Best-effort unlink of gallery files only; never touch MQTT/slideshow.
   for (const name of [filename, preview]) {
     if (!name) continue;
     try {
@@ -486,10 +504,16 @@ function deleteOwnedUpload(authUserId: string, uploadId: string): { ok: boolean;
       if (fs.existsSync(p)) fs.unlinkSync(p);
     } catch { /* ignore */ }
   }
+  await stopPlaybackIfSlideshowEmpty(touchedMacs).catch(() => {});
   return { ok: true };
 }
 
-function deleteOwnedPlaylist(authUserId: string, playlistId: string): { ok: boolean; error?: string } {
+async function deleteOwnedPlaylist(authUserId: string, playlistId: string): Promise<{
+  ok: boolean;
+  error?: string;
+  framesCleared?: string[];
+  framesNotified?: string[];
+}> {
   const id = String(playlistId || "").trim();
   if (!id) return { ok: false, error: "missing_id" };
   if (!playlistEditableByUser(id, authUserId)) {
@@ -497,67 +521,96 @@ function deleteOwnedPlaylist(authUserId: string, playlistId: string): { ok: bool
     if (!data.playlists.some((p) => p.id === id)) return { ok: false, error: "not_found" };
     return { ok: false, error: "forbidden" };
   }
+  const before = db.read().playlists.find((p) => p.id === id);
+  if (!before) return { ok: false, error: "not_found" };
+
+  const snapshot = {
+    photoIds: Array.isArray(before.photoIds) ? [...before.photoIds] : [],
+    assignedFrameIds: Array.isArray(before.assignedFrameIds) ? [...before.assignedFrameIds] : [],
+  };
+
+  const stopResult = await stopPlaybackForDeletedPlaylist(snapshot).catch((err) => {
+    console.warn("[user_portal] stopPlaybackForDeletedPlaylist", err);
+    return { cleared: [] as string[], notified: [] as string[] };
+  });
+
   let removed = false;
   db.mutate((draft) => {
-    const before = draft.playlists.length;
+    const n = draft.playlists.length;
     draft.playlists = draft.playlists.filter((p) => p.id !== id);
-    removed = draft.playlists.length < before;
+    removed = draft.playlists.length < n;
     if (removed) bumpUserSync(draft, authUserId);
   });
   if (!removed) return { ok: false, error: "not_found" };
-  return { ok: true };
+  return {
+    ok: true,
+    framesCleared: stopResult.cleared,
+    framesNotified: stopResult.notified,
+  };
 }
 
-/** DELETE /api/user/gallery/:id — account gallery photo (no frame TF clear). */
+/** DELETE /api/user/gallery/:id */
 userPortalRouter.delete("/user/gallery/:id", (req: Request, res: Response) => {
   const auth = authUser(req, res);
   if (!auth) return;
-  const result = deleteOwnedUpload(auth.userId, String(req.params.id));
-  if (!result.ok) {
-    const code = result.error === "forbidden" ? 403 : 404;
-    res.status(code).json({ ok: false, error: result.error || "delete_failed" });
-    return;
-  }
-  res.json({ ok: true });
+  void deleteOwnedUpload(auth.userId, String(req.params.id)).then((result) => {
+    if (!result.ok) {
+      const code = result.error === "forbidden" ? 403 : 404;
+      res.status(code).json({ ok: false, error: result.error || "delete_failed" });
+      return;
+    }
+    res.json({ ok: true });
+  });
 });
 
-/** DELETE /api/v1/user/media/:id — alias for Flutter / mini-app clients. */
+/** DELETE /api/v1/user/media/:id */
 userPortalRouter.delete("/v1/user/media/:id", (req: Request, res: Response) => {
   const auth = authUser(req, res);
   if (!auth) return;
-  const result = deleteOwnedUpload(auth.userId, String(req.params.id));
-  if (!result.ok) {
-    const code = result.error === "forbidden" ? 403 : 404;
-    res.status(code).json({ ok: false, error: result.error || "delete_failed" });
-    return;
-  }
-  res.json({ ok: true });
+  void deleteOwnedUpload(auth.userId, String(req.params.id)).then((result) => {
+    if (!result.ok) {
+      const code = result.error === "forbidden" ? 403 : 404;
+      res.status(code).json({ ok: false, error: result.error || "delete_failed" });
+      return;
+    }
+    res.json({ ok: true });
+  });
 });
 
-/** DELETE /api/user/playlists/:id — account album/playlist (no frame stop). */
+/** DELETE /api/user/playlists/:id — sync + notify frames to stop. */
 userPortalRouter.delete("/user/playlists/:id", (req: Request, res: Response) => {
   const auth = authUser(req, res);
   if (!auth) return;
-  const result = deleteOwnedPlaylist(auth.userId, String(req.params.id));
-  if (!result.ok) {
-    const code = result.error === "forbidden" ? 403 : 404;
-    res.status(code).json({ ok: false, error: result.error || "delete_failed" });
-    return;
-  }
-  res.json({ ok: true });
+  void deleteOwnedPlaylist(auth.userId, String(req.params.id)).then((result) => {
+    if (!result.ok) {
+      const code = result.error === "forbidden" ? 403 : 404;
+      res.status(code).json({ ok: false, error: result.error || "delete_failed" });
+      return;
+    }
+    res.json({
+      ok: true,
+      framesCleared: result.framesCleared || [],
+      framesNotified: result.framesNotified || [],
+    });
+  });
 });
 
-/** DELETE /api/v1/user/albums/:id — alias for Flutter / mini-app clients. */
+/** DELETE /api/v1/user/albums/:id — sync + notify frames to stop. */
 userPortalRouter.delete("/v1/user/albums/:id", (req: Request, res: Response) => {
   const auth = authUser(req, res);
   if (!auth) return;
-  const result = deleteOwnedPlaylist(auth.userId, String(req.params.id));
-  if (!result.ok) {
-    const code = result.error === "forbidden" ? 403 : 404;
-    res.status(code).json({ ok: false, error: result.error || "delete_failed" });
-    return;
-  }
-  res.json({ ok: true });
+  void deleteOwnedPlaylist(auth.userId, String(req.params.id)).then((result) => {
+    if (!result.ok) {
+      const code = result.error === "forbidden" ? 403 : 404;
+      res.status(code).json({ ok: false, error: result.error || "delete_failed" });
+      return;
+    }
+    res.json({
+      ok: true,
+      framesCleared: result.framesCleared || [],
+      framesNotified: result.framesNotified || [],
+    });
+  });
 });
 
 userPortalRouter.get("/v1/user/albums", (req: Request, res: Response) => {
