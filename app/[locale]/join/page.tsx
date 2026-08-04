@@ -1,6 +1,5 @@
-import { notFound } from "next/navigation";
 import { FamilyJoinView } from "@/components/frame/family-join-view";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -8,10 +7,9 @@ type Props = {
 };
 
 export default async function FamilyJoinPage({ params, searchParams }: Props) {
-  const { locale: raw } = await params;
-  if (!isLocale(raw)) notFound();
-
-  const locale: Locale = raw;
+  // Invite / join landings always show Simplified Chinese (match share sheets).
+  void params;
+  const locale: Locale = "zh";
   const { code: rawCode } = await searchParams;
   const code = String(rawCode ?? "")
     .trim()

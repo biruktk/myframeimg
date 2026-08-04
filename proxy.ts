@@ -55,6 +55,28 @@ export async function proxy(request: NextRequest) {
   const firstSegment = segments[0];
   const manualLocale = readManualLocale(request);
 
+  // Shared invite / join links always land on Simplified Chinese pages.
+  if (firstSegment === "join" || firstSegment === "invite") {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/zh${pathname}`;
+    if (!redirectUrl.searchParams.get("lang")) {
+      redirectUrl.searchParams.set("lang", "zh");
+    }
+    return withLocaleCookie(NextResponse.redirect(redirectUrl), "zh", false);
+  }
+  if (
+    firstSegment &&
+    isLocale(firstSegment) &&
+    (segments[1] === "join" || segments[1] === "invite") &&
+    firstSegment !== "zh"
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    const rest = segments.slice(1).join("/");
+    redirectUrl.pathname = `/zh/${rest}`;
+    redirectUrl.searchParams.set("lang", "zh");
+    return withLocaleCookie(NextResponse.redirect(redirectUrl), "zh", false);
+  }
+
   if (firstSegment && isLocale(firstSegment)) {
     const geo = await lookupGeoFromRequest(request);
     // Forced countries (e.g. Ethiopia → es) always win over a prior manual cookie.

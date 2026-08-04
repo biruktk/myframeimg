@@ -19,16 +19,18 @@ export default async function InviteGuestPage({ params }: Props) {
   const { locale: raw, code: rawCode } = await params;
   if (!isLocale(raw)) notFound();
 
-  const locale: Locale = raw;
+  // Guest invite landing always Simplified Chinese (match share / QR cards).
+  void raw;
+  const locale: Locale = "zh";
   const code = String(rawCode ?? "")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
 
   if (code.length !== 8) {
-    const t = invalidCopy[locale] ?? invalidCopy.en;
+    const t = invalidCopy.zh;
     return (
-      <main lang={locale} style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <main lang="zh" style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
         <h1>{t.title}</h1>
         <p>{t.body}</p>
       </main>
