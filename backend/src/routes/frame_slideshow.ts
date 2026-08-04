@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
+import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
 
 function normalizeMacKey(raw: string): string {
   try {
@@ -69,16 +70,24 @@ export function frameSlideshowRouter(): Router {
       return;
     }
 
-    console.log("[slideshow] POST macKey=%s ids=%d interval=%d strategy=%s idle=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, strategy === 2 ? "random" : "sequential", idle, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
+    console.log("[slideshow] POST macKey=%s ids=%d interval=%d strategy=%s idle=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, isRandomStrategy(strategy) ? "random" : "sequential", idle, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
 
     const now = Date.now();
     db.mutate((draft) => {
       if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
-      const startIndex = skipPlay && ids.length > 1 ? 1 : 0;
+      // currentIndex = last-played index (or -1 for random before first play).
+      // Sequential !skipPlay: last=n-1 → first tick plays photos[0].
+      // Random !skipPlay: last=-1 → first tick picks Math.random() * n (any photo).
+      // skipPlay: photo[0] already on frame → last=0 so next tick advances from there.
+      const startIndex = seedCurrentIndex({
+        strategy,
+        count: ids.length,
+        skipPlay,
+      });
       draft.slideshowsByBleMac[macKey] = {
         imageIds: ids,
         intervalMinutes,
-        strategy,
+        strategy: isRandomStrategy(strategy) ? 2 : 1,
         begintime,
         endtime,
         idle,
@@ -88,10 +97,10 @@ export function frameSlideshowRouter(): Router {
       };
     });
 
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy, begintime, endtime, idle, skipPlay });
+    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
   });
 
-  /** DELETE /api/frames/:mac/slideshow — clear active slideshow and notify frame to stop. */
+  /** DELETE /api/frames/:mac/slideshow — clear slideshow, stop, play fallback image. */
   router.delete("/frames/:mac/slideshow", (req: Request, res: Response) => {
     const u = verifyUserJwtBearer(req);
     if (!u && !isPairingTokenValid(req)) {
@@ -103,12 +112,40 @@ export function frameSlideshowRouter(): Router {
       res.status(400).json({ ok: false, error: "invalid_mac" });
       return;
     }
-    void stopPlaybackForMacKeys([macKey])
+    void stopPlaybackForMacKeys([macKey], { playFallback: true })
       .then((result) => {
         res.json({ ok: true, macKey, ...result });
       })
       .catch((err) => {
         console.warn("[slideshow] DELETE stop failed", macKey, err);
+        res.status(500).json({ ok: false, error: "stop_failed" });
+      });
+  });
+
+  /** POST /api/frames/:mac/stop-playlist — same powerful stop + fallback play. */
+  router.post("/frames/:mac/stop-playlist", (req: Request, res: Response) => {
+    const u = verifyUserJwtBearer(req);
+    if (!u && !isPairingTokenValid(req)) {
+      res.status(401).json({ ok: false, error: "unauthorized" });
+      return;
+    }
+    const macKey = normalizeMacKey(String(req.params.mac ?? ""));
+    if (macKey.length < 8) {
+      res.status(400).json({ ok: false, error: "invalid_mac" });
+      return;
+    }
+    const exclude = Array.isArray(req.body?.excludeImageIds)
+      ? (req.body.excludeImageIds as unknown[]).map((x) => String(x))
+      : [];
+    void stopPlaybackForMacKeys([macKey], {
+      playFallback: true,
+      excludeTokens: new Set(exclude.filter(Boolean)),
+    })
+      .then((result) => {
+        res.json({ ok: true, macKey, ...result });
+      })
+      .catch((err) => {
+        console.warn("[slideshow] stop-playlist failed", macKey, err);
         res.status(500).json({ ok: false, error: "stop_failed" });
       });
   });

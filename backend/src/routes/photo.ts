@@ -6,7 +6,7 @@ import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
-import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, publishStopPlaylistKeepDisplay, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -180,6 +180,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
               /* ignore */
             }
             try {
+              // Kill firmware-local playlist rotation before the new single image.
+              await publishStopPlaylistKeepDisplay(deviceId).catch(() => {});
               await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
               deliveredToFrame = true;
               deliveryMode = "vps_mqtt";
@@ -408,6 +410,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
               /* ignore */
             }
             try {
+              // Kill firmware-local playlist rotation before the new single image.
+              await publishStopPlaylistKeepDisplay(deviceId).catch(() => {});
               await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
               deliveredToFrame = true;
               deliveryMode = "vps_mqtt";

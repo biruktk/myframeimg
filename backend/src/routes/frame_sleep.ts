@@ -39,7 +39,8 @@ export function frameSleepRouter(): Router {
     }
     res.json({
       ok: true,
-      sleepConfig: frame.sleepConfig || { enabled: true, startTime: "23:00", endTime: "07:00" },
+      // Default OFF — never imply sleep is scheduled when unset.
+      sleepConfig: frame.sleepConfig || { enabled: false, startTime: "23:00", endTime: "07:00" },
     });
   });
 

@@ -1,5 +1,6 @@
 import { db } from "../db/store";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac, setPlayAckHandler } from "./frame_mqtt";
+import { nextSlideshowIndex } from "./slideshow_index";
 
 const QUEUE_INTERVAL_MS = 60000;
 let queueTimer: ReturnType<typeof setInterval> | null = null;
@@ -163,35 +164,53 @@ function processAllSlideshows(data: ReturnType<typeof db.read>, now: number): vo
   for (const [macKey, slideshow] of Object.entries(sb)) {
     if (!slideshow || slideshow.imageIds.length === 0) continue;
 
-    // Check expiration
+    // Check expiration — persist removal (empty mutate used to leave ghosts forever).
     if (slideshow.endtime && now > Number(slideshow.endtime)) {
       console.log(`[slideshow] ${macKey} expired at ${slideshow.endtime}, removing`);
-      delete sb[macKey];
-      db.mutate(() => {});
+      db.mutate((draft) => {
+        if (draft.slideshowsByBleMac && draft.slideshowsByBleMac[macKey]) {
+          delete draft.slideshowsByBleMac[macKey];
+        }
+      });
       continue;
     }
 
     if (now < slideshow.nextPlayAtMs) continue;
 
-    // Select next image: random or sequential
-    let nextIndex: number;
-    if (slideshow.strategy === 2) {
-      nextIndex = Math.floor(Math.random() * slideshow.imageIds.length);
-    } else {
-      nextIndex = (slideshow.currentIndex + 1) % slideshow.imageIds.length;
-    }
+    const n = slideshow.imageIds.length;
+    // currentIndex = last played (or -1 if nothing yet in random mode).
+    // Sequential: (currentIndex + 1) % n. Random: uniform pick ≠ currentIndex.
+    const nextIndex = nextSlideshowIndex({
+      strategy: slideshow.strategy,
+      currentIndex: slideshow.currentIndex,
+      total: n,
+    });
 
     const imageId = slideshow.imageIds[nextIndex];
     const upload = data.uploads.find((u) => u.id === imageId) ?? data.uploads.find((u) => u.filename === imageId);
     if (!upload) {
       db.mutate((draft) => {
         const s = draft.slideshowsByBleMac?.[macKey];
-        if (s) s.currentIndex = (s.currentIndex + 1) % s.imageIds.length;
+        if (!s) return;
+        // Advance past missing media with the same strategy (do not force sequential).
+        s.currentIndex = nextSlideshowIndex({
+          strategy: s.strategy,
+          currentIndex: nextIndex,
+          total: s.imageIds.length,
+        });
       });
       continue;
     }
 
     const imageUrl = `${publicBaseUrl}/frame-media/${encodeURIComponent(upload.filename)}`;
+    console.log(
+      `[slideshow] play mac=%s strategy=%s idx=%d/%d id=%s`,
+      macKey,
+      Math.round(Number(slideshow.strategy)) === 2 ? "random" : "sequential",
+      nextIndex,
+      n,
+      imageId,
+    );
     publishPlayImage(macKey, imageUrl).then(() => {
       db.mutate((draft) => {
         const s = draft.slideshowsByBleMac?.[macKey];

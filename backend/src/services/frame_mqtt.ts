@@ -477,18 +477,36 @@ export function publishSleepConfig(
 ): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
-  // retained so frame receives on reconnection
-  return publishJson("/inkjoyap/" + mac, {
-    msgid: msgid ?? Date.now().toString(),
-    action: "config",
-    stamac: mac,
-    data: {
-      ntp: {
-        enable: config.enabled ? 1 : 0,
-        sleep_start: config.startTime,
-        sleep_end: config.endTime,
+  // Retained so reconnecting frames keep the latest sleep/wake preference.
+  return publishJson(
+    "/inkjoyap/" + mac,
+    {
+      msgid: msgid ?? Date.now().toString(),
+      action: "config",
+      stamac: mac,
+      data: {
+        ntp: {
+          enable: config.enabled ? 1 : 0,
+          sleep_start: config.startTime,
+          sleep_end: config.endTime,
+        },
       },
     },
+    true,
+  );
+}
+
+/**
+ * Stop firmware-side playlist rotation without forcing the connected/idle image.
+ * Used before a single cast so an old local slideshow cannot overwrite the new photo later.
+ */
+export function publishStopPlaylistKeepDisplay(macRaw: string): Promise<void> {
+  return publishStrategyCommand(macRaw, {
+    strategy: 1,
+    intervalMinutes: 0,
+    begintime: "",
+    endtime: "",
+    idle: 0,
   });
 }
 

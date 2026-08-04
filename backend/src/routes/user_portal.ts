@@ -7,10 +7,8 @@ import type { AuthedUser } from "../services/app_user_jwt";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import {
   stopPlaybackForDeletedPlaylist,
-  stopPlaybackIfSlideshowEmpty,
-  mediaTokensFromIds,
-  stopPlaybackForMacKeys,
 } from "../services/slideshow_stop";
+import { visibleFramesForUser, frameDisplayName } from "../services/account_sync_state";
 
 export const userPortalRouter = Router();
 userPortalRouter.use(express.json({ limit: "256kb" }));
@@ -29,20 +27,7 @@ function normalizeBleKey(bleMac: string): string {
 }
 
 function visibleFrameIdsForUser(userId: string): string[] {
-  const data = db.read();
-  const user = data.users.find((x) => x.id === userId);
-  const ids = new Set<string>();
-  for (const f of data.frames) {
-    if (f.ownerUserId === userId) ids.add(f.id);
-    if (f.sharedToUserIds?.includes(userId)) ids.add(f.id);
-  }
-  if (user?.familyGroupId) {
-    const g = data.familyGroups.find((fg) => fg.id === user.familyGroupId);
-    if (g) {
-      for (const fid of g.frameIds) ids.add(fid);
-    }
-  }
-  return [...ids];
+  return visibleFramesForUser(db.read(), userId).map((f) => f.id);
 }
 
 function playlistEditableByUser(plId: string, userId: string): boolean {
@@ -66,27 +51,21 @@ userPortalRouter.get("/frames", (req: Request, res: Response) => {
   if (!auth) return;
   const data = db.read();
   const user = data.users.find((u) => u.id === auth.userId);
-  const ids = new Set<string>();
-  for (const f of data.frames) {
-    if (f.ownerUserId === auth.userId) ids.add(f.id);
-    if (Array.isArray(f.sharedToUserIds) && f.sharedToUserIds.includes(auth.userId)) ids.add(f.id);
-  }
-  if (user?.familyGroupId) {
-    const g = data.familyGroups.find((fg) => fg.id === user.familyGroupId);
-    if (g) for (const fid of g.frameIds) ids.add(fid);
-  }
-  const frames = data.frames
-    .filter((f) => ids.has(f.id))
-    .map((f) => ({
+  const frames = visibleFramesForUser(data, auth.userId).map((f) => ({
       id: f.id,
       bleMac: f.bleMac,
-      name: f.id,
+      stationMac: f.stationMac ?? null,
+      // Never send raw MAC/id as the display title — clients show that as the card name.
+      name: frameDisplayName(f) || null,
+      displayName: frameDisplayName(f) || null,
       wifiSsid: f.wifiSsid,
       wifiStatus: f.wifiStatus,
       firmwareVersion: f.firmwareVersion,
       lastSeenAtMs: f.lastSeenAtMs,
       uptimeMs: f.uptimeMs,
       familyId: user?.familyGroupId ?? null,
+      isOwner: f.ownerUserId === auth.userId,
+      userRole: f.ownerUserId === auth.userId ? "OWNER" : "MEMBER",
     }));
   res.json({ ok: true, frames });
 });
@@ -130,7 +109,7 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
     return {
       id: f.id,
       bleMac: f.bleMac,
-      name: f.id,
+      name: frameDisplayName(f) || null,
       wifiStatus: f.wifiStatus,
       online,
       lastSeenAtMs: f.lastSeenAtMs,
@@ -310,17 +289,32 @@ userPortalRouter.patch("/user/playlists/:id", (req: Request, res: Response) => {
   const title = req.body?.title != null ? String(req.body.title).trim() : undefined;
   const scheduleRule = req.body?.scheduleRule !== undefined ? (req.body.scheduleRule === null ? null : String(req.body.scheduleRule)) : undefined;
   const photoIds = Array.isArray(req.body?.photoIds) ? (req.body.photoIds as unknown[]).map((x) => String(x)) : undefined;
+  const assignedFrameId = req.body?.assignedFrameId != null
+    ? String(req.body.assignedFrameId).trim()
+    : undefined;
+  const assignedFrameIds = Array.isArray(req.body?.assignedFrameIds)
+    ? (req.body.assignedFrameIds as unknown[]).map((x) => String(x).trim()).filter(Boolean)
+    : undefined;
 
   let updated = false;
   const next = db.mutate((draft) => {
     draft.playlists = draft.playlists.map((p) => {
       if (p.id !== id) return p;
       updated = true;
+      let nextAssigned = p.assignedFrameIds;
+      if (assignedFrameIds !== undefined) {
+        nextAssigned = assignedFrameIds;
+      } else if (assignedFrameId !== undefined && assignedFrameId.length > 0) {
+        const set = new Set(p.assignedFrameIds || []);
+        set.add(assignedFrameId);
+        nextAssigned = [...set];
+      }
       return {
         ...p,
         ...(title !== undefined && title.length > 0 ? { title } : {}),
         ...(scheduleRule !== undefined ? { scheduleRule } : {}),
         ...(photoIds !== undefined ? { photoIds } : {}),
+        assignedFrameIds: nextAssigned,
         ...(p.ownerUserId ? {} : { ownerUserId: auth.userId }),
       };
     });
@@ -469,34 +463,22 @@ async function deleteOwnedUpload(authUserId: string, uploadId: string): Promise<
   }
   let filename: string | null = null;
   let preview: string | null = null;
-  const touchedMacs: string[] = [];
-  const tokens = mediaTokensFromIds([id]);
   db.mutate((draft) => {
     const match = draft.uploads.find((x) => x.id === id);
     if (!match || match.uploaderUserId !== authUserId) return;
     filename = match.filename || null;
     preview = match.previewFilename || null;
     draft.uploads = draft.uploads.filter((x) => x.id !== id);
+    // Account album membership only — never mutate live frame slideshows / MQTT.
+    // Single Recent-photo delete must not stop or replace an active playlist.
     for (const pl of draft.playlists) {
       if (!Array.isArray(pl.photoIds) || !pl.photoIds.includes(id)) continue;
       if (pl.ownerUserId && pl.ownerUserId !== authUserId) continue;
       pl.photoIds = pl.photoIds.filter((pid) => pid !== id);
     }
-    const slides = draft.slideshowsByBleMac || {};
-    for (const key of Object.keys(slides)) {
-      const s = slides[key];
-      if (!s?.imageIds?.length) continue;
-      const nextIds = s.imageIds.filter((pid: string) => {
-        const base = String(pid).split("/").pop() || String(pid);
-        return !tokens.has(String(pid)) && !tokens.has(base);
-      });
-      if (nextIds.length === s.imageIds.length) continue;
-      slides[key] = { ...s, imageIds: nextIds };
-      touchedMacs.push(key);
-    }
-    draft.slideshowsByBleMac = slides;
     bumpUserSync(draft, authUserId);
   });
+  // Always unlink this upload's bytes from disk (gallery JPEG / preview / cast).
   for (const name of [filename, preview]) {
     if (!name) continue;
     try {
@@ -504,7 +486,6 @@ async function deleteOwnedUpload(authUserId: string, uploadId: string): Promise<
       if (fs.existsSync(p)) fs.unlinkSync(p);
     } catch { /* ignore */ }
   }
-  await stopPlaybackIfSlideshowEmpty(touchedMacs).catch(() => {});
   return { ok: true };
 }
 
@@ -513,6 +494,7 @@ async function deleteOwnedPlaylist(authUserId: string, playlistId: string): Prom
   error?: string;
   framesCleared?: string[];
   framesNotified?: string[];
+  fallbackUrls?: Record<string, string | null>;
 }> {
   const id = String(playlistId || "").trim();
   if (!id) return { ok: false, error: "missing_id" };
@@ -527,11 +509,16 @@ async function deleteOwnedPlaylist(authUserId: string, playlistId: string): Prom
   const snapshot = {
     photoIds: Array.isArray(before.photoIds) ? [...before.photoIds] : [],
     assignedFrameIds: Array.isArray(before.assignedFrameIds) ? [...before.assignedFrameIds] : [],
+    ownerUserId: (before as { ownerUserId?: string | null }).ownerUserId || authUserId,
   };
 
   const stopResult = await stopPlaybackForDeletedPlaylist(snapshot).catch((err) => {
     console.warn("[user_portal] stopPlaybackForDeletedPlaylist", err);
-    return { cleared: [] as string[], notified: [] as string[] };
+    return {
+      cleared: [] as string[],
+      notified: [] as string[],
+      fallbackUrls: {} as Record<string, string | null>,
+    };
   });
 
   let removed = false;
@@ -546,6 +533,7 @@ async function deleteOwnedPlaylist(authUserId: string, playlistId: string): Prom
     ok: true,
     framesCleared: stopResult.cleared,
     framesNotified: stopResult.notified,
+    fallbackUrls: stopResult.fallbackUrls,
   };
 }
 
@@ -591,6 +579,7 @@ userPortalRouter.delete("/user/playlists/:id", (req: Request, res: Response) => 
       ok: true,
       framesCleared: result.framesCleared || [],
       framesNotified: result.framesNotified || [],
+      fallbackUrls: result.fallbackUrls || {},
     });
   });
 });
@@ -609,6 +598,7 @@ userPortalRouter.delete("/v1/user/albums/:id", (req: Request, res: Response) => 
       ok: true,
       framesCleared: result.framesCleared || [],
       framesNotified: result.framesNotified || [],
+      fallbackUrls: result.fallbackUrls || {},
     });
   });
 });

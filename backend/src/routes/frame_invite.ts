@@ -4,6 +4,14 @@ import QRCode from "qrcode";
 import { db } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
 import { createOrFetchInvite, publicInviteBaseUrl } from "../services/frame_guest_invite";
+import { findFrameByMac, frameDisplayName } from "../services/account_sync_state";
+
+function inviteFrameDisplayName(deviceId: string): string {
+  const data = db.read();
+  const frame = findFrameByMac(data, deviceId) || data.frames.find((f) => f.id === deviceId);
+  if (!frame) return "";
+  return frameDisplayName(frame);
+}
 
 function authUser(req: import("express").Request, res: import("express").Response): AuthedUser | null {
   const u = verifyUserJwtBearer(req);
@@ -72,6 +80,7 @@ export function frameInviteRouter() {
       return;
     }
     const inviteUrl = `${publicInviteBaseUrl()}/invite/${code}`;
+    const permanentName = inviteFrameDisplayName(row.deviceId);
     res.json({
       ok: true,
       success: true,
@@ -82,7 +91,9 @@ export function frameInviteRouter() {
       url: inviteUrl,
       frameMac: row.deviceId,
       deviceId: row.deviceId,
-      frameName: `MY_${row.deviceId}`,
+      // Owner's permanent display name — never MY_<mac> / frame id.
+      frameName: permanentName || "",
+      frameOwnerName: permanentName || "",
       fromServer: true,
     });
   });
@@ -102,18 +113,32 @@ export function frameInviteRouter() {
       res.status(404).json({ ok: false, error: "invite_not_found" });
       return;
     }
-    const frame = data.frames.find((f) => f.id === invite.deviceId);
+    const frame =
+      findFrameByMac(data, invite.deviceId) || data.frames.find((f) => f.id === invite.deviceId);
     if (!frame) {
       res.status(404).json({ ok: false, error: "frame_not_found" });
       return;
     }
+    const permanentName = frameDisplayName(frame);
     if (frame.sharedToUserIds.includes(auth.userId)) {
-      res.json({ ok: true, success: true, frameMac: frame.bleMac, frameName: frame.id, alreadyBound: true });
+      res.json({
+        ok: true,
+        success: true,
+        frameMac: frame.bleMac || frame.id,
+        frameName: permanentName,
+        alreadyBound: true,
+      });
       return;
     }
     frame.sharedToUserIds.push(auth.userId);
     db.write(data);
-    res.json({ ok: true, success: true, frameMac: frame.bleMac, frameName: frame.id, alreadyBound: false });
+    res.json({
+      ok: true,
+      success: true,
+      frameMac: frame.bleMac || frame.id,
+      frameName: permanentName,
+      alreadyBound: false,
+    });
   });
 
   /** GET /api/invite/:code/qr — PNG QR code for invite. */
