@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 
@@ -41,20 +41,20 @@ const copy: Record<
     invalid: "This invite link is missing a valid 8-character code.",
   },
   zh: {
-    title: "\u52A0\u5165 MyFrame \u5BB6\u5EAD",
-    lead: "\u6709\u4EBA\u9080\u8BF7\u4F60\u52A0\u5165\u4ED6\u4EEC\u7684\u5BB6\u5EAD\u7EC4\u5E76\u5171\u4EAB\u7167\u7247\u3002",
-    openApp: "\u5728 MyFrame \u5E94\u7528\u4E2D\u6253\u5F00",
-    download: "\u4E0B\u8F7D\u5E94\u7528",
-    codeLabel: "\u9080\u8BF7\u7801",
-    copyLabel: "\u590D\u5236",
-    copiedLabel: "\u5DF2\u590D\u5236",
-    copiedToast: "\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F",
+    title: "加入 MyFrame 家庭",
+    lead: "有人邀请你加入他们的家庭组并共享照片。",
+    openApp: "在 MyFrame 应用中打开",
+    download: "下载应用",
+    codeLabel: "邀请码",
+    copyLabel: "复制",
+    copiedLabel: "已复制",
+    copiedToast: "已复制到剪贴板",
     steps: [
-      "\u5982\u672A\u5B89\u88C5\u8BF7\u5148\u4E0B\u8F7D MyFrame\u3002",
-      "\u6253\u5F00\u5E94\u7528\u5E76\u767B\u5F55\u3002",
-      "\u8FDB\u5165\u300C\u5BB6\u5EAD\u300D\u2192\u300C\u52A0\u5165\u5BB6\u5EAD\u300D\u5E76\u8F93\u5165\u4E0B\u65B9\u9080\u8BF7\u7801\u3002",
+      "如未安装请先下载 MyFrame。",
+      "打开应用并登录。",
+      "进入「家庭」→「加入家庭」并输入下方邀请码。",
     ],
-    invalid: "\u6B64\u9080\u8BF7\u94FE\u63A5\u7F3A\u5C11\u6709\u6548\u7684 8 \u4F4D\u9080\u8BF7\u7801\u3002",
+    invalid: "此邀请链接缺少有效的 8 位邀请码。",
   },
   es: {
     title: "\u00DAnete a una familia MyFrame",
@@ -122,20 +122,34 @@ const copy: Record<
   },
 };
 
+/** Custom-scheme deep links — opened only on explicit button tap (no auto-redirect). */
+function buildAppDeepLinks(inviteCode: string): string[] {
+  const q = encodeURIComponent(inviteCode);
+  return [
+    `myframe://family/join?code=${q}`,
+    `myframe://join?code=${q}`,
+  ];
+}
+
+function storeFallbackUrl(locale: Locale): string {
+  if (typeof navigator === "undefined") return `/${locale}/download`;
+  const ua = navigator.userAgent || "";
+  if (/android/i.test(ua)) {
+    return "https://play.google.com/store/apps/details?id=com.myframe.minyuex";
+  }
+  if (/iphone|ipad|ipod/i.test(ua)) {
+    // Prefer in-site download until App Store id is wired.
+    return `/${locale}/download`;
+  }
+  return `/${locale}/download`;
+}
+
 export function FamilyJoinView({ locale, code }: Props) {
   const t = copy[locale] ?? copy.en;
   const valid = code.length === 8;
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState(false);
-
-  useEffect(() => {
-    if (!valid || typeof window === "undefined") return;
-    const deep = `myframe://join?code=${encodeURIComponent(code)}`;
-    const timer = window.setTimeout(() => {
-      window.location.href = deep;
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [code, valid]);
+  const [opening, setOpening] = useState(false);
 
   async function copyCode() {
     try {
@@ -157,7 +171,32 @@ export function FamilyJoinView({ locale, code }: Props) {
     window.setTimeout(() => setToast(false), 2000);
   }
 
-  const appDeepLink = valid ? `myframe://join?code=${encodeURIComponent(code)}` : "#";
+  function openAppWithCode() {
+    if (!valid || typeof window === "undefined") return;
+    setOpening(true);
+    const links = buildAppDeepLinks(code);
+    // Try primary scheme first; secondary covers older app builds.
+    window.location.href = links[0]!;
+
+    // If the app does not take focus, send user to download / store.
+    const fallback = storeFallbackUrl(locale);
+    const started = Date.now();
+    const timer = window.setTimeout(() => {
+      // Still visible after ~2.5s → app likely not installed / scheme blocked.
+      if (document.visibilityState === "visible" && Date.now() - started >= 2400) {
+        window.location.href = fallback;
+      }
+      setOpening(false);
+    }, 2500);
+
+    const onHide = () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onHide);
+      setOpening(false);
+    };
+    document.addEventListener("visibilitychange", onHide);
+  }
+
   const downloadHref = `/${locale}/download`;
 
   return (
@@ -261,22 +300,28 @@ export function FamilyJoinView({ locale, code }: Props) {
               </div>
             </div>
 
-            <a
-              href={appDeepLink}
+            <button
+              type="button"
+              onClick={openAppWithCode}
+              disabled={opening}
               style={{
                 display: "block",
+                width: "100%",
                 textAlign: "center",
                 background: "#dc2626",
                 color: "#fff",
                 padding: "14px 20px",
                 borderRadius: 10,
                 fontWeight: 600,
-                textDecoration: "none",
+                border: "none",
                 marginBottom: 12,
+                cursor: opening ? "wait" : "pointer",
+                opacity: opening ? 0.85 : 1,
+                fontSize: 16,
               }}
             >
               {t.openApp}
-            </a>
+            </button>
 
             <a
               href={downloadHref}
