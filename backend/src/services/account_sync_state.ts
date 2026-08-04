@@ -1,5 +1,10 @@
 import type { MyframeDb } from "../db/store";
 import { normalizeMac } from "./frame_mqtt";
+import {
+  grantRemoteMember,
+  isFrameOwner,
+  listFrameOwners,
+} from "./frame_user_roles";
 
 type UserRow = MyframeDb["users"][number];
 type FrameRow = MyframeDb["frames"][number];
@@ -71,7 +76,9 @@ export function reconcileFamilyFrameIds(draft: MyframeDb, familyGroupId: string)
   const ids = new Set<string>(Array.isArray(g.frameIds) ? g.frameIds : []);
   for (const f of draft.frames) {
     if (!isFrameShareReady(f)) continue;
-    const ownedByMember = memberIds.has(f.ownerUserId);
+    const owners = listFrameOwners(draft, f.id);
+    const ownedByMember =
+      memberIds.has(f.ownerUserId) || owners.some((uid) => memberIds.has(uid));
     const sharedToMember = (f.sharedToUserIds || []).some((uid) => memberIds.has(uid));
     if (!ownedByMember && !sharedToMember) continue;
     ids.add(f.id);
@@ -105,7 +112,9 @@ export function grantFamilyFramesToMember(
     const ownerBefore = f.ownerUserId;
 
     if (!isFrameShareReady(f) && !granted.has(f.id)) continue;
-    const ownedByMember = memberIds.has(f.ownerUserId);
+    const owners = listFrameOwners(draft, f.id);
+    const ownedByMember =
+      memberIds.has(f.ownerUserId) || owners.some((uid) => memberIds.has(uid));
     const sharedToMember = (f.sharedToUserIds || []).some((uid) => memberIds.has(uid));
     if (!ownedByMember && !sharedToMember && !granted.has(f.id)) continue;
 
@@ -115,12 +124,10 @@ export function grantFamilyFramesToMember(
       if (!g.frameIds.includes(f.id)) g.frameIds.push(f.id);
     }
 
-    // Owner already has full access — do not demote them into sharedToUserIds.
-    if (f.ownerUserId === memberUserId) continue;
-    if (!Array.isArray(f.sharedToUserIds)) f.sharedToUserIds = [];
-    if (!f.sharedToUserIds.includes(memberUserId)) {
-      f.sharedToUserIds.push(memberUserId);
-    }
+    // Co-owners already have full access — do not demote into MEMBER.
+    if (isFrameOwner(draft, f.id, memberUserId) || f.ownerUserId === memberUserId) continue;
+    // Remote family join → MEMBER only (never OWNER).
+    grantRemoteMember(draft, f, memberUserId);
 
     // Hard guard: ownership is immutable during family share grants.
     if (f.ownerUserId !== ownerBefore) {
@@ -183,9 +190,16 @@ export function visibleFramesForUser(data: MyframeDb, userId: string): FrameRow[
   }
 
   for (const f of data.frames) {
-    if (f.ownerUserId === userId) ids.add(f.id);
-    if (familyMemberIds.has(f.ownerUserId)) ids.add(f.id);
+    if (f.ownerUserId === userId || isFrameOwner(data, f.id, userId)) ids.add(f.id);
+    const owners = listFrameOwners(data, f.id);
+    if (familyMemberIds.has(f.ownerUserId) || owners.some((uid) => familyMemberIds.has(uid))) {
+      ids.add(f.id);
+    }
     if (Array.isArray(f.sharedToUserIds) && f.sharedToUserIds.includes(userId)) {
+      ids.add(f.id);
+    }
+    const roles = Array.isArray(data.frameUserRoles) ? data.frameUserRoles : [];
+    if (roles.some((r) => r.frameId === f.id && r.userId === userId)) {
       ids.add(f.id);
     }
     const legacyFamilyId = (f as { familyId?: string | null }).familyId;
@@ -196,8 +210,8 @@ export function visibleFramesForUser(data: MyframeDb, userId: string): FrameRow[
 
   return data.frames.filter((f) => {
     if (!ids.has(f.id)) return false;
-    // Owner always sees their own unfinished frames (setup on their phone).
-    if (f.ownerUserId === userId) return true;
+    // Any co-owner always sees their own unfinished frames (setup on their phone).
+    if (f.ownerUserId === userId || isFrameOwner(data, f.id, userId)) return true;
     return isFrameShareReady(f);
   });
 }

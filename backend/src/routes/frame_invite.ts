@@ -5,6 +5,7 @@ import { db } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
 import { createOrFetchInvite, publicInviteBaseUrl } from "../services/frame_guest_invite";
 import { findFrameByMac, frameDisplayName } from "../services/account_sync_state";
+import { grantRemoteMember, getFrameUserRole } from "../services/frame_user_roles";
 
 function inviteFrameDisplayName(deviceId: string): string {
   const data = db.read();
@@ -120,24 +121,35 @@ export function frameInviteRouter() {
       return;
     }
     const permanentName = frameDisplayName(frame);
-    if (frame.sharedToUserIds.includes(auth.userId)) {
+    const already = !!getFrameUserRole(data, frame.id, auth.userId) ||
+      (frame.sharedToUserIds || []).includes(auth.userId);
+    if (already) {
       res.json({
         ok: true,
         success: true,
         frameMac: frame.bleMac || frame.id,
         frameName: permanentName,
         alreadyBound: true,
+        userRole: getFrameUserRole(data, frame.id, auth.userId) || "MEMBER",
       });
       return;
     }
-    frame.sharedToUserIds.push(auth.userId);
-    db.write(data);
+    // Remote invite link → MEMBER only (never OWNER / never steal co-owners).
+    db.mutate((draft) => {
+      const live =
+        findFrameByMac(draft, invite.deviceId) ||
+        draft.frames.find((f) => f.id === invite.deviceId);
+      if (!live) return;
+      grantRemoteMember(draft, live, auth.userId);
+    });
+    const after = db.read();
     res.json({
       ok: true,
       success: true,
       frameMac: frame.bleMac || frame.id,
       frameName: permanentName,
       alreadyBound: false,
+      userRole: getFrameUserRole(after, frame.id, auth.userId) || "MEMBER",
     });
   });
 

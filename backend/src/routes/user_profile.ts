@@ -3,6 +3,15 @@ import { db } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
 import { normalizeMac } from "../services/frame_mqtt";
 import { bumpUserSyncVersion, bumpFamilyMembersSync, visibleFramesForUser, playlistsMetaForUser, findFrameByMac, frameDisplayName, relatedMacKeys, attachFrameToOwnerFamily } from "../services/account_sync_state";
+import {
+  grantBluetoothCoOwner,
+  isFrameOwner,
+  getFrameUserRole,
+  listFrameOwners,
+  removeFrameUserRole,
+  removeAllFrameUserRoles,
+  reassignLegacyOwnerUserId,
+} from "../services/frame_user_roles";
 
 export const userProfileRouter = Router();
 
@@ -86,8 +95,8 @@ userProfileRouter.get("/v1/user/profile", (req: Request, res: Response) => {
       frame_name: frameDisplayName(f) || null,
       ble_mac: normalizeMac(f.bleMac || f.stationMac || f.id),
       station_mac: f.stationMac ? normalizeMac(f.stationMac) : null,
-      is_owner: f.ownerUserId === account.id,
-      user_role: f.ownerUserId === account.id ? "OWNER" : "MEMBER",
+      is_owner: isFrameOwner(data, f.id, account.id),
+      user_role: isFrameOwner(data, f.id, account.id) ? "OWNER" : "MEMBER",
       wifi_ssid: f.wifiSsid,
       online: f.wifiStatus === "online" && !!(f.wifiSsid && String(f.wifiSsid).trim()),
       last_seen_at: f.lastSeenAtMs,
@@ -230,20 +239,14 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
         ota: { targetVersion: null, status: "idle" },
       });
       existing = draft.frames[draft.frames.length - 1];
+      // Manual Bluetooth setup → co-owner (unlimited OWNERs).
+      grantBluetoothCoOwner(draft, existing, user.userId);
     } else {
       const idx = draft.frames.findIndex((f) => f.id === existing!.id);
       const f = draft.frames[idx]!;
-      // NEVER transfer ownership on bind / family join side-effects.
-      // Empty / demo owner → claim. Anyone else → share only (MEMBER).
-      const existingOwner = String(f.ownerUserId || "").trim();
-      if (!existingOwner || existingOwner === "usr_1") {
-        f.ownerUserId = user.userId;
-      } else if (existingOwner !== user.userId) {
-        if (!Array.isArray(f.sharedToUserIds)) f.sharedToUserIds = [];
-        if (!f.sharedToUserIds.includes(user.userId)) {
-          f.sharedToUserIds.push(user.userId);
-        }
-      }
+      // Direct Bluetooth / Wi-Fi bind always grants OWNER (co-owner).
+      // Never remove or demote other owners.
+      grantBluetoothCoOwner(draft, f, user.userId);
       // Keep station mac hint when client bound with STA.
       if (!f.stationMac && relatedMacKeys(f.bleMac).includes(norm) && normalizeMac(f.bleMac) !== norm) {
         f.stationMac = norm;
@@ -318,9 +321,10 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
     return;
   }
 
-  const isOwner = frame.ownerUserId === user.userId;
+  const isOwner = isFrameOwner(data, frame.id, user.userId);
+  const role = getFrameUserRole(data, frame.id, user.userId);
   const sharedIdx = (frame.sharedToUserIds || []).indexOf(user.userId);
-  if (!isOwner && sharedIdx < 0) {
+  if (!isOwner && sharedIdx < 0 && !role) {
     // Family-only visibility without ownership/share row — still drop from family list below.
     const account = data.users.find((u) => u.id === user.userId);
     const inFamily =
@@ -342,7 +346,8 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
     const u = draft.users.find((x) => x.id === user.userId);
     const affectedFamilyIds = new Set<string>();
 
-    const isHardwareOwner = live.ownerUserId === user.userId;
+    const isCoOwner = isFrameOwner(draft, live.id, user.userId);
+    const otherOwners = listFrameOwners(draft, live.id).filter((id) => id !== user.userId);
     let isFamilyOwnerOfFrame = false;
     if (u?.familyGroupId) {
       const g = draft.familyGroups.find((fg) => fg.id === u.familyGroupId);
@@ -355,9 +360,10 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
       }
     }
 
-    if (isHardwareOwner) {
-      // Hardware owner delete: hard-remove so it cannot rehydrate for anyone.
+    if (isCoOwner && otherOwners.length === 0) {
+      // Sole OWNER delete: hard-remove so it cannot rehydrate for anyone.
       const sharedBefore = [...(live.sharedToUserIds || [])];
+      removeAllFrameUserRoles(draft, live.id);
       const idx = draft.frames.findIndex((f) => f.id === live.id);
       if (idx >= 0) draft.frames.splice(idx, 1);
       for (const g of draft.familyGroups) {
@@ -366,13 +372,21 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
           affectedFamilyIds.add(g.id);
         }
       }
-      // Push sync so every former sharer / family member drops the device on Home.
       for (const sid of sharedBefore) {
         const su = draft.users.find((x) => x.id === sid);
         if (su) bumpUserSyncVersion(su);
       }
       for (const gid of affectedFamilyIds) {
         bumpFamilyMembersSync(draft, gid);
+      }
+    } else if (isCoOwner && otherOwners.length > 0) {
+      // Co-owner leaves: keep frame + other owners intact.
+      removeFrameUserRole(draft, live.id, user.userId);
+      live.sharedToUserIds = (live.sharedToUserIds || []).filter((id) => id !== user.userId);
+      reassignLegacyOwnerUserId(draft, live);
+      for (const oid of otherOwners) {
+        const ou = draft.users.find((x) => x.id === oid);
+        if (ou) bumpUserSyncVersion(ou);
       }
     } else if (isFamilyOwnerOfFrame && u?.familyGroupId) {
       // Family owner removes a shared family frame: every member loses access
@@ -389,6 +403,7 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
       }
     } else {
       // Shared guest / family member: remove this user only; keep the frame for others.
+      removeFrameUserRole(draft, live.id, user.userId);
       live.sharedToUserIds = (live.sharedToUserIds || []).filter((id) => id !== user.userId);
       // Do NOT strip familyGroups.frameIds here — that would hide the frame
       // from every other family member.
@@ -433,7 +448,8 @@ userProfileRouter.get("/v1/user/frames", (req: Request, res: Response) => {
       online: f.wifiStatus === "online",
       firmware_version: f.firmwareVersion,
       last_seen_at: f.lastSeenAtMs,
-      is_owner: f.ownerUserId === user.userId,
+      is_owner: isFrameOwner(data, f.id, user.userId),
+      user_role: isFrameOwner(data, f.id, user.userId) ? "OWNER" : "MEMBER",
     })),
   });
 });

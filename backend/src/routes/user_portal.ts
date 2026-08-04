@@ -9,6 +9,7 @@ import {
   stopPlaybackForDeletedPlaylist,
 } from "../services/slideshow_stop";
 import { visibleFramesForUser, frameDisplayName } from "../services/account_sync_state";
+import { isFrameOwner } from "../services/frame_user_roles";
 
 export const userPortalRouter = Router();
 userPortalRouter.use(express.json({ limit: "256kb" }));
@@ -64,8 +65,8 @@ userPortalRouter.get("/frames", (req: Request, res: Response) => {
       lastSeenAtMs: f.lastSeenAtMs,
       uptimeMs: f.uptimeMs,
       familyId: user?.familyGroupId ?? null,
-      isOwner: f.ownerUserId === auth.userId,
-      userRole: f.ownerUserId === auth.userId ? "OWNER" : "MEMBER",
+      isOwner: isFrameOwner(data, f.id, auth.userId),
+      userRole: isFrameOwner(data, f.id, auth.userId) ? "OWNER" : "MEMBER",
     }));
   res.json({ ok: true, frames });
 });

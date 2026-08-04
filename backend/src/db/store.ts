@@ -336,6 +336,18 @@ export type MyframeDb = {
 
   marketingCms?: MarketingCmsState;
 
+  /**
+   * Junction table: unlimited co-owners (OWNER) + remote members (MEMBER).
+   * Equivalent of SQL frame_user_roles (frame_id, user_id, role).
+   * Manual Bluetooth bind → OWNER; invite/join → MEMBER.
+   */
+  frameUserRoles?: Array<{
+    frameId: string;
+    userId: string;
+    role: "OWNER" | "MEMBER";
+    createdAtMs: number;
+  }>;
+
   /** Guest frame photo upload invites (code → deviceId). */
   frameGuestInvites?: Array<{
     code: string;
@@ -552,6 +564,42 @@ function readDbRaw(): MyframeDb {
     parsed.marketingCms = marketingCmsSeed();
   }
   hydrateManageRowIds(parsed);
+  if (!Array.isArray(parsed.frameUserRoles)) {
+    parsed.frameUserRoles = [];
+  }
+  // Lazy backfill from legacy ownerUserId / sharedToUserIds (idempotent).
+  {
+    const roles = parsed.frameUserRoles;
+    const key = (frameId: string, userId: string) => frameId + "\0" + userId;
+    const existing = new Map(roles.map((r) => [key(r.frameId, r.userId), r]));
+    const now = Date.now();
+    for (const f of parsed.frames || []) {
+      const frameId = String(f.id || "").trim();
+      if (!frameId) continue;
+      const ownerId = String(f.ownerUserId || "").trim();
+      if (ownerId && ownerId !== "usr_1") {
+        const k = key(frameId, ownerId);
+        const row = existing.get(k);
+        if (!row) {
+          const next = { frameId, userId: ownerId, role: "OWNER" as const, createdAtMs: now };
+          roles.push(next);
+          existing.set(k, next);
+        } else if (row.role !== "OWNER") {
+          row.role = "OWNER";
+        }
+      }
+      for (const uid of f.sharedToUserIds || []) {
+        const userId = String(uid || "").trim();
+        if (!userId) continue;
+        const k = key(frameId, userId);
+        if (!existing.has(k)) {
+          const next = { frameId, userId, role: "MEMBER" as const, createdAtMs: now };
+          roles.push(next);
+          existing.set(k, next);
+        }
+      }
+    }
+  }
   if (!Array.isArray(parsed.frameGuestInvites)) {
     parsed.frameGuestInvites = [];
   }
