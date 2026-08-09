@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "../db/store";
+import { db, type MyframeDb } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
 import { normalizeMac } from "../services/frame_mqtt";
 import { bumpUserSyncVersion, bumpFamilyMembersSync, visibleFramesForUser, playlistsMetaForUser, findFrameByMac, frameDisplayName, relatedMacKeys, attachFrameToOwnerFamily } from "../services/account_sync_state";
@@ -18,7 +18,9 @@ export const userProfileRouter = Router();
 userProfileRouter.use((req, res, next) => {
   // Only guard /api/v1/user/* — do NOT block other /api routes mounted later
   // (e.g. WeChat phone-login). Express runs this router for every /api request.
-  if (!String(req.path || "").startsWith("/v1/user")) {
+  const path = String(req.path || "");
+  const isHardDeleteAlias = req.method === "DELETE" && /^\/frames\/[^/]+$/.test(path);
+  if (!path.startsWith("/v1/user") && !isHardDeleteAlias) {
     next("router");
     return;
   }
@@ -214,7 +216,7 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
     return;
   }
   const setPrimary = req.body?.set_primary !== false;
-  const frameNameIn = String(req.body?.frame_name ?? req.body?.display_name ?? "").trim();
+  const frameNameIn = String(req.body?.frame_name ?? req.body?.display_name ?? req.body?.custom_name ?? req.body?.alias ?? "").trim();
   const wifiSsidIn = String(req.body?.wifi_ssid ?? req.body?.wifiSsid ?? "").trim();
   let frameId = "";
   let bleMacOut = norm;
@@ -296,7 +298,38 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
   });
 });
 
-userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Response) => {
+/** Remove a frame and every persisted reference so it can never rehydrate. */
+function permanentlyDeleteFrame(draft: MyframeDb, frameId: string): Set<string> {
+  const frame = draft.frames.find((f) => f.id === frameId);
+  const affectedUserIds = new Set<string>();
+  if (!frame) return affectedUserIds;
+  affectedUserIds.add(frame.ownerUserId);
+  for (const id of frame.sharedToUserIds || []) affectedUserIds.add(id);
+  for (const row of draft.frameUserRoles || []) if (row.frameId === frameId) affectedUserIds.add(row.userId);
+  const keys = new Set(relatedMacKeys(frame.id));
+  for (const key of relatedMacKeys(frame.bleMac || "")) keys.add(key);
+  for (const key of relatedMacKeys(frame.stationMac || "")) keys.add(key);
+  const matches = (value: string | undefined) => keys.has(normalizeMac(String(value || ""))) || String(value || "") === frameId;
+  draft.frames = draft.frames.filter((f) => f.id !== frameId);
+  draft.frameUserRoles = (draft.frameUserRoles || []).filter((row) => row.frameId !== frameId);
+  draft.frameGuestInvites = (draft.frameGuestInvites || []).filter((invite) => !matches(invite.deviceId));
+  draft.uploads = draft.uploads.filter((upload) => !matches(upload.deviceId));
+  draft.playlists = draft.playlists.map((playlist) => ({ ...playlist, assignedFrameIds: (playlist.assignedFrameIds || []).filter((id) => id !== frameId) }));
+  for (const group of draft.familyGroups) {
+    if ((group.frameIds || []).includes(frameId)) {
+      group.frameIds = group.frameIds.filter((id) => id !== frameId);
+      for (const member of group.members) affectedUserIds.add(member.userId);
+      bumpFamilyMembersSync(draft, group.id);
+    }
+  }
+  for (const key of keys) delete draft.slideshowsByBleMac?.[key];
+  for (const account of draft.users) {
+    if (affectedUserIds.has(account.id)) bumpUserSyncVersion(account);
+    if (account.primaryFrameId && matches(account.primaryFrameId)) { account.primaryFrameId = null; bumpUserSyncVersion(account); }
+  }
+  return affectedUserIds;
+}
+const hardDeleteFrameHandler = (req: Request, res: Response) => {
   const user = authed(req);
   const frameId = String(req.params.frameId ?? "").trim();
   if (!frameId) {
@@ -343,6 +376,10 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
     const live = findFrameByMac(draft, frameId);
     if (!live) return;
     removedId = live.id;
+    const hardDeleted = true;
+    permanentlyDeleteFrame(draft, live.id);
+    if (hardDeleted) return;
+
     const u = draft.users.find((x) => x.id === user.userId);
     const affectedFamilyIds = new Set<string>();
 
@@ -430,7 +467,10 @@ userProfileRouter.post("/v1/user/frames/:frameId/unbind", (req: Request, res: Re
     frame_id: removedId,
     sync_version: account?.syncVersion ?? 0,
   });
-});
+};
+
+userProfileRouter.post("/v1/user/frames/:frameId/unbind", hardDeleteFrameHandler);
+userProfileRouter.delete("/frames/:frameId", hardDeleteFrameHandler);
 
 userProfileRouter.get("/v1/user/frames", (req: Request, res: Response) => {
   const user = authed(req);

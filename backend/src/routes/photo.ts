@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
-import { verifyUserJwtBearer } from "../services/app_user_jwt";
+import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
 import { isMqttConnected, publishPlayImage, publishStopPlaylistKeepDisplay, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendPushToFrameSubscribers } from "../services/firebase_admin";
 import {
@@ -230,6 +230,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           deliveryMode,
           deliveryCheckedAtMs: now,
           uploaderUserId: verifyUserJwtBearer(req)?.userId,
+          sourcePlatform:
+            platformFromRequest(req, verifyUserJwtBearer(req)?.platform) || undefined,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
@@ -460,6 +462,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           deliveryMode,
           deliveryCheckedAtMs: now,
           uploaderUserId: verifyUserJwtBearer(req)?.userId,
+          sourcePlatform:
+            platformFromRequest(req, verifyUserJwtBearer(req)?.platform) || undefined,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);

@@ -9,7 +9,12 @@ type StoredProductRow = MarketingSiteStored["products"][number];
 import { marketingSiteSeed } from "../data/marketing_defaults";
 import { db, type MyframeDb } from "../db/store";
 import { requireAdminToken } from "../middleware/security";
-
+import {
+  ensureFrameUserRoles,
+  listFrameOwners,
+  reassignLegacyOwnerUserId,
+  removeFrameUserRole,
+} from "../services/frame_user_roles";
 import { attachCmsManageRoutes } from "./cms_manage_routes";
 
 export const adminRouter = Router();
@@ -789,6 +794,161 @@ adminRouter.post("/admin/content/notify", (req, res) => {
     });
   });
   res.json({ ok: true });
+});
+
+function normalizeFrameMac(raw: string): string {
+  try {
+    return decodeURIComponent(raw).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+  } catch {
+    return raw.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
+  }
+}
+
+function findFrameIndex(frames: MyframeDb["frames"], macKey: string): number {
+  return frames.findIndex(
+    (f) =>
+      normalizeFrameMac(f.id) === macKey ||
+      normalizeFrameMac(f.bleMac) === macKey ||
+      normalizeFrameMac(f.stationMac ?? "") === macKey,
+  );
+}
+
+type InviteRow = { code: string; deviceId: string };
+
+/** Legacy untyped DB key (invite codes) — accessed via cast. */
+function frameInviteCodesOf(draft: MyframeDb): InviteRow[] {
+  const codes = (draft as unknown as Record<string, unknown>).frameInviteCodes;
+  return Array.isArray(codes) ? (codes as InviteRow[]) : [];
+}
+
+/** GET /api/admin/frames/:mac/account-bindings — all accounts + queues linked to a frame. */
+adminRouter.get("/admin/frames/:mac/account-bindings", (req, res) => {
+  const macKey = normalizeFrameMac(String(req.params.mac ?? ""));
+  const data = db.read();
+  const idx = findFrameIndex(data.frames, macKey);
+  if (idx < 0) {
+    res.status(404).json({ ok: false, error: "frame_not_found", mac: macKey });
+    return;
+  }
+  const frame = data.frames[idx]!;
+  const fid = frame.id;
+  const roles = ensureFrameUserRoles(data).filter((r) => r.frameId === fid);
+  const bindings = roles.map((r) => {
+    const user = data.users.find((u) => u.id === r.userId) ?? null;
+    return {
+      userId: r.userId,
+      role: r.role,
+      createdAtMs: r.createdAtMs,
+      user: user ? { id: user.id, email: user.email, name: user.name } : null,
+    };
+  });
+  const groups = data.familyGroups
+    .filter((g) => (g.frameIds || []).includes(fid))
+    .map((g) => ({ id: g.id, name: g.name, members: g.members }));
+  const invites = frameInviteCodesOf(data).filter((c) => c.deviceId === fid);
+  const guestInvite = (data.frameGuestInvites || []).find((g) => g.deviceId === fid) ?? null;
+  const recentUploads = data.uploads
+    .filter((u) => (u.deviceId || "").toUpperCase() === fid.toUpperCase())
+    .slice(0, 10)
+    .map((u) => ({
+      id: u.id,
+      filename: u.filename,
+      atMs: u.atMs,
+      deliveredToFrame: !!u.deliveredToFrame,
+      uploaderUserId: u.uploaderUserId ?? null,
+    }));
+  res.json({
+    ok: true,
+    mac: frame.id,
+    macKey,
+    ownerUserId: frame.ownerUserId,
+    sharedToUserIds: frame.sharedToUserIds,
+    bindings,
+    familyGroups: groups,
+    inviteCodes: invites,
+    guestInvite,
+    recentUploads,
+  });
+});
+
+/** POST /api/admin/frames/:mac/unbind-all-except-owner — keep only the primary owner. */
+adminRouter.post("/admin/frames/:mac/unbind-all-except-owner", (req, res) => {
+  const macKey = normalizeFrameMac(String(req.params.mac ?? ""));
+  let result: { ok: boolean; mac?: string; owner?: string; removed?: Array<{ userId: string; role: string }> } = { ok: false };
+  db.mutate((draft) => {
+    const idx = findFrameIndex(draft.frames, macKey);
+    if (idx < 0) return;
+    const frame = draft.frames[idx]!;
+    const fid = frame.id;
+    const owner = String(frame.ownerUserId || "").trim();
+    const roles = ensureFrameUserRoles(draft).filter((r) => r.frameId === fid);
+    const removed: Array<{ userId: string; role: string }> = [];
+    for (const r of roles) {
+      if (r.userId !== owner) {
+        removeFrameUserRole(draft, fid, r.userId);
+        removed.push({ userId: r.userId, role: r.role });
+      }
+    }
+    frame.sharedToUserIds = (frame.sharedToUserIds || []).filter((u) => u === owner);
+    // Drop the frame from family groups that don't include the primary owner.
+    draft.familyGroups = draft.familyGroups.map((g) => {
+      if (!(g.frameIds || []).includes(fid)) return g;
+      const hasOwner = (g.members || []).some((m) => m.userId === owner);
+      return hasOwner ? g : { ...g, frameIds: g.frameIds.filter((x) => x !== fid) };
+    });
+    // Remove standalone invite codes so removed accounts cannot re-join.
+    const keptInvites = frameInviteCodesOf(draft).filter((c) => c.deviceId !== fid);
+    (draft as unknown as Record<string, unknown>).frameInviteCodes = keptInvites;
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+      actor: "superadmin",
+      action: "frame_unbind_all_except_owner",
+      target: fid,
+      atMs: Date.now(),
+      meta: { owner, removed },
+    });
+    result = { ok: true, mac: fid, owner, removed };
+  });
+  if (!result.ok) {
+    res.status(404).json({ ok: false, error: "frame_not_found", mac: macKey });
+    return;
+  }
+  res.json(result);
+});
+
+/** POST /api/admin/frames/:mac/unbind-user — remove a single account from a frame. */
+adminRouter.post("/admin/frames/:mac/unbind-user", (req, res) => {
+  const macKey = normalizeFrameMac(String(req.params.mac ?? ""));
+  const userId = String(req.body?.userId ?? "").trim();
+  if (!userId) {
+    res.status(400).json({ ok: false, error: "userId_required" });
+    return;
+  }
+  let result: { ok: boolean; mac?: string; removed?: boolean; wasOwner?: boolean } = { ok: false };
+  db.mutate((draft) => {
+    const idx = findFrameIndex(draft.frames, macKey);
+    if (idx < 0) return;
+    const frame = draft.frames[idx]!;
+    const fid = frame.id;
+    const wasOwner = listFrameOwners(draft, fid).includes(userId);
+    const removed = removeFrameUserRole(draft, fid, userId);
+    frame.sharedToUserIds = (frame.sharedToUserIds || []).filter((u) => u !== userId);
+    if (wasOwner) reassignLegacyOwnerUserId(draft, frame);
+    draft.auditLog.unshift({
+      id: `audit_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+      actor: "superadmin",
+      action: "frame_unbind_user",
+      target: fid,
+      atMs: Date.now(),
+      meta: { userId, wasOwner },
+    });
+    result = { ok: true, mac: fid, removed, wasOwner };
+  });
+  if (!result.ok) {
+    res.status(404).json({ ok: false, error: "frame_not_found", mac: macKey });
+    return;
+  }
+  res.json(result);
 });
 
 attachCmsManageRoutes(adminRouter);

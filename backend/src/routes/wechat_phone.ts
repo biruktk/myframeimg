@@ -127,6 +127,7 @@ function upsertWechatPhoneUser(
               wechatOpenId: u.wechatOpenId || openid,
               wechatUnionId: u.wechatUnionId || unionid,
               phone: u.phone || normalizedPhone,
+              appLastPlatform: "miniapp",
             }
           : u,
       );
@@ -159,6 +160,7 @@ function upsertWechatPhoneUser(
       wechatOpenId: openid,
       wechatUnionId: unionid,
       phone: normalizedPhone,
+      appLastPlatform: "miniapp",
     });
     draft.auditLog.unshift({
       id: "audit_" + now + "_" + crypto.randomBytes(2).toString("hex"),
@@ -192,11 +194,12 @@ wechatPhoneRouter.post("/wechat/phone-login", async (req, res) => {
     const phoneInfo = await getPhoneNumber(accessToken, phoneCode);
     const phone = String(phoneInfo?.purePhoneNumber || phoneInfo?.phoneNumber || "");
     const user = upsertWechatPhoneUser(phone, session.openid, session.unionid);
-    const token = signUserJwt(user.id, user.email);
+    const token = signUserJwt(user.id, user.email, "miniapp");
 
     res.json({
       ok: true,
       token,
+      platform: "miniapp",
       user: { id: user.id, name: user.name, phoneMasked: maskPhone(phone) },
     });
   } catch (err) {

@@ -22,6 +22,28 @@ export const metadata: Metadata = {
     shortcut: "/favicon.png",
     apple: "/apple-icon.png",
   },
+  openGraph: {
+    title: "MyFrame — Paper-like photo frame",
+    description:
+      "Smart photo frame: AI art, family sharing, live sync.",
+    url: "https://myframe.ink/",
+    siteName: "MyFrame",
+    type: "website",
+    images: [
+      {
+        url: "/assets/share-cover.jpg",
+        width: 800,
+        height: 533,
+        alt: "MyFrame",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MyFrame — Paper-like photo frame",
+    description: "Smart photo frame: AI art, family sharing, live sync.",
+    images: ["/assets/share-cover.jpg"],
+  },
 };
 
 export default function RootLayout({

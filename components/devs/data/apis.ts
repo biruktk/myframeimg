@@ -137,7 +137,7 @@ export const DEV_APIS: Api[] = [
     proxyPath: "/api/device/send",
     auth: "none",
     description: "Push a photo URL to the frame via MQTT play command.",
-    requestNote: "Requires MQTT connected. deviceId defaults to live primary device from bootstrap.",
+    requestNote: "Requires MQTT connected. deviceId defaults to the live primary device. image_url must be a .bin e-paper render of the photo — the frame firmware renders .bin media, not raw JPEG — otherwise the live frame rejects with mqtt_play_imgurl_must_end_with_dot_bin.",
     responseNote: "Fields: ok, deviceId, imageUrl (on success) or ok:false, error",
     params: [
       { name: "deviceId", required: true, type: "string", description: "Frame/device ID (live default pre-filled)", defaultValue: "" },

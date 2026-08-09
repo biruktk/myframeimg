@@ -1,0 +1,769 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.adminRouter = void 0;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const express_1 = require("express");
+const marketing_defaults_1 = require("../data/marketing_defaults");
+const store_1 = require("../db/store");
+const security_1 = require("../middleware/security");
+const cms_manage_routes_1 = require("./cms_manage_routes");
+exports.adminRouter = (0, express_1.Router)();
+exports.adminRouter.use(security_1.requireAdminToken);
+function serialFromDeviceId(id) {
+    const m = id.match(/(\d+)(?!.*\d)/);
+    return m ? m[1] : "--";
+}
+const uploadDir = process.env.UPLOAD_DIR || path_1.default.join(process.cwd(), "uploads");
+function effectiveUploadBytes(filename, bytes) {
+    if (Number.isFinite(bytes) && bytes > 0)
+        return bytes;
+    try {
+        const p = path_1.default.join(uploadDir, path_1.default.basename(filename));
+        if (fs_1.default.existsSync(p))
+            return fs_1.default.statSync(p).size;
+    }
+    catch {
+        /* ignore */
+    }
+    return 0;
+}
+function ensureMarketingSiteDraft(draft) {
+    const site = draft.marketingSite;
+    if (!site || typeof site !== "object") {
+        draft.marketingSite = (0, marketing_defaults_1.marketingSiteSeed)();
+    }
+    return draft.marketingSite;
+}
+/** Map persisted shipment status ↔ legacy CMS labels used by manage.html */
+function uiToDbOrderStatus(ui) {
+    if (ui === "in_progress")
+        return "shipped";
+    if (ui === "completed")
+        return "delivered";
+    return "pending";
+}
+function normalizeProductBody(body) {
+    const specsRaw = body.specs;
+    let specs = {};
+    if (specsRaw && typeof specsRaw === "object" && !Array.isArray(specsRaw))
+        specs = specsRaw;
+    else if (typeof specsRaw === "string" && specsRaw.trim()) {
+        try {
+            const p = JSON.parse(specsRaw);
+            if (p && typeof p === "object" && !Array.isArray(p))
+                specs = p;
+        }
+        catch {
+            /* keep {} */
+        }
+    }
+    const features = Array.isArray(body.features) ? body.features : [];
+    const price = Number(body.price);
+    return {
+        sku: String(body.sku ?? "").trim(),
+        name: String(body.name ?? "").trim(),
+        description: String(body.description ?? "").trim(),
+        price: Number.isFinite(price) ? price : 0,
+        currency: String(body.currency ?? "USD").trim() || "USD",
+        category_id: body.category_id != null ? Number(body.category_id) : 1,
+        badge: String(body.badge ?? "").trim(),
+        button_text: String(body.button_text ?? "Add to Cart").trim(),
+        status: String(body.status ?? "publish").trim(),
+        features: features.map(String),
+        specs,
+        image_url: body.image_url != null ? String(body.image_url).trim() : undefined,
+    };
+}
+function appendAudit(actor, action, target, meta) {
+    store_1.db.mutate((draft) => {
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+            actor,
+            action,
+            target,
+            atMs: Date.now(),
+            meta,
+        });
+    });
+}
+exports.adminRouter.get("/admin/commerce/summary", (_req, res) => {
+    const data = store_1.db.read();
+    const sold = data.commerceEvents.filter((e) => e.type === "items_sold");
+    const totalQuantity = sold.reduce((a, e) => a + e.quantity, 0);
+    const last = sold.length ? sold[0] : null;
+    res.json({
+        ok: true,
+        total_quantity: totalQuantity,
+        events_count: sold.length,
+        last_event: last
+            ? { id: last.id, quantity: last.quantity, sku: last.sku, orderId: last.orderId, atMs: last.atMs }
+            : null,
+    });
+});
+exports.adminRouter.get("/admin/overview", (_req, res) => {
+    const data = store_1.db.read();
+    res.json({
+        totalUploads: data.uploads.length,
+        totalFaqs: data.faqs.length,
+        photoCount: data.device.photoCount,
+        lastPhotoAtMs: data.device.lastPhotoAtMs,
+        connected: data.device.connected,
+        deviceId: data.device.id,
+        deviceSn: serialFromDeviceId(data.device.id),
+        usedBytes: data.device.usedBytes,
+        capacityBytes: data.device.capacityBytes,
+    });
+});
+exports.adminRouter.get("/admin/faqs", (_req, res) => {
+    const data = store_1.db.read();
+    res.json(data.faqs);
+});
+exports.adminRouter.post("/admin/faqs", (req, res) => {
+    const q = String(req.body?.question ?? "").trim();
+    const a = String(req.body?.answer ?? "").trim();
+    if (!q || !a) {
+        res.status(400).json({ ok: false, error: "question_and_answer_required" });
+        return;
+    }
+    const now = Date.now();
+    const id = `faq_${now}_${Math.random().toString(16).slice(2, 8)}`;
+    const next = store_1.db.mutate((draft) => {
+        draft.faqs.unshift({ id, question: q, answer: a, updatedAtMs: now });
+    });
+    res.status(201).json(next.faqs[0]);
+});
+exports.adminRouter.put("/admin/faqs/:id", (req, res) => {
+    const id = String(req.params.id);
+    const q = String(req.body?.question ?? "").trim();
+    const a = String(req.body?.answer ?? "").trim();
+    if (!q || !a) {
+        res.status(400).json({ ok: false, error: "question_and_answer_required" });
+        return;
+    }
+    let updated = false;
+    const now = Date.now();
+    const next = store_1.db.mutate((draft) => {
+        draft.faqs = draft.faqs.map((f) => {
+            if (f.id !== id)
+                return f;
+            updated = true;
+            return { ...f, question: q, answer: a, updatedAtMs: now };
+        });
+    });
+    if (!updated) {
+        res.status(404).json({ ok: false, error: "faq_not_found" });
+        return;
+    }
+    res.json(next.faqs.find((f) => f.id === id));
+});
+exports.adminRouter.delete("/admin/faqs/:id", (req, res) => {
+    const id = String(req.params.id);
+    let deleted = false;
+    store_1.db.mutate((draft) => {
+        const before = draft.faqs.length;
+        draft.faqs = draft.faqs.filter((f) => f.id !== id);
+        deleted = draft.faqs.length < before;
+    });
+    if (!deleted) {
+        res.status(404).json({ ok: false, error: "faq_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+// Superadmin: Fleet overview
+exports.adminRouter.get("/admin/fleet/overview", (_req, res) => {
+    const data = store_1.db.read();
+    const frames = data.frames.map((f) => {
+        if (f.id === data.device.id && data.device.connected) {
+            return { ...f, wifiStatus: "online", lastSeenAtMs: f.lastSeenAtMs ?? Date.now() };
+        }
+        return f;
+    });
+    const now = Date.now();
+    const online = frames.filter((f) => f.wifiStatus === "online").length;
+    const offline = frames.filter((f) => f.wifiStatus === "offline").length;
+    const neverProvisioned = frames.filter((f) => f.wifiStatus === "never_provisioned").length;
+    const activeToday = frames.filter((f) => f.lastSeenAtMs && now - f.lastSeenAtMs < 24 * 60 * 60 * 1000).length;
+    const firmwareDistribution = frames.reduce((acc, f) => {
+        acc[f.firmwareVersion] = (acc[f.firmwareVersion] ?? 0) + 1;
+        return acc;
+    }, {});
+    res.json({
+        totalFrames: frames.length,
+        onlineNow: online,
+        offline,
+        neverProvisioned,
+        dailyActiveFrames: activeToday,
+        firmwareDistribution,
+        locations: frames.filter((f) => f.location).map((f) => ({ id: f.id, ...f.location })),
+    });
+});
+// Superadmin: User management
+exports.adminRouter.get("/admin/users", (req, res) => {
+    const q = String(req.query.q ?? "").trim().toLowerCase();
+    const page = Math.max(1, Number(req.query.page ?? 1) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize ?? 25) || 25));
+    const asCsv = String(req.query.format ?? "").toLowerCase() === "csv";
+    const data = store_1.db.read();
+    const all = data.users
+        .filter((u) => {
+        if (!q)
+            return true;
+        const frames = data.frames.filter((f) => f.ownerUserId === u.id);
+        return (u.email.toLowerCase().includes(q) ||
+            u.id.toLowerCase().includes(q) ||
+            frames.some((f) => f.id.toLowerCase().includes(q) || f.bleMac.toLowerCase().includes(q)));
+    })
+        .map((u) => ({
+        ...u,
+        frames: data.frames.filter((f) => f.ownerUserId === u.id).map((f) => ({ id: f.id, bleMac: f.bleMac, wifiStatus: f.wifiStatus })),
+        familyGroup: data.familyGroups.find((g) => g.id === u.familyGroupId) ?? null,
+    }));
+    if (asCsv) {
+        const lines = [
+            "id,email,name,subscriptionTier,status,createdAtMs,lastSeenAtMs,frames",
+            ...all.map((u) => [
+                u.id,
+                JSON.stringify(u.email),
+                JSON.stringify(u.name),
+                u.subscriptionTier,
+                u.status,
+                String(u.createdAtMs),
+                String(u.lastSeenAtMs ?? ""),
+                JSON.stringify(u.frames.map((f) => f.id).join("|")),
+            ].join(",")),
+        ];
+        res.setHeader("content-type", "text/csv; charset=utf-8");
+        res.send(lines.join("\n"));
+        return;
+    }
+    const total = all.length;
+    const start = (page - 1) * pageSize;
+    const items = all.slice(start, start + pageSize);
+    res.json({ items, total, page, pageSize });
+});
+exports.adminRouter.post("/admin/users/:id/status", (req, res) => {
+    const id = String(req.params.id);
+    const status = String(req.body?.status ?? "");
+    if (!["active", "suspended", "banned"].includes(status)) {
+        res.status(400).json({ ok: false, error: "invalid_status" });
+        return;
+    }
+    let found = false;
+    store_1.db.mutate((draft) => {
+        draft.users = draft.users.map((u) => {
+            if (u.id !== id)
+                return u;
+            found = true;
+            return { ...u, status: status };
+        });
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "user_status_change",
+            target: id,
+            atMs: Date.now(),
+            meta: { status },
+        });
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "user_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.post("/admin/users/:id/tier", (req, res) => {
+    const id = String(req.params.id);
+    const tier = String(req.body?.tier ?? "");
+    if (!["free", "pro"].includes(tier)) {
+        res.status(400).json({ ok: false, error: "invalid_tier" });
+        return;
+    }
+    let found = false;
+    store_1.db.mutate((draft) => {
+        draft.users = draft.users.map((u) => {
+            if (u.id !== id)
+                return u;
+            found = true;
+            return { ...u, subscriptionTier: tier };
+        });
+        if (found) {
+            draft.auditLog.unshift({
+                id: `audit_${Date.now()}`,
+                actor: "superadmin",
+                action: "user_tier_change",
+                target: id,
+                atMs: Date.now(),
+                meta: { tier },
+            });
+        }
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "user_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.delete("/admin/users/:id", (req, res) => {
+    const id = String(req.params.id);
+    let deleted = false;
+    store_1.db.mutate((draft) => {
+        const before = draft.users.length;
+        draft.users = draft.users.filter((u) => u.id !== id);
+        deleted = draft.users.length < before;
+        if (!deleted)
+            return;
+        draft.familyGroups = draft.familyGroups.map((g) => ({
+            ...g,
+            members: g.members.filter((m) => m.userId !== id),
+        }));
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "user_deleted",
+            target: id,
+            atMs: Date.now(),
+        });
+    });
+    if (!deleted) {
+        res.status(404).json({ ok: false, error: "user_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.get("/admin/users/:id/uploads", (req, res) => {
+    const id = String(req.params.id);
+    const data = store_1.db.read();
+    const frameIds = new Set(data.frames.filter((f) => f.ownerUserId === id).map((f) => f.id));
+    const uploads = data.uploads
+        .filter((u) => frameIds.has(u.deviceId))
+        .map((u) => ({ ...u, bytes: effectiveUploadBytes(u.filename, u.bytes) }))
+        .slice(0, 500);
+    res.json({ items: uploads });
+});
+// Superadmin: Device management
+exports.adminRouter.get("/admin/frames", (req, res) => {
+    const filter = String(req.query.filter ?? "");
+    const data = store_1.db.read();
+    let frames = data.frames;
+    if (filter === "offline_7d") {
+        const cut = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        frames = frames.filter((f) => !f.lastSeenAtMs || f.lastSeenAtMs < cut);
+    }
+    else if (filter === "never_sent_photo") {
+        const ids = new Set(data.uploads.map((u) => u.deviceId));
+        frames = frames.filter((f) => !ids.has(f.id));
+    }
+    res.json(frames.map((f) => ({
+        ...f,
+        owner: data.users.find((u) => u.id === f.ownerUserId) ?? null,
+        bleProvisionLogs: data.bleProvisionLogs.filter((l) => l.frameId === f.id).slice(0, 20),
+    })));
+});
+exports.adminRouter.delete("/admin/frames/:id", (req, res) => {
+    const id = String(req.params.id);
+    let found = false;
+    store_1.db.mutate((draft) => {
+        const before = draft.frames.length;
+        draft.frames = draft.frames.filter((f) => f.id !== id);
+        found = draft.frames.length < before;
+        if (!found)
+            return;
+        draft.familyGroups = draft.familyGroups.map((g) => ({
+            ...g,
+            frameIds: g.frameIds.filter((x) => x !== id),
+        }));
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "frame_deleted",
+            target: id,
+            atMs: Date.now(),
+        });
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "frame_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.post("/admin/frames/:id/ota", (req, res) => {
+    const id = String(req.params.id);
+    const version = String(req.body?.version ?? "").trim();
+    if (!version) {
+        res.status(400).json({ ok: false, error: "version_required" });
+        return;
+    }
+    let found = false;
+    store_1.db.mutate((draft) => {
+        draft.frames = draft.frames.map((f) => {
+            if (f.id !== id)
+                return f;
+            found = true;
+            return { ...f, ota: { targetVersion: version, status: "queued" } };
+        });
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "ota_push",
+            target: id,
+            atMs: Date.now(),
+            meta: { version },
+        });
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "frame_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.get("/admin/frames/:id/ble-logs", (req, res) => {
+    const id = String(req.params.id);
+    const data = store_1.db.read();
+    res.json(data.bleProvisionLogs.filter((l) => l.frameId === id));
+});
+// Superadmin: Content & ops
+exports.adminRouter.get("/admin/content/ops", (_req, res) => {
+    const data = store_1.db.read();
+    const stuckUploads = data.uploads.filter((u) => u.deliveredToFrame === false);
+    const storageByUser = data.users.map((u) => {
+        const ownedFrames = new Set(data.frames.filter((f) => f.ownerUserId === u.id).map((f) => f.id));
+        const bytes = data.uploads
+            .filter((up) => ownedFrames.has(up.deviceId))
+            .reduce((a, b) => a + effectiveUploadBytes(b.filename, b.bytes), 0);
+        return { userId: u.id, email: u.email, bytes };
+    });
+    const uploadUserByFrame = new Map();
+    for (const f of data.frames)
+        uploadUserByFrame.set(f.id, f.ownerUserId);
+    const recentUploads = data.uploads.slice(0, 200).map((u) => ({
+        ...u,
+        bytes: effectiveUploadBytes(u.filename, u.bytes),
+        ownerUserId: uploadUserByFrame.get(u.deviceId) ?? null,
+        imageUrl: `/frame-media/${encodeURIComponent(u.filename)}`,
+    }));
+    res.json({
+        queue: { total: data.uploads.length, stuck: stuckUploads.length },
+        storageByUser,
+        playlists: data.playlists,
+        featureFlags: data.featureFlags,
+        auditLog: data.auditLog.slice(0, 200),
+        recentUploads,
+    });
+});
+exports.adminRouter.delete("/admin/uploads/:id", (req, res) => {
+    const id = String(req.params.id);
+    let removed = false;
+    store_1.db.mutate((draft) => {
+        const match = draft.uploads.find((u) => u.id === id);
+        if (!match)
+            return;
+        removed = true;
+        draft.uploads = draft.uploads.filter((u) => u.id !== id);
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "upload_deleted",
+            target: id,
+            atMs: Date.now(),
+            meta: { filename: match.filename, deviceId: match.deviceId },
+        });
+        try {
+            const p = path_1.default.join(uploadDir, path_1.default.basename(match.filename));
+            if (fs_1.default.existsSync(p))
+                fs_1.default.unlinkSync(p);
+        }
+        catch {
+            /* ignore */
+        }
+    });
+    if (!removed) {
+        res.status(404).json({ ok: false, error: "upload_not_found" });
+        return;
+    }
+    res.json({ ok: true });
+});
+exports.adminRouter.get("/admin/commerce/orders/summary", (_req, res) => {
+    const data = store_1.db.read();
+    const orders = data.orders;
+    let revenue = 0;
+    let units = 0;
+    for (const o of orders) {
+        revenue += Number(o.total) || 0;
+        for (const li of o.items) {
+            units += li.quantity;
+        }
+    }
+    res.json({
+        ok: true,
+        orderCount: orders.length,
+        framesSoldApprox: units,
+        revenueUsdApprox: revenue,
+    });
+});
+exports.adminRouter.get("/admin/commerce/orders", (_req, res) => {
+    const data = store_1.db.read();
+    res.json({
+        ok: true,
+        orders: data.orders.map((o) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            customerName: o.customerName,
+            email: o.email,
+            status: o.status,
+            gateway: o.gateway,
+            currency: o.currency,
+            total: o.total,
+            createdAtMs: o.createdAtMs,
+            updatedAtMs: o.updatedAtMs,
+            items: o.items,
+        })),
+    });
+});
+/** manage.html-compatible list (snake_case + CMS order statuses). */
+exports.adminRouter.get("/admin/orders", (_req, res) => {
+    const data = store_1.db.read();
+    res.json({
+        ok: true,
+        orders: data.orders.map((o) => ({
+            id: o.id,
+            order_number: o.orderNumber,
+            customer_name: o.customerName,
+            email: o.email,
+            phone: o.phone,
+            gateway: o.gateway,
+            total: o.total,
+            currency: o.currency,
+            order_status: o.status === "shipped"
+                ? "in_progress"
+                : o.status === "delivered"
+                    ? "completed"
+                    : o.status === "pending"
+                        ? "pending"
+                        : "pending",
+            payment_status: o.paymentStatus || "pending",
+            city_country: o.cityCountry || "",
+        })),
+    });
+});
+exports.adminRouter.put("/admin/orders/:id", (req, res) => {
+    const id = String(req.params.id);
+    const orderStatus = String(req.body?.order_status ?? "").trim();
+    const paymentStatus = String(req.body?.payment_status ?? "").trim();
+    if (!paymentStatus) {
+        res.status(400).json({ ok: false, error: "payment_status_required" });
+        return;
+    }
+    let found = false;
+    store_1.db.mutate((draft) => {
+        draft.orders = draft.orders.map((o) => {
+            if (o.id !== id)
+                return o;
+            found = true;
+            const nextStatus = uiToDbOrderStatus(orderStatus);
+            return {
+                ...o,
+                status: nextStatus,
+                paymentStatus,
+                updatedAtMs: Date.now(),
+            };
+        });
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "order_not_found" });
+        return;
+    }
+    appendAudit("superadmin", "order_cms_update", id, { order_status: orderStatus, payment_status: paymentStatus });
+    res.json({ ok: true });
+});
+exports.adminRouter.get("/admin/subscribers", (_req, res) => {
+    const data = store_1.db.read();
+    res.json({
+        ok: true,
+        subscribers: data.notifySubscribers.map((s) => ({
+            id: s.id,
+            name: s.name,
+            email: s.email,
+            sku: s.sku,
+            product_name: s.productName,
+            language: s.language || "en",
+            status: "active",
+            source: "notify_me",
+            created_at: new Date(s.createdAtMs).toISOString(),
+        })),
+    });
+});
+exports.adminRouter.delete("/admin/subscribers/:id", (req, res) => {
+    const id = String(req.params.id);
+    let removed = false;
+    store_1.db.mutate((draft) => {
+        const before = draft.notifySubscribers.length;
+        draft.notifySubscribers = draft.notifySubscribers.filter((s) => s.id !== id);
+        removed = draft.notifySubscribers.length < before;
+    });
+    if (!removed) {
+        res.status(404).json({ ok: false, error: "subscriber_not_found" });
+        return;
+    }
+    appendAudit("admin", "notify_subscriber_delete", id, {});
+    res.json({ ok: true });
+});
+exports.adminRouter.put("/admin/settings/basic", (req, res) => {
+    const patch = (req.body && typeof req.body === "object" ? req.body : {});
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        ms.basic = { ...ms.basic, ...patch };
+    });
+    appendAudit("admin", "marketing_basic_update", "basic", {});
+    res.json({ ok: true });
+});
+exports.adminRouter.put("/admin/settings/media", (req, res) => {
+    const patch = (req.body && typeof req.body === "object" ? req.body : {});
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        ms.media = { ...ms.media, ...patch };
+    });
+    appendAudit("admin", "marketing_media_update", "media", {});
+    res.json({ ok: true });
+});
+exports.adminRouter.put("/admin/settings/features", (req, res) => {
+    const rows = Array.isArray(req.body) ? req.body : Array.isArray(req.body?.features) ? req.body.features : null;
+    if (!rows || !Array.isArray(rows)) {
+        res.status(400).json({ ok: false, error: "features_array_required" });
+        return;
+    }
+    const next = rows
+        .filter((r) => r != null && typeof r === "object")
+        .map((r) => ({
+        icon: String(r.icon ?? ""),
+        image: String(r.image ?? ""),
+        title: String(r.title ?? ""),
+        description: String(r.description ?? ""),
+    }));
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        ms.features = next;
+    });
+    appendAudit("admin", "marketing_features_update", "features", { count: next.length });
+    res.json({ ok: true });
+});
+exports.adminRouter.post("/admin/products", (req, res) => {
+    const body = normalizeProductBody((req.body ?? {}));
+    if (!body.sku || !body.name) {
+        res.status(400).json({ ok: false, error: "sku_and_name_required" });
+        return;
+    }
+    let row;
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        const nums = ms.products.map((p) => Number(p.id)).filter(Number.isFinite);
+        const maxId = nums.length ? Math.max(...nums) : 0;
+        const id = maxId + 1;
+        row = { id, ...body };
+        ms.products = [...ms.products, row];
+    });
+    if (!row) {
+        res.status(500).json({ ok: false, error: "product_create_failed" });
+        return;
+    }
+    appendAudit("admin", "marketing_product_create", body.sku, { id: row.id });
+    res.status(201).json(row);
+});
+exports.adminRouter.put("/admin/products/:id", (req, res) => {
+    const idRaw = req.params.id;
+    const pid = Number(idRaw);
+    const body = normalizeProductBody((req.body ?? {}));
+    let updated = false;
+    let row;
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        ms.products = ms.products.map((p) => {
+            if (Number(p.id) !== pid && String(p.id) !== String(idRaw))
+                return p;
+            updated = true;
+            const merged = { ...p, ...body, id: p.id };
+            row = merged;
+            return merged;
+        });
+    });
+    if (!updated || !row) {
+        res.status(404).json({ ok: false, error: "product_not_found" });
+        return;
+    }
+    appendAudit("admin", "marketing_product_update", body.sku, { id: idRaw });
+    res.json(row);
+});
+exports.adminRouter.delete("/admin/products/:id", (req, res) => {
+    const idRaw = req.params.id;
+    const pid = Number(idRaw);
+    let removed = false;
+    store_1.db.mutate((draft) => {
+        const ms = ensureMarketingSiteDraft(draft);
+        const before = ms.products.length;
+        ms.products = ms.products.filter((p) => Number(p.id) !== pid && String(p.id) !== String(idRaw));
+        removed = ms.products.length < before;
+    });
+    if (!removed) {
+        res.status(404).json({ ok: false, error: "product_not_found" });
+        return;
+    }
+    appendAudit("admin", "marketing_product_delete", idRaw, {});
+    res.json({ ok: true });
+});
+exports.adminRouter.patch("/admin/commerce/orders/:id/status", (req, res) => {
+    const id = String(req.params.id);
+    const status = String(req.body?.status ?? "").trim();
+    if (status !== "pending" && status !== "shipped" && status !== "delivered") {
+        res.status(400).json({ ok: false, error: "invalid_status" });
+        return;
+    }
+    let found = false;
+    const next = store_1.db.mutate((draft) => {
+        draft.orders = draft.orders.map((o) => {
+            if (o.id !== id)
+                return o;
+            found = true;
+            return { ...o, status, updatedAtMs: Date.now() };
+        });
+    });
+    if (!found) {
+        res.status(404).json({ ok: false, error: "order_not_found" });
+        return;
+    }
+    appendAudit("superadmin", "order_status", id, { status });
+    res.json({ ok: true, order: next.orders.find((o) => o.id === id) });
+});
+exports.adminRouter.post("/admin/content/notify", (req, res) => {
+    const title = String(req.body?.title ?? "").trim();
+    const body = String(req.body?.body ?? "").trim();
+    if (!title || !body) {
+        res.status(400).json({ ok: false, error: "title_body_required" });
+        return;
+    }
+    store_1.db.mutate((draft) => {
+        for (const u of draft.users) {
+            draft.notifications.unshift({
+                id: `n_${Date.now()}_${u.id}`,
+                userId: u.id,
+                type: "admin_broadcast",
+                token: null,
+                delivered: false,
+                atMs: Date.now(),
+            });
+        }
+        draft.auditLog.unshift({
+            id: `audit_${Date.now()}`,
+            actor: "superadmin",
+            action: "broadcast_notify",
+            target: "all_users",
+            atMs: Date.now(),
+            meta: { title, body },
+        });
+    });
+    res.json({ ok: true });
+});
+(0, cms_manage_routes_1.attachCmsManageRoutes)(exports.adminRouter);

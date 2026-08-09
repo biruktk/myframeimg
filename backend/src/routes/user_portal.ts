@@ -8,6 +8,7 @@ import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import {
   stopPlaybackForDeletedPlaylist,
 } from "../services/slideshow_stop";
+import { syncSlideshowDelete } from "../services/album_delete_sync";
 import { visibleFramesForUser, frameDisplayName } from "../services/account_sync_state";
 import { isFrameOwner } from "../services/frame_user_roles";
 
@@ -59,6 +60,8 @@ userPortalRouter.get("/frames", (req: Request, res: Response) => {
       // Never send raw MAC/id as the display title — clients show that as the card name.
       name: frameDisplayName(f) || null,
       displayName: frameDisplayName(f) || null,
+      custom_name: frameDisplayName(f) || null,
+      alias: frameDisplayName(f) || null,
       wifiSsid: f.wifiSsid,
       wifiStatus: f.wifiStatus,
       firmwareVersion: f.firmwareVersion,
@@ -91,7 +94,14 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
   const msStart = monthStart.getTime();
 
   const uploadsOnFrames = data.uploads
-    .filter((u) => frameIds.includes(u.deviceId))
+    .filter((u) => {
+      // Same platform isolation as GET /api/user/gallery (devices are shared,
+      // photo histories are not).
+      if (auth.platform && u.sourcePlatform && u.sourcePlatform !== auth.platform) {
+        return false;
+      }
+      return frameIds.includes(u.deviceId);
+    })
     .sort((a, b) => b.atMs - a.atMs);
   const photosThisMonth = uploadsOnFrames.filter((u) => u.atMs >= msStart).length;
 
@@ -254,6 +264,12 @@ userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
   }
   const photos = data.uploads
     .filter((u) => {
+      // Gallery isolation across UnionID-shared accounts: only return uploads
+      // originating from the requesting app platform (legacy uploads with no
+      // sourcePlatform stay visible on both).
+      if (auth.platform && u.sourcePlatform && u.sourcePlatform !== auth.platform) {
+        return false;
+      }
       if (u.uploaderUserId === auth.userId) return true;
       const d = String(u.deviceId || "");
       const hex = d.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
@@ -537,6 +553,71 @@ async function deleteOwnedPlaylist(authUserId: string, playlistId: string): Prom
     fallbackUrls: stopResult.fallbackUrls,
   };
 }
+
+/**
+ * ALBUM_DELETE_SYNC — delete the album and tell frames via MQTT to drop the
+ * deleted images and continue autonomous local playback with the remaining list.
+ * Replaces the old stop/fallback behaviour.
+ */
+userPortalRouter.post("/v1/user/albums/:id/delete-sync", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const id = String(req.params.id || "").trim();
+  const body = (req.body || {}) as {
+    imageIds?: unknown;
+    intervalMinutes?: unknown;
+    strategy?: unknown;
+    durationHours?: unknown;
+    macSlugs?: unknown;
+  };
+
+  const before = db.read().playlists.find((p) => p.id === id);
+  if (!before) {
+    res.status(404).json({ ok: false, error: "not_found" });
+    return;
+  }
+  if (!playlistEditableByUser(id, auth.userId)) {
+    res.status(403).json({ ok: false, error: "forbidden" });
+    return;
+  }
+
+  const imageIds = Array.isArray(body.imageIds)
+    ? (body.imageIds as unknown[]).map((x) => String(x || "")).filter((x) => x.length > 0)
+    : [];
+  const intervalMinutes = Math.round(Number(body.intervalMinutes ?? 10));
+  const strategy = Math.round(Number(body.strategy ?? 1));
+  const durationHours = Math.round(Number(body.durationHours ?? 0));
+  const macSlugs = Array.isArray(body.macSlugs)
+    ? (body.macSlugs as unknown[]).map((x) => String(x)).filter((x) => x.length > 0)
+    : [];
+
+  void (async () => {
+    let removed = false;
+    db.mutate((draft) => {
+      const n = draft.playlists.length;
+      draft.playlists = draft.playlists.filter((p) => p.id !== id);
+      removed = draft.playlists.length < n;
+      if (removed) bumpUserSync(draft, auth.userId);
+    });
+    if (!removed) {
+      res.status(404).json({ ok: false, error: "not_found" });
+      return;
+    }
+
+    const result = syncSlideshowDelete({
+      photoIds: Array.isArray(before.photoIds) ? before.photoIds : [],
+      assignedFrameIds:
+        (before as { assignedFrameIds?: string[] }).assignedFrameIds ?? [],
+      ownerUserId: (before as { ownerUserId?: string | null }).ownerUserId || auth.userId,
+      macSlugs,
+      imageIds,
+      intervalMinutes,
+      strategy,
+      durationHours,
+    });
+    res.json({ ok: true, albumId: id, ...result });
+  })();
+});
 
 /** DELETE /api/user/gallery/:id */
 userPortalRouter.delete("/user/gallery/:id", (req: Request, res: Response) => {

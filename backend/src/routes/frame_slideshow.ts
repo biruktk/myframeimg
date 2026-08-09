@@ -3,6 +3,11 @@ import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
+import {
+  isMqttConnected,
+  publishStrategyCommand,
+  resolveMqttHardwareMac,
+} from "../services/frame_mqtt";
 
 function normalizeMacKey(raw: string): string {
   try {
@@ -73,6 +78,14 @@ export function frameSlideshowRouter(): Router {
     console.log("[slideshow] POST macKey=%s ids=%d interval=%d strategy=%s idle=%d skipPlay=%s authed=%s", macKey, ids.length, intervalMinutes, isRandomStrategy(strategy) ? "random" : "sequential", idle, skipPlay, u ? "jwt:" + u.userId : "pairing_token");
 
     const now = Date.now();
+    // A frame in "stopped / fallback" state has no active slideshow record.
+    // In that case a fresh send must play immediately instead of waiting a full
+    // interval (otherwise a delete → re-send stalls the panel for up to
+    // intervalMinutes on the stale fallback image).
+    const priorSlideshow = db.read().slideshowsByBleMac?.[macKey];
+    const hadActiveSlideshow =
+      !!priorSlideshow && (priorSlideshow.imageIds ?? []).length > 0;
+    const effectiveSkipPlay = skipPlay && hadActiveSlideshow;
     db.mutate((draft) => {
       if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
       // currentIndex = last-played index (or -1 for random before first play).
@@ -82,7 +95,7 @@ export function frameSlideshowRouter(): Router {
       const startIndex = seedCurrentIndex({
         strategy,
         count: ids.length,
-        skipPlay,
+        skipPlay: effectiveSkipPlay,
       });
       draft.slideshowsByBleMac[macKey] = {
         imageIds: ids,
@@ -93,9 +106,36 @@ export function frameSlideshowRouter(): Router {
         idle,
         updatedAtMs: now,
         currentIndex: startIndex,
-        nextPlayAtMs: skipPlay ? now + intervalMinutes * 60 * 1000 : now,
+        nextPlayAtMs: effectiveSkipPlay ? now + intervalMinutes * 60 * 1000 : now,
       };
     });
+
+    // Send strategy command with full image manifest so frame cycles autonomously
+    const data = db.read();
+    const imageUrls = ids
+      .map((id) => {
+        const upload = data.uploads.find((u) => u.id === id);
+        return upload
+          ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "")}/frame-media/${encodeURIComponent(upload.filename)}`
+          : null;
+      })
+      .filter((url): url is string => url !== null);
+
+    if (isMqttConnected() && imageUrls.length > 0) {
+      const publishMac = resolveMqttHardwareMac(macKey);
+      if (publishMac) {
+        publishStrategyCommand(publishMac, {
+          strategy: isRandomStrategy(strategy) ? 2 : 1,
+          intervalMinutes,
+          begintime,
+          endtime,
+          idle,
+          imageUrls,
+        }).catch((e) => {
+          console.warn("[slideshow] mqtt strategy failed", macKey, e);
+        });
+      }
+    }
 
     res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
   });

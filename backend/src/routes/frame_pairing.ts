@@ -160,6 +160,10 @@ framePairingRouter.get("/frames/:mac/history", function(req, res) {
   var data = db.read();
   var authed = verifyUserJwtBearer(req);
   var filtered = data.uploads.filter(function(u) { return resolveMqttHardwareMac(u.deviceId) === mac; });
+  // Per-frame history is also isolated per app platform (shared devices, separate galleries).
+  if (authed?.platform) {
+    filtered = filtered.filter(function(u) { return !u.sourcePlatform || u.sourcePlatform === authed!.platform; });
+  }
   var authedId = authed?.userId;
   if (authedId) {
     filtered = filtered.filter(function(u) { return u.uploaderUserId === authedId; });

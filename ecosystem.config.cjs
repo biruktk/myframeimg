@@ -19,6 +19,8 @@ module.exports = {
         PORT: "3000",
         MYFRAME_API_URL: "http://127.0.0.1:3001",
         NEXT_PUBLIC_SITE_URL: "https://myframe.ink",
+        ADMIN_USER: "Myframe_mike",
+        ADMIN_PASS: "ASwq123",
       },
     },
   ],

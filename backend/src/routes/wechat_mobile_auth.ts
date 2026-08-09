@@ -64,7 +64,7 @@ function completeWeChatLogin(profile: {
   openid: string;
   unionid?: string;
   nickname?: string;
-}): { token: string; user: { id: string; email: string; name: string } } {
+}): { token: string; platform: "flutter"; user: { id: string; email: string; name: string } } {
   const now = Date.now();
   const email = fallbackEmail(profile.unionid || profile.openid);
   const name = String(profile.nickname ?? "").trim() || "WeChat User";
@@ -91,6 +91,7 @@ function completeWeChatLogin(profile: {
         lastSeenAtMs: now,
         iosOpenId: profile.openid,
         wechatUnionId: profile.unionid,
+        appLastPlatform: "flutter",
       });
       draft.auditLog.unshift({
         id: `audit_${now}_${crypto.randomBytes(2).toString("hex")}`,
@@ -115,6 +116,7 @@ function completeWeChatLogin(profile: {
               lastSeenAtMs: now,
               iosOpenId: u.iosOpenId ?? profile.openid,
               wechatUnionId: u.wechatUnionId ?? profile.unionid,
+              appLastPlatform: "flutter",
             }
           : u,
       );
@@ -132,7 +134,8 @@ function completeWeChatLogin(profile: {
 
   if (!user) throw new Error("wechat_user_create_failed");
   return {
-    token: signUserJwt(user.id, user.email),
+    token: signUserJwt(user.id, user.email, "flutter"),
+    platform: "flutter",
     user: { id: user.id, email: user.email, name: user.name },
   };
 }

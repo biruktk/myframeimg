@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
 import { db } from "../db/store";
+import { appendFrameLog } from "./frame_logs";
 
 /**
  * Frame firmware (0.5.x) emits MQTT `heart` about every ~10 minutes and often
@@ -76,6 +77,25 @@ function mqttDebugRx(topic: string, raw: Buffer) {
 }
 
 function mqttDebugTx(topic: string, payloadJson: string) {
+  const tail = topic.split("/").pop() ?? "";
+  const mac = normalizeMac(tail);
+  let action = "";
+  try {
+    action = String((JSON.parse(payloadJson) as Record<string, unknown>).action ?? "");
+  } catch {
+    /* ignore */
+  }
+  appendFrameLog({
+    id: `log_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+    atMs: Date.now(),
+    direction: "tx",
+    source: "api",
+    mac,
+    frameName: frameDisplayName(mac),
+    topic,
+    action: action || undefined,
+    payload: payloadJson,
+  });
   if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1") return;
   console.log(
     "[frame-mqtt] --> tx",
@@ -106,6 +126,17 @@ function handleMessage(topic: string, raw: Buffer) {
   if (!mac) return;
 
   const action = String(data.action ?? "");
+  appendFrameLog({
+    id: `log_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+    atMs: Date.now(),
+    direction: "rx",
+    source: "frame",
+    mac,
+    frameName: frameDisplayName(mac),
+    topic,
+    action: action || undefined,
+    payload: raw.toString().slice(0, 2000),
+  });
   const rec: FrameRecord =
     frames.get(mac) ??
     ({
@@ -265,6 +296,30 @@ export function startFrameMqtt(): void {
 
 export function isMqttConnected(): boolean {
   return mqttClient?.connected ?? false;
+}
+export function getMqttBrokerStatus(): { connected: boolean; brokerUrl?: string; host: string; port: number } {
+  const options = mqttClient?.options;
+  let brokerUrl = String(process.env.MQTT_URL ?? "");
+  try {
+    const href = options && "href" in options ? String((options as Record<string, unknown>).href ?? "") : "";
+    if (href) brokerUrl = href;
+  } catch {
+    /* ignore */
+  }
+  return {
+    connected: mqttClient?.connected ?? false,
+    brokerUrl: brokerUrl || undefined,
+    host: String(process.env.FRAME_MQTT_BROKER_HOST ?? "").trim() || DEFAULT_MQTT_BROKER_HOST,
+    port: Number(process.env.FRAME_MQTT_BROKER_PORT || DEFAULT_MQTT_BROKER_PORT),
+  };
+}
+
+function frameDisplayName(mac: string): string | undefined {
+  const slug = mac.toLowerCase();
+  const f = db
+    .read()
+    .frames.find((x) => x.id === slug || normalizeMac(x.stationMac ?? "") === mac);
+  return f?.displayName ?? undefined;
 }
 
 /** True when the frame has been heard within the reachable grace window. */
@@ -510,6 +565,31 @@ export function publishStopPlaylistKeepDisplay(macRaw: string): Promise<void> {
   });
 }
 
+/**
+ * Format time to HH:MM string per V1.3 protocol spec.
+ * Accepts HH:MM, HH:MM:SS, or milliseconds since epoch.
+ */
+function formatTimeHHMM(timeStr: string): string {
+  if (!timeStr || timeStr.trim() === "") {
+    return "00:00";
+  }
+  const trimmed = timeStr.trim();
+  // Already in HH:MM or HH:MM:SS format
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    return trimmed.slice(0, 5); // Return HH:MM
+  }
+  // Try parsing as timestamp (milliseconds since epoch)
+  const ms = Number(trimmed);
+  if (Number.isFinite(ms) && ms > 0) {
+    const date = new Date(ms);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+  // Default fallback
+  return "00:00";
+}
+
 export function publishStrategyCommand(
   macRaw: string,
   config: {
@@ -519,29 +599,116 @@ export function publishStrategyCommand(
     endtime: string;
     idle: number;
     host?: string;
+    /** Optional: full image manifest for playlist/slideshow sync */
+    imageUrls?: string[];
   },
   msgid?: string,
 ): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
-  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "");
-  const port = process.env.PUBLIC_BASE_URL?.startsWith("https") ? 443 : 80;
+
+  // Use configured host or default to myframe.ink
+  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink");
+  const port = 443; // Always HTTPS per V1.3 spec
+
+  // Ensure begintime/endtime are in HH:MM format per V1.3 spec
+  const begintime = formatTimeHHMM(config.begintime);
+  const endtime = formatTimeHHMM(config.endtime);
+
+  const data: Record<string, unknown> = {
+    idle: config.idle,
+    strategy: config.strategy,
+    host,
+    port,
+    path: "/api/v1/frames/manifest",
+    updatetype: "2",
+    begintime,
+    endtime,
+    intervalminutes: config.intervalMinutes,
+    updatedays: 1,
+    updatetimelist: [] as string[],
+  };
+
+  // Include full image manifest for playlist/slideshow sync
+  if (config.imageUrls && config.imageUrls.length > 0) {
+    data.imgs = config.imageUrls.map((url, idx) => ({
+      imgid: `playlist_${Date.now()}_${idx}`,
+      imgurl: url,
+    }));
+  }
+
   return publishJson("/inkjoyap/" + mac, {
     msgid: msgid ?? Date.now().toString(),
     action: "strategy",
     stamac: mac,
+    data,
+  });
+}
+
+/**
+ * Publish a raw app-issued command (wifi_sleep) to /inkjoyap/{MAC}.
+ * `data` passes through verbatim per the strict firmware protocol.
+ */
+export function publishFrameCommand(
+  macRaw: string,
+  action: string,
+  data: Record<string, unknown>,
+  msgid?: string,
+): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  return publishJson(`/inkjoyap/${mac}`, {
+    msgid: msgid ?? Date.now().toString(),
+    action: action,
+    stamac: mac,
+    data: data,
+  });
+}
+
+/**
+ * Publish a Frame Profile playback-config update to the frame, alongside the
+ * existing strategy command, so the hardware updates its active slideshow
+ * timer instantly (no restart required). Emits both `UPDATE_PLAYBACK_STRATEGY`
+ * and the standard `strategy` action to keep parity with documented firmware.
+ * Payload matches V1.3 protocol spec (Section 2.10).
+ */
+export function publishMqttConfig(
+  macRaw: string,
+  config: { action: string; data: Record<string, unknown> },
+  msgid?: string,
+): Promise<void> {
+  const mac = resolveMqttHardwareMac(macRaw);
+  if (!mac) return Promise.reject(new Error("invalid_mac"));
+  const mid = msgid ?? Date.now().toString();
+  const strategy = Number(config.data.strategy ?? 1);
+  const intervalMinutes = Number(config.data.intervalMinutes ?? 10);
+  const endtime = formatTimeHHMM(String(config.data.endtime ?? ""));
+  const begintime = formatTimeHHMM(String(config.data.begintime ?? ""));
+  const host = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink";
+  const port = 443;
+
+  return publishJson(`/inkjoyap/${mac}`, {
+    msgid: mid,
+    action: config.action,
+    stamac: mac,
     data: {
-      idle: config.idle,
-      strategy: config.strategy,
+      idle: config.data.idle ?? 0,
+      strategy,
       host,
       port,
-      path: "/frame-media/",
+      path: "/api/v1/frames/manifest",
       updatetype: "2",
-      begintime: config.begintime,
-      endtime: config.endtime,
-      intervalminutes: config.intervalMinutes,
-      updatedays: 0,
+      begintime,
+      endtime,
+      intervalminutes: intervalMinutes,
+      updatedays: 1,
       updatetimelist: [] as string[],
     },
   });
+}
+
+function playlistMinutes(data: Record<string, unknown>): number {
+  const raw = data.interval ?? data.intervalMinutes ?? data.global_interval;
+  const n = Math.round(Number(raw));
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }

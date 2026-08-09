@@ -55,24 +55,27 @@ export async function proxy(request: NextRequest) {
   const firstSegment = segments[0];
   const manualLocale = readManualLocale(request);
 
-  // Shared invite / join links always land on Simplified Chinese pages.
-  if (firstSegment === "join" || firstSegment === "invite") {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/zh${pathname}`;
-    if (!redirectUrl.searchParams.get("lang")) {
-      redirectUrl.searchParams.set("lang", "zh");
+  // Guest invite / join pages are always Simplified Chinese, regardless of the
+  // visitor's region, geo force-locale, or manual cookie. They must never be
+  // re-prefixed to another locale — otherwise force-locale countries (e.g. an
+  // `es` <-> `zh` geo bounce) produce an infinite redirect loop.
+  const isGuestShare =
+    firstSegment === "invite" ||
+    firstSegment === "join" ||
+    (firstSegment &&
+      isLocale(firstSegment) &&
+      (segments[1] === "invite" || segments[1] === "join"));
+  if (isGuestShare) {
+    // Reuse the existing locale prefix when one is present, else rebuild.
+    const rest = firstSegment && isLocale(firstSegment)
+      ? segments.slice(1).join("/")
+      : segments.join("/");
+    const canonical = `/zh/${rest}`;
+    if (canonical === pathname) {
+      return withLocaleCookie(NextResponse.next(), "zh", false);
     }
-    return withLocaleCookie(NextResponse.redirect(redirectUrl), "zh", false);
-  }
-  if (
-    firstSegment &&
-    isLocale(firstSegment) &&
-    (segments[1] === "join" || segments[1] === "invite") &&
-    firstSegment !== "zh"
-  ) {
     const redirectUrl = request.nextUrl.clone();
-    const rest = segments.slice(1).join("/");
-    redirectUrl.pathname = `/zh/${rest}`;
+    redirectUrl.pathname = canonical;
     redirectUrl.searchParams.set("lang", "zh");
     return withLocaleCookie(NextResponse.redirect(redirectUrl), "zh", false);
   }

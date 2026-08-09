@@ -126,6 +126,8 @@ export type MyframeDb = {
     iosOpenId?: string;
     /** WeChat UnionID (shared across apps). */
     wechatUnionId?: string;
+    /** Last login app origin ("flutter" | "miniapp") — for attribution only. */
+    appLastPlatform?: string;
     /** E.164 phone number (from WeChat getPhoneNumber). */
     phone?: string;
     /** Apple Sign-In `sub` (user identifier). */
@@ -192,6 +194,8 @@ export type MyframeDb = {
     location?: { lat: number; lng: number };
     ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
     sleepConfig?: { enabled: boolean; startTime: string; endTime: string };
+    playbackConfig?: { intervalMinutes: number; mode: "sequential" | "random"; durationHours: number };
+    playbackConfigUpdatedAtMs?: number;
     stationMac?: string;
     battery?: number;
     storageUsed?: number;
@@ -240,6 +244,8 @@ export type MyframeDb = {
     deliveryMode?: string;
     deliveryCheckedAtMs?: number;
     uploaderUserId?: string;
+    /** App origin of the upload, for gallery isolation across UnionID-shared accounts. */
+    sourcePlatform?: string;
   }>;
   playlists: Array<{
     id: string;
@@ -397,45 +403,9 @@ function createInitialDb(): MyframeDb {
       },
     ],
     enterpriseApiKeys: [],
-    users: [
-      {
-        id: "usr_1",
-        email: "owner@example.com",
-        name: "Owner",
-        orgId: defaultOrgId,
-        subscriptionTier: "pro",
-        familyGroupId: "fam_1",
-        status: "active",
-        createdAtMs: now,
-        lastSeenAtMs: now,
-      },
-    ],
-    familyGroups: [
-      {
-        id: "fam_1",
-        name: "Family Group",
-        inviteCode: "INVITE-ABCD",
-        members: [{ userId: "usr_1", role: "owner" }],
-        frameIds: ["YX-133P-001"],
-      },
-    ],
-    frames: [
-      {
-        id: "YX-133P-001",
-        bleMac: "D0:CF:13:F0:16:1E",
-        ownerUserId: "usr_1",
-        sharedToUserIds: [],
-        orgId: defaultOrgId,
-        wifiSsid: null,
-        wifiStatus: "never_provisioned",
-        firmwareVersion: "1.2.0",
-        lastSeenAtMs: null,
-        uptimeMs: 0,
-        pendingQueue: [],
-        nextDeliveryAtMs: null,
-        ota: { targetVersion: null, status: "idle" },
-      },
-    ],
+    users: [],
+    familyGroups: [],
+    frames: [],
     device: {
       id: "YX-133P-001",
       name: "MyFrame (Primary)",
@@ -467,16 +437,7 @@ function createInitialDb(): MyframeDb {
       },
     },
     uploads: [],
-    playlists: [
-      {
-        id: "pl_family_moments",
-        title: "Family Moments",
-        photoIds: [],
-        scheduleRule: null,
-        assignedFrameIds: ["YX-133P-001"],
-        system: true,
-      },
-    ],
+    playlists: [],
     notifications: [],
     bleProvisionLogs: [],
     featureFlags: {

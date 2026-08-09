@@ -13,7 +13,12 @@ import { sendPushToUser } from "../services/firebase_admin";
 
 export const familyRouter = Router();
 
-familyRouter.use(express.json({ limit: "64kb" }));
+// Some released iOS builds send JSON as text/plain. Parse it only for this
+// endpoint; the main app remains the canonical JSON parser for all others.
+familyRouter.use("/family/join", express.text({ type: "text/plain", limit: "64kb" }));
+
+// Body parsing is handled by the main app (express.json({ limit: "2mb" }))
+// Do NOT add another express.json() here -- it consumes the stream and leaves req.body empty.
 
 function authUser(req: Request, res: Response): { userId: string } | null {
   const u = verifyUserJwtBearer(req);
@@ -180,13 +185,40 @@ familyRouter.post("/family/join", (req, res) => {
   const auth = authUser(req, res);
   if (!auth) return;
 
-  const inviteRaw = req.body?.inviteCode ?? req.body?.code ?? "";
+  let parsedJoinBody: unknown = req.body;
+  if (typeof parsedJoinBody === "string") {
+    try {
+      parsedJoinBody = JSON.parse(parsedJoinBody);
+    } catch {
+      parsedJoinBody = {};
+    }
+  }
+  const joinBody = (parsedJoinBody && typeof parsedJoinBody === "object"
+    ? parsedJoinBody
+    : {}) as Record<string, unknown>;
+  const joinQuery = (req.query && typeof req.query === "object" ? req.query : {}) as Record<string, unknown>;
+  const inviteRaw = [
+    joinBody.inviteCode,
+    joinBody.invite_code,
+    joinBody.familyCode,
+    joinBody.family_code,
+    joinBody.code,
+    joinQuery.inviteCode,
+    joinQuery.invite_code,
+    joinQuery.familyCode,
+    joinQuery.family_code,
+    joinQuery.code,
+  ].find((value) => String(value ?? "").trim()) ?? "";
   const inviteCodeNorm = normalizeInviteCode(inviteRaw);
   if (inviteCodeNorm.length !== 8) {
     console.log(
       "[family/join] invalid_length",
       JSON.stringify({
         userId: auth.userId,
+        contentType: req.header("content-type") ?? "",
+        contentLength: req.header("content-length") ?? "",
+        bodyKeys: req.body && typeof req.body === "object" ? Object.keys(req.body) : [],
+        queryKeys: Object.keys(req.query ?? {}),
         ...codeDebug("received", inviteRaw),
       }),
     );
@@ -255,7 +287,7 @@ familyRouter.post("/family/join", (req, res) => {
     res.status(409).json({
       ok: false,
       error: "already_member",
-      message: "You are already a member of this family.",
+      message: "You are already in this family circle",
       familyId: targetGroup.id,
     });
     return;

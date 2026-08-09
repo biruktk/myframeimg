@@ -1,0 +1,590 @@
+"use strict";
+/**
+ * Optional MQTT bridge to frames on your broker.
+ * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
+ */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalizeMac = normalizeMac;
+exports.resolveMqttHardwareMac = resolveMqttHardwareMac;
+exports.startFrameMqtt = startFrameMqtt;
+exports.mqttConnectedForStatus = mqttConnectedForStatus;
+exports.isFrameMqttOnline = isFrameMqttOnline;
+exports.getMqttBrokerStatus = getMqttBrokerStatus;
+exports.isMqttConnected = isMqttConnected;
+exports.listFrames = listFrames;
+exports.resolveKnownMqttHardwareMac = resolveKnownMqttHardwareMac;
+exports.getFrame = getFrame;
+exports.publishMqttBrokerConfig = publishMqttBrokerConfig;
+exports.publishLoginAck = publishLoginAck;
+exports.publishPlayImage = publishPlayImage;
+exports.publishOta = publishOta;
+exports.publishManualMqttCommand = publishManualMqttCommand;
+exports.sendFramePushNotification = sendFramePushNotification;
+const crypto_1 = __importDefault(require("crypto"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const mqtt_1 = __importDefault(require("mqtt"));
+const frame_media_1 = require("../config/frame_media");
+const store_1 = require("../db/store");
+const frame_logs_1 = require("./frame_logs");
+function unawaited(p) {
+    p.catch(() => { });
+}
+const frames = new Map();
+const FRAMES_STATE_PATH = path_1.default.join(process.cwd(), "data", "frames-state.json");
+let saveTimer = null;
+function scheduleSave() {
+    if (saveTimer)
+        clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        const obj = {};
+        for (const [mac, rec] of frames) {
+            obj[mac] = rec;
+        }
+        try {
+            const dir = path_1.default.dirname(FRAMES_STATE_PATH);
+            if (!fs_1.default.existsSync(dir))
+                fs_1.default.mkdirSync(dir, { recursive: true });
+            fs_1.default.writeFileSync(FRAMES_STATE_PATH, JSON.stringify(obj, null, 2), "utf8");
+        }
+        catch (err) {
+            console.error("[frame-mqtt] failed to persist frames state:", err);
+        }
+        saveTimer = null;
+    }, 2000);
+}
+function loadFramesState() {
+    try {
+        if (!fs_1.default.existsSync(FRAMES_STATE_PATH))
+            return;
+        const raw = fs_1.default.readFileSync(FRAMES_STATE_PATH, "utf8");
+        const obj = JSON.parse(raw);
+        for (const [mac, rec] of Object.entries(obj)) {
+            frames.set(mac, rec);
+        }
+        console.log("[frame-mqtt] restored " + Object.keys(obj).length + " frame(s) from disk");
+    }
+    catch (err) {
+        console.error("[frame-mqtt] failed to load frames state:", err);
+    }
+}
+let mqttClient = null;
+function frameAckEnabled() {
+    return String(process.env.FRAME_MQTT_ACKS ?? "0").trim() === "1";
+}
+function normalizeMac(mac) {
+    return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
+}
+/** 12‑hex Wi‑Fi MAC for `/inkjoyap/{MAC}` and `play` payloads; strips BLE names like `IJ_D0CF13F0161C`. */
+function resolveMqttHardwareMac(raw) {
+    let s = raw.trim();
+    if (!s)
+        return null;
+    const low = s.toLowerCase();
+    if (low.startsWith("ij_") || low.startsWith("ij-"))
+        s = s.slice(3).trim();
+    if (low.startsWith("xt_esp_"))
+        s = s.slice(7).trim();
+    else if (low.startsWith("xt-esp-"))
+        s = s.slice(7).trim();
+    let h = normalizeMac(s);
+    if (!h)
+        return null;
+    // If app sent `IJ_` as prefix merged into hex, keep only the trailing EUI‑48 (12 hex).
+    if (h.length > 12)
+        h = h.slice(-12);
+    if (h.length !== 12 || !/^[0-9A-F]{12}$/i.test(h))
+        return null;
+    return h.toUpperCase();
+}
+function resolveFrameName(mac) {
+    const data = store_1.db.read();
+    const norm = normalizeMac(mac);
+    const frame = data.frames.find((f) => normalizeMac(f.id) === norm || normalizeMac(f.bleMac) === norm);
+    if (frame)
+        return frame.id;
+    if (normalizeMac(data.device.id) === norm)
+        return data.device.name || data.device.id;
+    return null;
+}
+function logFrameTraffic(direction, mac, topic, payload, action) {
+    const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+    (0, frame_logs_1.appendFrameLog)({
+        direction,
+        source: "mqtt",
+        mac: normalizeMac(mac),
+        frameName: resolveFrameName(mac),
+        topic,
+        action: action ?? (typeof payload === "object" ? String(payload.action ?? "") || null : null),
+        payload: body.length > 4000 ? `${body.slice(0, 4000)}…` : body,
+    });
+}
+function parseMqttJson(text) {
+    try {
+        const parsed = JSON.parse(text);
+        return parsed != null && typeof parsed === "object" && !Array.isArray(parsed)
+            ? parsed
+            : null;
+    }
+    catch {
+        return null;
+    }
+}
+function mqttDebugRx(topic, raw) {
+    if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1")
+        return;
+    const txt = raw.toString("utf8");
+    console.log("[frame-mqtt] <-- rx", topic, txt.length > 1500 ? `${txt.slice(0, 1500)}…` : txt);
+}
+function mqttDebugTx(topic, payloadJson) {
+    if (String(process.env.FRAME_MQTT_DEBUG ?? "").trim() !== "1")
+        return;
+    console.log("[frame-mqtt] --> tx", topic, payloadJson.length > 1500 ? `${payloadJson.slice(0, 1500)}…` : payloadJson);
+}
+function resolveFrameMediaPath(imageUrl) {
+    let rawPath = imageUrl.trim();
+    try {
+        rawPath = new URL(imageUrl).pathname;
+    }
+    catch {
+        // Accept already-normalized path input.
+    }
+    const basename = decodeURIComponent(rawPath.split("/").pop() ?? "").trim();
+    if (!basename || !basename.toLowerCase().endsWith(".bin")) {
+        throw new Error("mqtt_play_imgurl_must_end_with_dot_bin_xt_epaper_firmware_does_not_render_jpeg");
+    }
+    return `/frame-media/${encodeURIComponent(basename)}`;
+}
+/** ESP32 BLE MAC is typically Wi‑Fi station MAC + 2 (last octet). */
+function esp32BleMacFromWifiMac(wifiMac) {
+    const value = Number.parseInt(wifiMac, 16);
+    if (!Number.isFinite(value))
+        return null;
+    return (value + 2).toString(16).toUpperCase().padStart(12, "0").slice(-12);
+}
+function mqttBrokerPayload(msgid) {
+    const host = process.env.MQTT_BROKER_PUBLIC_HOST?.trim() ||
+        process.env.PUBLIC_BASE_URL?.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim() ||
+        "128.241.231.234";
+    const port = Number(process.env.MQTT_BROKER_PUBLIC_PORT || 1883);
+    return {
+        msgid: msgid || Date.now().toString(),
+        action: "mqtt_config",
+        data: {
+            host,
+            port,
+            usr: process.env.MQTT_USER || "device",
+            pwd: process.env.MQTT_PASSWORD || process.env.MQTT_BROKER_DEVICE_PASS || "framepass2026",
+        },
+    };
+}
+function publishFrameCommand(stamac, payload, qos, label, retain = false) {
+    return new Promise((resolve, reject) => {
+        if (!mqttClient?.connected) {
+            reject(new Error("MQTT not connected"));
+            return;
+        }
+        const topic = `/inkjoyap/${stamac}`;
+        const body = JSON.stringify(payload);
+        mqttDebugTx(topic, body);
+        mqttClient.publish(topic, body, { qos, retain }, (err) => {
+            if (err)
+                reject(err);
+            else {
+                console.log(`[MQTT] ${label} sent to`, stamac, retain ? "(retain)" : "(no-retain)");
+                resolve();
+            }
+        });
+    });
+}
+async function publishToStationAndBleMac(wifiMac, payload, qos, label, retain = false) {
+    await publishFrameCommand(wifiMac, payload, qos, label, retain);
+    const bleMac = esp32BleMacFromWifiMac(wifiMac);
+    if (bleMac && bleMac !== wifiMac) {
+        await publishFrameCommand(bleMac, payload, qos, `${label}_ble`, retain);
+    }
+}
+function handleMessage(topic, raw) {
+    mqttDebugRx(topic, raw);
+    const payloadText = raw.toString("utf8");
+    const data = parseMqttJson(payloadText);
+    const tail = topic.split("/").pop() ?? "";
+    const clientid = (typeof data?.clientid === "string" && data.clientid) ||
+        (typeof data?.stamac === "string" && data.stamac) ||
+        tail;
+    const mac = resolveMqttHardwareMac(clientid) ?? normalizeMac(clientid);
+    if (!mac)
+        return;
+    const action = String(data?.action ?? "");
+    logFrameTraffic("rx", mac, topic, payloadText, action || null);
+    if (!data)
+        return;
+    const rec = frames.get(mac) ??
+        {
+            lastSeen: Date.now(),
+            status: "online",
+            config: {},
+        };
+    rec.lastSeen = Date.now();
+    rec.status = "online";
+    rec.clientid = String(clientid || mac);
+    rec.lastAction = action || rec.lastAction;
+    if (action === "shutdown") {
+        rec.status = "offline";
+        rec.displayed = false;
+    }
+    const stamac = resolveMqttHardwareMac(typeof data.stamac === "string" && data.stamac.trim() ? data.stamac : clientid) ?? mac;
+    const d = data.data;
+    const result = data.result ??
+        data.code ??
+        data.lastResult ??
+        data.displayCode ??
+        d?.result ??
+        d?.code ??
+        d?.displayCode;
+    if (typeof result === "number" || typeof result === "string") {
+        rec.lastResult = result;
+        const n = Number(result);
+        if (n === 113 || n === 182 || n === 184 || n === 186 || n === 188 || n === 210) {
+            rec.displayed = true;
+            unawaited(sendFramePushNotification(mac, '🖼️ Frame Updated!', 'Your image is now showing on the frame.'));
+        }
+        if (n === 104)
+            rec.displayed = false;
+    }
+    if (action === "play_ack") {
+        rec.status = "online";
+        const n = Number(rec.lastResult);
+        // 106 = download start — not displayed yet. Finished: 113/182/184/186/188/210.
+        if (n === 113 || n === 182 || n === 184 || n === 186 || n === 188 || n === 210) {
+            rec.displayed = true;
+        }
+    }
+    switch (action) {
+        case "login": {
+            rec.config = {
+                firmwareVersion: d?.ver,
+                stationType: d?.statype,
+                stamac,
+            };
+            if (frameAckEnabled()) {
+                // Working backup behavior: login_ack only, NOT retained, NO mqtt_config on login.
+                // Retained login_ack/mqtt_config on /inkjoyap/{MAC} overwrites retained play and
+                // causes reconnect loops that abort .bin downloads.
+                const msgid = String(data.msgid ?? Date.now());
+                void publishToStationAndBleMac(stamac, { action: "login_ack", msgid, stamac }, 1, "login_ack", false).catch((err) => {
+                    console.error("[MQTT] login_ack publish failed:", err);
+                });
+                void publishToStationAndBleMac(stamac, { action: "wifimode", msgid: String(Date.now()), stamac, data: { mode: 0 } }, 0, "wifi_sleep_off", false).catch((err) => {
+                    console.error("[MQTT] wifi_sleep off publish failed:", err);
+                });
+            }
+            break;
+        }
+        case "heart": {
+            if (frameAckEnabled() && (d?.ack === 1 || d?.ack === "1")) {
+                void publishFrameCommand(stamac, {
+                    action: "heart_ack",
+                    msgid: String(Date.now()),
+                    stamac,
+                }, 0, "heart_ack").catch((err) => {
+                    console.error("[MQTT] heart_ack publish failed:", err);
+                });
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    frames.set(mac, rec);
+    scheduleSave();
+}
+/** Call after Express is listening. No-op if MQTT_URL unset. */
+function startFrameMqtt() {
+    const url = process.env.MQTT_URL?.trim();
+    if (!url) {
+        console.log("[frame-mqtt] MQTT_URL not set — frame cloud MQTT disabled");
+        return;
+    }
+    const user = process.env.MQTT_USER;
+    const pass = process.env.MQTT_PASSWORD;
+    mqttClient = mqtt_1.default.connect(url, {
+        keepalive: 60,
+        username: user || undefined,
+        password: pass || undefined,
+        clientId: `myframe_api_${crypto_1.default.randomBytes(6).toString("hex")}`,
+        reconnectPeriod: 2000,
+        connectTimeout: 10000,
+    });
+    mqttClient.on("connect", () => {
+        console.log("[frame-mqtt] connected");
+        mqttClient?.subscribe("/device/report/#", { qos: 1 }, (err) => {
+            if (err)
+                console.error("[frame-mqtt] subscribe error", err);
+        });
+    });
+    loadFramesState();
+    mqttClient.on("message", (topic, msg) => handleMessage(topic, msg));
+    mqttClient.on("error", (err) => console.error("[frame-mqtt]", err));
+    mqttClient.on("close", () => console.log("[frame-mqtt] connection closed"));
+}
+function mqttConnectedForStatus(macRaw) {
+    if (isFrameMqttOnline(macRaw))
+        return true;
+    const mac = resolveKnownMqttHardwareMac(macRaw);
+    if (!mac)
+        return false;
+    const rec = frames.get(mac);
+    if (!rec || rec.status !== "online")
+        return false;
+    const grace = Number(process.env.FRAME_MQTT_GRACE_MS ?? 1800000) || 1800000;
+    if (Date.now() - rec.lastSeen > grace)
+        return false;
+    const action = String(rec.lastAction ?? "").toLowerCase();
+    return action === "login" || action === "heart" || action === "play_ack";
+}
+function isFrameMqttOnline(macRaw, maxAgeMs = 1800000) {
+    const mac = resolveKnownMqttHardwareMac(macRaw);
+    if (!mac)
+        return false;
+    const rec = frames.get(mac);
+    if (!rec || rec.status !== "online")
+        return false;
+    const age = Date.now() - rec.lastSeen;
+    if (age > maxAgeMs)
+        return false;
+    const action = String(rec.lastAction ?? "");
+    // Only device-originated actions (login/heart/play_ack) confirm frame is online, not locally-set "play".
+    return action === "login" || action === "heart" || action === "play_ack";
+}
+function getMqttBrokerStatus() {
+    return {
+        connected: isMqttConnected(),
+        connectedSinceMs: null,
+        brokerUrl: process.env.MQTT_URL?.trim() || null,
+    };
+}
+function isMqttConnected() {
+    return mqttClient?.connected ?? false;
+}
+function listFrames() {
+    const now = Date.now();
+    const out = [];
+    for (const [mac, rec] of frames) {
+        out.push({ mac, ...rec, age: now - rec.lastSeen });
+    }
+    return out.sort((a, b) => a.age - b.age);
+}
+function resolveKnownMqttHardwareMac(raw) {
+    const exact = resolveMqttHardwareMac(raw);
+    if (exact)
+        return exact;
+    const suffix = normalizeMac(raw).slice(-4);
+    if (suffix.length < 4)
+        return null;
+    const matches = Array.from(frames.keys()).filter((mac) => mac.endsWith(suffix));
+    return matches.length === 1 ? matches[0] : null;
+}
+function getFrame(macRaw) {
+    const exact = resolveMqttHardwareMac(macRaw);
+    const candidates = new Set();
+    if (exact)
+        candidates.add(exact);
+    const suffix = normalizeMac(macRaw).slice(-4);
+    if (suffix.length >= 4) {
+        for (const knownMac of frames.keys()) {
+            if (knownMac.endsWith(suffix))
+                candidates.add(knownMac);
+        }
+    }
+    for (const mac of candidates) {
+        const rec = frames.get(mac);
+        if (rec)
+            return { mac, ...rec, age: Date.now() - rec.lastSeen };
+    }
+    return null;
+}
+/** Push broker credentials over MQTT (retained) so frames reconnect after Wi‑Fi/BLE setup. */
+function publishMqttBrokerConfig(macRaw, msgidRaw) {
+    const mac = resolveKnownMqttHardwareMac(macRaw);
+    if (!mac) {
+        return Promise.reject(new Error("invalid_device_id_for_mqtt_config"));
+    }
+    const msgid = msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString();
+    return publishToStationAndBleMac(mac, mqttBrokerPayload(msgid), 1, "mqtt_config", true);
+}
+async function publishLoginAck(macRaw, msgidRaw) {
+    const mac = resolveKnownMqttHardwareMac(macRaw);
+    if (!mac) {
+        throw new Error("invalid_device_id_for_login_ack");
+    }
+    const msgid = msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString();
+    // Do NOT publish mqtt_config here (BLE / explicit /mqtt-config only).
+    // Do NOT retain login_ack — it shares /inkjoyap/{MAC} with play and would clobber retained play.
+    await publishToStationAndBleMac(mac, { action: "login_ack", msgid, stamac: mac }, 1, "login_ack", false);
+    await publishToStationAndBleMac(mac, { action: "wifimode", msgid: String(Date.now()), stamac: mac, data: { mode: 0 } }, 0, "wifi_sleep_off", false).catch((err) => {
+        console.error("[MQTT] wifi_sleep off publish failed:", err);
+    });
+}
+/** Publish play image command (same shape as reference Node server). */
+function publishPlayImage(macRaw, imageUrl, publicHost) {
+    return new Promise((resolve, reject) => {
+        void publicHost;
+        if (!mqttClient?.connected) {
+            reject(new Error("MQTT not connected"));
+            return;
+        }
+        let mac = resolveKnownMqttHardwareMac(macRaw);
+        if (!mac) {
+            reject(new Error("invalid_device_id_for_mqtt_play"));
+            return;
+        }
+        // Also publish to any sibling MACs (same 10-char prefix) that are online
+        // Frame firmware 0.5.0 may use a different client ID than the WiFi MAC
+        const playMacs = [mac];
+        {
+            const macPrefix = mac.slice(0, 10);
+            const graceMs = 1800000;
+            frames.forEach((candidateRec, candidateMac) => {
+                if (candidateMac !== mac &&
+                    candidateRec.status === "online" &&
+                    candidateMac.startsWith(macPrefix) &&
+                    Date.now() - candidateRec.lastSeen < graceMs) {
+                    playMacs.push(candidateMac);
+                }
+            });
+        }
+        const rec = frames.get(mac);
+        if (rec) {
+            rec.lastAction = "play";
+            rec.lastResult = undefined;
+            rec.displayed = false;
+            frames.set(mac, rec);
+            scheduleSave();
+        }
+        const msgid = Date.now().toString();
+        try {
+            const { host, port } = (0, frame_media_1.frameMediaPlayEndpoint)();
+            const imgurlForPlay = resolveFrameMediaPath(imageUrl);
+            const payload = {
+                action: "play",
+                msgid,
+                stamac: mac,
+                data: {
+                    host,
+                    port,
+                    imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
+                },
+            };
+            // Publish play to all sibling MACs (frame may connect with different client ID)
+            let published = 0;
+            for (const playMac of playMacs) {
+                const topic = `/inkjoyap/${playMac}`;
+                const body = JSON.stringify(payload);
+                mqttDebugTx(topic, body);
+                mqttClient.publish(topic, body, { qos: 1, retain: true }, (err) => {
+                    if (err) {
+                        console.error("[MQTT] play publish failed for", playMac, err);
+                    }
+                    else {
+                        published++;
+                        console.log("[MQTT] play sent to", playMac, "(retain)");
+                    }
+                });
+                // Update frame record for each MAC
+                const rec = frames.get(playMac);
+                if (rec) {
+                    rec.lastAction = "play";
+                    rec.lastResult = undefined;
+                    rec.displayed = false;
+                    frames.set(playMac, rec);
+                }
+            }
+            scheduleSave();
+            resolve();
+        }
+        catch (err) {
+            reject(err instanceof Error ? err : new Error("mqtt_play_invalid_media_base_or_path"));
+            return;
+        }
+    });
+}
+/** Publish OTA command — device downloads [firmwarePath] via HTTP from [host]:[port]. */
+function publishOta(input) {
+    const mac = resolveMqttHardwareMac(input.mac);
+    if (!mac) {
+        return Promise.reject(new Error("invalid_device_id_for_mqtt_ota"));
+    }
+    const msgid = Date.now().toString();
+    const versionTag = input.version.startsWith("v") ? input.version : `v${input.version}`;
+    const payload = {
+        action: "ota",
+        cmd: "ota",
+        msgid,
+        stamac: mac,
+        url: input.downloadUrl,
+        version: versionTag,
+        data: {
+            host: input.host,
+            port: input.port,
+            path: input.firmwarePath,
+            version: input.version.replace(/^v/i, ""),
+        },
+    };
+    return publishFrameCommand(mac, payload, 1, "ota");
+}
+async function publishManualMqttCommand(clientidRaw, payload) {
+    const clientid = String(clientidRaw ?? "").trim();
+    if (!clientid)
+        throw new Error("missing_clientid");
+    if (!mqttClient?.connected)
+        throw new Error("mqtt_disconnected");
+    const topic = `/inkjoyap/${clientid}`;
+    const body = JSON.stringify(payload);
+    mqttDebugTx(topic, body);
+    await new Promise((resolve, reject) => {
+        mqttClient.publish(topic, body, { qos: 1 }, (err) => {
+            if (err)
+                reject(err);
+            else
+                resolve();
+        });
+    });
+    const mac = resolveMqttHardwareMac(String(payload.stamac ?? "")) ?? resolveKnownMqttHardwareMac(clientid) ?? normalizeMac(clientid);
+    logFrameTraffic("tx", mac || clientid, topic, payload, String(payload.action ?? "") || null);
+    return { topic };
+}
+const fcmServerKey = (process.env.FCM_SERVER_KEY || "").trim();
+/** Send push notification via Firebase Cloud Messaging when frame confirms display. */
+async function sendFramePushNotification(deviceMac, title, body) {
+    if (!fcmServerKey)
+        return;
+    const data = store_1.db.read();
+    const frame = data.frames.find((f) => normalizeMac(f.id) === deviceMac);
+    const fcmToken = frame?.fcmToken || data.device.fcmToken;
+    if (!fcmToken)
+        return;
+    try {
+        const res = await fetch("https://fcm.googleapis.com/fcm/send", {
+            method: "POST",
+            headers: {
+                "Authorization": `key=${fcmServerKey}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                to: fcmToken,
+                notification: { title, body },
+                data: { type: "frame_updated", mac: deviceMac },
+            }),
+        });
+        if (!res.ok) {
+            console.error("[FCM] push failed:", res.status, await res.text());
+        }
+    }
+    catch (err) {
+        console.error("[FCM] push error:", err);
+    }
+}

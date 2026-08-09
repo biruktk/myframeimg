@@ -11,7 +11,7 @@ export const DEMO_STEPS: DemoStep[] = [
     id: "demo-login",
     title: "Step 2: Admin Session",
     description:
-      "Sign in with admin / admin (local defaults). The session cookie authorizes fleet and admin endpoints in this portal.",
+      "Sign in with your CMS admin account (Myframe_mike). The session cookie authorizes fleet and admin endpoints in this portal.",
     apis: ["devs_status"],
   },
   {
