@@ -639,7 +639,7 @@ export function publishStrategyCommand(
 
   return publishJson("/inkjoyap/" + mac, {
     msgid: msgid ?? Date.now().toString(),
-    action: "strategy",
+    action: "strategy_bin",
     stamac: mac,
     data,
   });

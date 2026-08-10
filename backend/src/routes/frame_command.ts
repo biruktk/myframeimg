@@ -17,7 +17,7 @@ function normalizeMacKey(raw: string): string {
 }
 
 const TIME_RE = /^\d{2}:\d{2}$/;
-const ALLOWED_ACTIONS = new Set(["wifi_sleep"]);
+const ALLOWED_ACTIONS = new Set(["wifi_sleep", "strategy_bin"]);
 
 function validateActionPayload(action: string, data: Record<string, unknown>): string | null {
   const begintime = String(data.begintime ?? "");
@@ -25,10 +25,19 @@ function validateActionPayload(action: string, data: Record<string, unknown>): s
   if (!TIME_RE.test(begintime) || !TIME_RE.test(endtime)) {
     return "begintime/endtime must use HH:MM format";
   }
-  if (action === "wifi_sleep") {
+  if (action === "strategy_bin") {
+    const idle = data.idle;
+    const strategy = data.strategy;
+    if (idle !== 1 && idle !== 0 && idle !== "1" && idle !== "0") {
+      return "strategy_bin.data.idle must be 1 or 0";
+    }
+    if (strategy !== 1 && strategy !== 2 && strategy !== "1" && strategy !== "2") {
+      return "strategy_bin.data.strategy must be 1 or 2";
+    }
+  } else if (action === "wifi_sleep") {
     const mode = data.mode;
-    if (mode !== 1 && mode !== 0 && mode !== "1" && mode !== "0") {
-      return "wifi_sleep.data.mode must be 1 or 0";
+    if (mode !== 0 && mode !== 1 && mode !== 2 && mode !== "0" && mode !== "1" && mode !== "2") {
+      return "wifi_sleep.data.mode must be 0, 1, or 2";
     }
   }
   return null;
@@ -55,7 +64,7 @@ export function frameCommandRouter(): Router {
     if (!ALLOWED_ACTIONS.has(action)) {
       res
         .status(422)
-        .json({ ok: false, error: "invalid_action", message: "action must be wifi_sleep" });
+        .json({ ok: false, error: "invalid_action", message: "action must be wifi_sleep or strategy_bin" });
       return;
     }
     const data = (body.data && typeof body.data === "object" ? body.data : {}) as Record<string, unknown>;
