@@ -59,10 +59,41 @@ export function frameSlideshowRouter(): Router {
     };
     const rawIds = body.imageIds;
     const ids = Array.isArray(rawIds) ? rawIds.map((x) => String(x ?? "").trim()).filter((x) => x.length > 0) : [];
-    const intervalMinutes = Math.round(Number(body.intervalMinutes));
-    const strategy = Math.round(Number(body.strategy ?? 1));
+    let intervalMinutes = Math.round(Number(body.intervalMinutes));
+    if (Number.isNaN(intervalMinutes) || intervalMinutes < 1) {
+      if (u) {
+        const usr = db.read().users.find(x => x.id === u.userId);
+        if (usr && usr.playbackRules) {
+          intervalMinutes = Math.round(usr.playbackRules.display_seconds / 60);
+        }
+      }
+    }
+    if (Number.isNaN(intervalMinutes) || intervalMinutes < 1) {
+      intervalMinutes = 10;
+    }
+    let strategy = Math.round(Number(body.strategy ?? 0));
+    if (strategy !== 1 && strategy !== 2) {
+      if (u) {
+        const usr = db.read().users.find(x => x.id === u.userId);
+        if (usr && usr.playbackRules) {
+          strategy = usr.playbackRules.playback_mode === "random" ? 2 : 1;
+        }
+      }
+    }
+    if (strategy !== 1 && strategy !== 2) {
+      strategy = 1;
+    }
     const begintime = String(body.begintime ?? "").trim();
-    const endtime = String(body.endtime ?? "").trim();
+    let endtime = String(body.endtime ?? "").trim();
+    if (!endtime && u) {
+      const usr = db.read().users.find(x => x.id === u.userId);
+      if (usr && usr.playbackRules && usr.playbackRules.duration_type && usr.playbackRules.duration_type !== "unlimited") {
+        const hrs = parseInt(usr.playbackRules.duration_type, 10) || 0;
+        if (hrs > 0) {
+          endtime = String(Date.now() + hrs * 3600 * 1000);
+        }
+      }
+    }
     const idle = Math.round(Number(body.idle ?? 0));
     const skipPlay = body.skipPlay === true || String(body.skipPlay ?? "").trim() === "true";
 

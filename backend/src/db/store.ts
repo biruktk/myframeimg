@@ -151,6 +151,12 @@ export type MyframeDb = {
     };
     /** Preferred active frame id / MAC among bound_frames. */
     primaryFrameId?: string | null;
+    playbackRules?: {
+      display_seconds: number;
+      playback_mode: "sequential" | "random";
+      duration_type: "unlimited" | "6h" | "12h" | "24h";
+      skip_play: boolean;
+    };
   }>;
   emailVerifications: Array<{
     id: string;
