@@ -1,3 +1,4 @@
+import { notifyPhotoUploaded } from "../services/wechat_subscribe_notify";
 import crypto from "crypto";
 import express from "express";
 import fs from "fs";
@@ -6,7 +7,7 @@ import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
-import { isMqttConnected, publishPlayImage, publishStopPlaylistKeepDisplay, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -180,8 +181,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
               /* ignore */
             }
             try {
-              // Kill firmware-local playlist rotation before the new single image.
-              await publishStopPlaylistKeepDisplay(deviceId).catch(() => {});
+              // Single photo cast: direct play command only (strict 1-to-1 protocol).
               await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
               deliveredToFrame = true;
               deliveryMode = "vps_mqtt";
@@ -261,6 +261,11 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
           { alsoNotifyUserId: uploaderId },
         );
+        notifyPhotoUploaded({
+          uploaderUserId: uploaderId,
+          photoName: mqttBasename,
+          frameName: deviceId || "MyFrame",
+        }).catch((e: unknown) => console.warn("[photo] wechat subscribe notify error", e));
       }
 
       res.json({
@@ -412,8 +417,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
               /* ignore */
             }
             try {
-              // Kill firmware-local playlist rotation before the new single image.
-              await publishStopPlaylistKeepDisplay(deviceId).catch(() => {});
+              // Single photo cast: direct play command only (strict 1-to-1 protocol).
               await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
               deliveredToFrame = true;
               deliveryMode = "vps_mqtt";
@@ -492,6 +496,11 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
           { alsoNotifyUserId: uploaderId },
         );
+        notifyPhotoUploaded({
+          uploaderUserId: uploaderId,
+          photoName: mqttBasename,
+          frameName: deviceId || "MyFrame",
+        }).catch((e: unknown) => console.warn("[photo] wechat subscribe notify error", e));
       }
 
       res.json({

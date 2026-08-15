@@ -7,6 +7,7 @@ import path from "path";
 import { deviceRouter } from "./routes/device";
 import { photoRouter } from "./routes/photo";
 import { settingsRouter } from "./routes/settings";
+import { notificationsRouter } from "./routes/notifications";
 import { authRouter } from "./routes/auth";
 import { miniProgramRouter } from "./routes/mini_program";
 import { adminRouter } from "./routes/admin";
@@ -158,6 +159,7 @@ app.use("/api", frameSettingsRouter());
 app.use("/api", miniProgramRouter);
 app.use("/api", photoRouter(uploadDir, mediaPublicBaseUrl));
 app.use("/api", settingsRouter);
+app.use("/api", notificationsRouter);
 // Public / token-scoped routes must be registered before [adminRouter], which applies
 // [requireAdminToken] to every request that reaches it.
 app.use("/api", faqRouter);

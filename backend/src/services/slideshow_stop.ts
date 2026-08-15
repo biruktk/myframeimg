@@ -248,21 +248,11 @@ export async function notifyFrameStopPlayback(
   const mac = resolveMqttHardwareMac(macRaw) ?? normalizeMac(macRaw);
   if (!mac || !isMqttConnected()) return { fallbackUrl: null };
 
-  await publishMqttAction(mac, "stop").catch((err) => {
-    console.warn("[slideshow-stop] stop action failed", mac, err);
+  await publishMqttAction(mac, "strategy_stop").catch((err) => {
+    console.warn("[slideshow-stop] strategy_stop action failed", mac, err);
   });
 
-  await publishStrategyCommand(mac, {
-    strategy: 1,
-    intervalMinutes: 60 * 24 * 365,
-    begintime: "",
-    endtime: "",
-    idle: 1,
-  }).catch((err) => {
-    console.warn("[slideshow-stop] strategy idle failed", mac, err);
-  });
-
-  const playFallback = options?.playFallback !== false;
+  const playFallback = options?.playFallback === true;
   let fallbackUrl: string | null = null;
   if (playFallback) {
     fallbackUrl = resolveFallbackPlayUrl(mac, options?.excludeTokens);
@@ -317,9 +307,11 @@ export async function stopPlaybackForDeletedPlaylist(playlist: {
 }> {
   const macKeys = macKeysForDeletedPlaylist(playlist);
   const exclude = mediaTokensFromIds(playlist.photoIds ?? []);
+  // PROTOCOL COMPLIANCE (STRICT 1-to-1): playlist delete MUST dispatch ONLY
+  // `strategy_stop` — never a fallback `play` after stopping.
   return stopPlaybackForMacKeys(macKeys, {
     excludeTokens: exclude,
-    playFallback: true,
+    playFallback: false,
   });
 }
 
@@ -339,5 +331,6 @@ export async function stopPlaybackIfSlideshowEmpty(
       toStop.push(key);
     }
   }
-  if (toStop.length) await stopPlaybackForMacKeys(toStop, { playFallback: true });
+  // PROTOCOL COMPLIANCE (STRICT 1-to-1): never a fallback `play` after stop.
+  if (toStop.length) await stopPlaybackForMacKeys(toStop, { playFallback: false });
 }

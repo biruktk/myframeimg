@@ -1,3 +1,4 @@
+import { notifyPlaylistSent } from "../services/wechat_subscribe_notify";
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
@@ -116,7 +117,7 @@ export function frameSlideshowRouter(): Router {
     const priorSlideshow = db.read().slideshowsByBleMac?.[macKey];
     const hadActiveSlideshow =
       !!priorSlideshow && (priorSlideshow.imageIds ?? []).length > 0;
-    const effectiveSkipPlay = skipPlay && hadActiveSlideshow;
+    const effectiveSkipPlay = skipPlay;
     db.mutate((draft) => {
       if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
       // currentIndex = last-played index (or -1 for random before first play).
@@ -141,18 +142,25 @@ export function frameSlideshowRouter(): Router {
       };
     });
 
-    // Send strategy command with full image manifest so frame cycles autonomously
+    // PROTOCOL COMPLIANCE: dispatch `strategy_bin` SYNCHRONOUSLY inside the
+    // request lifecycle (<500ms) so the frame starts cycling immediately.
+    // The app sends imageIds as upload filenames (e.g. 1..._slideshow_x.bin),
+    // so resolve against BOTH upload.id and upload.filename. If a filename is
+    // not found yet, still publish strategy_bin without imgs — the frame polls
+    // /api/v1/frames/manifest for the current manifest regardless.
     const data = db.read();
     const imageUrls = ids
       .map((id) => {
-        const upload = data.uploads.find((u) => u.id === id);
+        const upload =
+          data.uploads.find((u) => u.id === id) ??
+          data.uploads.find((u) => u.filename === id);
         return upload
           ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "")}/frame-media/${encodeURIComponent(upload.filename)}`
           : null;
       })
       .filter((url): url is string => url !== null);
 
-    if (isMqttConnected() && imageUrls.length > 0) {
+    if (isMqttConnected()) {
       const publishMac = resolveMqttHardwareMac(macKey);
       if (publishMac) {
         publishStrategyCommand(publishMac, {
@@ -162,16 +170,25 @@ export function frameSlideshowRouter(): Router {
           endtime,
           idle,
           imageUrls,
-        }).catch((e) => {
-          console.warn("[slideshow] mqtt strategy failed", macKey, e);
-        });
+        })
+          .then(() => {
+            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", macKey, imageUrls.length);
+          })
+          .catch((e) => {
+            console.warn("[slideshow] mqtt strategy failed", macKey, e);
+          });
+      } else {
+        console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
       }
+    } else {
+      console.warn("[slideshow] strategy_bin skipped (mqtt offline)", macKey);
     }
 
+    notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
     res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
   });
 
-  /** DELETE /api/frames/:mac/slideshow — clear slideshow, stop, play fallback image. */
+  // DELETE /api/frames/:mac/slideshow 2014 clear slideshow, stop playlist (strategy_stop only, no fallback play).
   router.delete("/frames/:mac/slideshow", (req: Request, res: Response) => {
     const u = verifyUserJwtBearer(req);
     if (!u && !isPairingTokenValid(req)) {
@@ -183,7 +200,7 @@ export function frameSlideshowRouter(): Router {
       res.status(400).json({ ok: false, error: "invalid_mac" });
       return;
     }
-    void stopPlaybackForMacKeys([macKey], { playFallback: true })
+    void stopPlaybackForMacKeys([macKey], { playFallback: false })
       .then((result) => {
         res.json({ ok: true, macKey, ...result });
       })
@@ -193,7 +210,7 @@ export function frameSlideshowRouter(): Router {
       });
   });
 
-  /** POST /api/frames/:mac/stop-playlist — same powerful stop + fallback play. */
+  // POST /api/frames/:mac/stop-playlist 2014 stop playlist (strategy_stop only, no fallback play).
   router.post("/frames/:mac/stop-playlist", (req: Request, res: Response) => {
     const u = verifyUserJwtBearer(req);
     if (!u && !isPairingTokenValid(req)) {
@@ -209,7 +226,7 @@ export function frameSlideshowRouter(): Router {
       ? (req.body.excludeImageIds as unknown[]).map((x) => String(x))
       : [];
     void stopPlaybackForMacKeys([macKey], {
-      playFallback: true,
+      playFallback: false,
       excludeTokens: new Set(exclude.filter(Boolean)),
     })
       .then((result) => {

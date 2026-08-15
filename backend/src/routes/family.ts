@@ -1,3 +1,4 @@
+import { notifyMemberJoined } from "../services/wechat_subscribe_notify";
 import crypto from "crypto";
 import express, { Request, Response, Router } from "express";
 import type { MyframeDb } from "../db/store";
@@ -381,6 +382,11 @@ familyRouter.post("/family/join", (req, res) => {
     ).catch((e) =>
       console.error("[family/join] push failed", uid, e),
     );
+    notifyMemberJoined({
+      targetUserId: uid,
+      joinerName: joinerName || "A member",
+      albumName: "MyFrame Family",
+    }).catch((e: unknown) => console.warn("[family/join] wechat subscribe notify error", e));
   }
 
   // Fresh member roster for the joining client (no stale cache).

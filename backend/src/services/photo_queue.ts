@@ -154,7 +154,11 @@ function processQueue(): void {
 
   }
 
-  processAllSlideshows(data, now);
+  // PROTOCOL COMPLIANCE (STRICT 1-to-1): once `strategy_bin` is published to
+  // the frame it cycles autonomously. The server MUST NOT push individual
+  // `play` commands for active playlists — the recurring slideshow ticker is
+  // disabled (was: processAllSlideshows(data, now)).
+  // processAllSlideshows(data, now);
 }
 
 function processAllSlideshows(data: ReturnType<typeof db.read>, now: number): void {

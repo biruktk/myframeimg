@@ -1,6 +1,7 @@
 "use strict";
 import express from "express";
 import { Router } from "express";
+import { db } from "../db/store";
 import { requirePairingToken } from "../middleware/security";
 import {
   getFrame,
@@ -35,9 +36,12 @@ function validateActionPayload(action: string, data: Record<string, unknown>): s
       return "strategy_bin.data.strategy must be 1 or 2";
     }
   } else if (action === "wifi_sleep") {
-    const mode = data.mode;
-    if (mode !== 0 && mode !== 1 && mode !== 2 && mode !== "0" && mode !== "1" && mode !== "2") {
+    const mode = Number(data.mode);
+    if (mode !== 0 && mode !== 1 && mode !== 2) {
       return "wifi_sleep.data.mode must be 0, 1, or 2";
+    }
+    if (mode !== 0 && begintime === endtime) {
+      return "begintime and endtime must not be identical";
     }
   }
   return null;
@@ -77,6 +81,17 @@ export function frameCommandRouter(): Router {
     if (!isMqttConnected()) {
       res.status(503).json({ ok: false, error: "mqtt_not_connected" });
       return;
+    }
+    if (action === "wifi_sleep") {
+      db.mutate((draft) => {
+        if (!draft.wifiSleepByBleMac) draft.wifiSleepByBleMac = {};
+        draft.wifiSleepByBleMac[macKey] = {
+          mode: Number(data.mode),
+          begintime: String(data.begintime ?? "00:00"),
+          endtime: String(data.endtime ?? "00:00"),
+          updatedAtMs: Date.now(),
+        };
+      });
     }
     try {
       await publishFrameCommand(macKey, action, data, msgid);

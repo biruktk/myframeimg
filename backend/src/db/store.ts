@@ -266,10 +266,14 @@ export type MyframeDb = {
   notifications: Array<{
     id: string;
     userId: string;
-    type: "photo_sent" | "frame_offline" | "admin_broadcast";
-    token: string | null;
-    delivered: boolean;
-    atMs: number;
+    type: "photo_uploaded" | "playlist_started" | "member_joined" | "photo_sent" | "frame_offline" | "admin_broadcast";
+    title?: string;
+    body?: string;
+    token?: string | null;
+    delivered?: boolean;
+    read?: boolean;
+    createdAtMs?: number;
+    atMs?: number;
   }>;
   bleProvisionLogs: Array<{
     id: string;
@@ -303,6 +307,7 @@ export type MyframeDb = {
     consumedAtMs: number | null;
   }>;
   sleepConfigs?: Record<string, { enabled: boolean; startTime: string; endTime: string }>;
+  wifiSleepByBleMac?: Record<string, { mode: number; begintime: string; endtime: string; updatedAtMs: number }>;
   faqs: Array<{
     id: string;
     question: string;
@@ -570,6 +575,7 @@ function readDbRaw(): MyframeDb {
   if (!Array.isArray(parsed.frameGuestInvites)) {
     parsed.frameGuestInvites = [];
   }
+  if (!parsed.wifiSleepByBleMac || typeof parsed.wifiSleepByBleMac !== "object") { parsed.wifiSleepByBleMac = {}; }
   if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
     parsed.slideshowsByBleMac = {};
   }

@@ -9,6 +9,11 @@
  *
  * If the updated list is empty (nothing remains to play) we fall back to a
  * clean stop so the panel does not stall on deleted-only content.
+ *
+ * PROTOCOL COMPLIANCE (STRICT 1-to-1):
+ *  - remaining > 0  -> ONLY `strategy_bin` (with resolved imgs manifest)
+ *  - remaining == 0 -> ONLY `strategy_stop` (never an empty strategy_bin,
+ *                      never a fallback `play`).
  */
 import { db } from "../db/store";
 import {
@@ -17,7 +22,11 @@ import {
   publishStrategyCommand,
   resolveMqttHardwareMac,
 } from "./frame_mqtt";
-import { macKeysForDeletedPlaylist } from "./slideshow_stop";
+import {
+  macKeysForDeletedPlaylist,
+  mediaTokensFromIds,
+  stopPlaybackForMacKeys,
+} from "./slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "./slideshow_index";
 
 export interface AlbumDeleteSyncInput {
@@ -47,6 +56,51 @@ function macSlug(raw: string): string {
   return n && n.length >= 8 ? n : "";
 }
 
+/** Resolve an upload URL by id OR filename (the app sends filenames as ids). */
+function resolveUploadUrl(
+  uploads: { id: string; filename?: string }[],
+  id: string,
+): string | null {
+  const base = String(process.env.PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
+  const baseName = id.split("/").pop() || id;
+  const upload =
+    uploads.find((u) => u.id === id) ??
+    uploads.find((u) => u.filename === id) ??
+    uploads.find((u) => u.filename === baseName);
+  return upload?.filename
+    ? `${base}/frame-media/${encodeURIComponent(upload.filename)}`
+    : null;
+}
+
+/**
+ * Compute the effective remaining list for a frame: the client-supplied
+ * `imageIds` (the active list, which may still contain the deleted album's
+ * photos) minus the deleted album's photo tokens. Falls back to the frame's
+ * current slideshow record if the client list is empty.
+ */
+function remainingForFrame(
+  clientImageIds: string[],
+  deletedTokens: Set<string>,
+  currentImageIds: string[] | undefined,
+): string[] {
+  const base =
+    clientImageIds.length > 0
+      ? clientImageIds
+      : currentImageIds && currentImageIds.length > 0
+        ? currentImageIds
+        : [];
+  if (deletedTokens.size === 0) return base;
+  const out: string[] = [];
+  for (const id of base) {
+    const t = String(id || "").trim();
+    if (!t) continue;
+    const baseName = t.split("/").pop() || t;
+    if (deletedTokens.has(t) || deletedTokens.has(baseName)) continue;
+    out.push(t);
+  }
+  return out;
+}
+
 /** ALBUM_DELETE_SYNC — update manifests + MQTT-notify frames to continue
  *  autonomous local playback with the remaining image list. */
 export function syncSlideshowDelete(
@@ -66,35 +120,53 @@ export function syncSlideshowDelete(
   }
   macKeys.delete("");
 
+  // PROTOCOL COMPLIANCE (STRICT 1-to-1): collapse BLE-mac / station-mac /
+  // id variants of the SAME physical frame to ONE hardware MAC so the
+  // delete-sync never double-dispatches strategy_bin / strategy_stop.
+  const hwMacKeys = new Set<string>();
+  for (const k of macKeys) {
+    const hw = resolveMqttHardwareMac(k) ?? normalizeMac(k);
+    if (hw && hw.length >= 8) hwMacKeys.add(hw);
+  }
+  const macList = [...hwMacKeys];
+
   const result: AlbumDeleteSyncResult = {
     macsUpdated: [],
     macsStopped: [],
     emptyFrames: [],
   };
   const now = Date.now();
-  const ids = playlist.imageIds;
   const random = isRandomStrategy(playlist.strategy) ? 2 : 1;
   const durationMs =
     playlist.durationHours > 0 ? playlist.durationHours * 3600 * 1000 : 0;
   const endtime = durationMs ? (now + durationMs).toString() : "";
-  const startIndex = seedCurrentIndex({
-    strategy: random,
-    count: ids.length,
-    skipPlay: false,
-  });
+  const deletedTokens = mediaTokensFromIds(playlist.photoIds ?? []);
 
   db.mutate((draft) => {
     if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
-    for (const rawKey of macKeys) {
+    for (const rawKey of macList) {
       const key = normalizeMac(rawKey) || rawKey;
-      if (ids.length === 0) {
+      const current = draft.slideshowsByBleMac[key]?.imageIds;
+      // PROTOCOL COMPLIANCE (STRICT 1-to-1): an EXPLICITLY EMPTY client
+      // remaining list means a full delete — the frame must STOP, never
+      // fall back to the current slideshow (that re-dispatch produced a
+      // stray `strategy_bin` in the audit).
+      const remaining = playlist.imageIds.length === 0
+        ? []
+        : remainingForFrame(playlist.imageIds, deletedTokens, current);
+      if (remaining.length === 0) {
         delete draft.slideshowsByBleMac[key];
         result.emptyFrames.push(key);
         result.macsStopped.push(key);
         continue;
       }
+      const startIndex = seedCurrentIndex({
+        strategy: random,
+        count: remaining.length,
+        skipPlay: false,
+      });
       draft.slideshowsByBleMac[key] = {
-        imageIds: ids,
+        imageIds: remaining,
         intervalMinutes: playlist.intervalMinutes,
         strategy: random,
         begintime: now.toString(),
@@ -108,14 +180,29 @@ export function syncSlideshowDelete(
     }
   });
 
-  for (const key of result.macsUpdated) {
-    // Resolve image URLs from the uploads table
-    const uploads = db.read().uploads;
-    const imageUrls = playlist.imageIds
-      .map((id) => {
-        const upload = uploads.find((u) => u.id === id);
-        return upload ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "")}/frame-media/${encodeURIComponent(upload.filename)}` : null;
+  // PROTOCOL COMPLIANCE: when nothing remains to play, dispatch ONLY
+  // `strategy_stop` (playFallback: false) — never an empty `strategy_bin`,
+  // never a fallback `play`.
+  if (result.macsStopped.length > 0) {
+    void stopPlaybackForMacKeys(result.macsStopped, { playFallback: false })
+      .then(() => {
+        console.log(
+          "[album-delete-sync] strategy_stop dispatched macs=%s",
+          result.macsStopped.join(","),
+        );
       })
+      .catch((err) => {
+        console.warn("[album-delete-sync] strategy_stop failed", err);
+      });
+  }
+
+  for (const key of result.macsUpdated) {
+    // Resolve image URLs from the uploads table (by id OR filename).
+    const uploads = db.read().uploads;
+    const slide = db.read().slideshowsByBleMac?.[key];
+    const imageIds = slide?.imageIds ?? [];
+    const imageUrls = imageIds
+      .map((id) => resolveUploadUrl(uploads, id))
       .filter((url): url is string => url !== null);
 
     publishStrategyCommand(key, {

@@ -124,8 +124,8 @@ function upsertWechatPhoneUser(
           ? {
               ...u,
               lastSeenAtMs: now,
-              wechatOpenId: u.wechatOpenId || openid,
-              wechatUnionId: u.wechatUnionId || unionid,
+              wechatOpenId: openid || u.wechatOpenId,
+              wechatUnionId: unionid || u.wechatUnionId,
               phone: u.phone || normalizedPhone,
               appLastPlatform: "miniapp",
             }
@@ -140,6 +140,9 @@ function upsertWechatPhoneUser(
         meta: { openid: openid || null, unionid: unionid || null },
       });
     });
+    if (openid) {
+      console.log("[WECHAT AUTH] Successfully linked openid to user:", existing.id, openid);
+    }
     return { id: existing.id, email: existing.email, name: existing.name };
   }
 
@@ -171,6 +174,7 @@ function upsertWechatPhoneUser(
       meta: { openid: openid || null, unionid: unionid || null },
     });
   });
+  if (openid) { console.log("[WECHAT AUTH] Successfully linked openid to new user:", id, openid); }
   return { id, email, name };
 }
 
