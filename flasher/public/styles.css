@@ -1,0 +1,655 @@
+/* MyFrame Flasher — light brand shell
+ * Palette: vermillion (#C83838), ink black (#1A1A1A), rice paper (#F7F5F0)
+ * Typography: Cormorant Garamond + Noto Serif SC (title), system sans (body)
+ */
+
+/* Typography — English serif upgraded from Cormorant Garamond (display,
+ * too thin at 14-18 px UI sizes) to Fraunces + Newsreader, the same style
+ * family Anthropic uses on claude.ai / anthropic.com. Both are variable,
+ * humanist, and stay legible from caption to hero without ever feeling
+ * "display-only". Chinese pairing stays Noto Serif SC per brand §08.
+ *
+ *   Fraunces      — headings + hero (opsz + wght variable, warm modern serif)
+ *   Newsreader    — body copy + labels (readable at 12-18 px, tight metrics)
+ *   Noto Serif SC — Chinese runs at every tier
+ */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&display=swap');
+
+:root {
+  /* MyFrame 12-color palette per docs/M2/M2-品牌手册-v1.0.html §07.
+   * To-B / production tool uses the ON INK 900 · MY WHITE + FRAME 朱砂
+   * combination: black-dominant, MY WHITE for text, 朱砂 for the one CTA
+   * that matters per screen. Everything else stays inside the palette
+   * (no ad-hoc greys, no new hues).
+   *
+   * ① Paper       ---------------------------------------------------------
+   *   Paper 100   #F5F1E8  brand assets / packaging / iOS cards
+   *   Paper 200   #FAF7F0  wide whitespace · Web bg (MY WHITE)
+   *   Paper 300   #EFE8DC  dividers / borders
+   * ② Ink         ---------------------------------------------------------
+   *   Ink 900     #1A1A1A  primary text · MY colour
+   *   Ink 700     #5C5750  secondary text
+   *   Ink 500     #8A857C  muted / timestamps
+   * ③ Cinnabar    (core brand colour, use sparingly — max 2 per screen) ---
+   *   App         #C83838  App LCD · FRAME · CTA · seal
+   *   Frame       #B71C1C  e-paper 6-colour
+   *   Amber       #B86E3C  warm accent
+   * ④ Honey + status --------------------------------------------------------
+   *   Honey       #C49A2D  gentle emphasis
+   *   Success     #5A7F3E  moss green
+   *   Danger      #8E2A1F  deep 朱
+   */
+
+  /* ── Palette tokens (never used outside this file) ── */
+  --paper-100: #F5F1E8;  --paper-200: #FAF7F0;  --paper-300: #EFE8DC;
+  --ink-900:   #1A1A1A;  --ink-700:   #5C5750;  --ink-500:   #8A857C;
+  --cinnabar-app:   #C83838;  --cinnabar-frame: #B71C1C;  --amber-500:  #B86E3C;
+  --honey-500: #C49A2D;  --success-green: #5A7F3E;  --danger-deep: #8E2A1F;
+
+  /* ── Role tokens (what the rest of the CSS actually uses) ──
+   * Paper-first classical layout — 米纸底 打底, 朱砂克制.
+   * Strict adherence to §07: any hex outside the 12-color palette is a bug.
+   */
+  /* Paper 200 as page bg per manual §07 "大面积留白 · Web 背景" — cleaner,
+   * more modern, this is the Web-spec official value. White cards float on
+   * it; Paper 100 shows through as subtle warmth on hero band / insets. */
+  --bg:              var(--paper-200);            /* MY WHITE · Web bg */
+  --bg-elevated:     #FFFFFF;                     /* white cards */
+  --bg-inset:        var(--paper-100);            /* warmer inset (hints, log wrap) */
+
+  --text-primary:    var(--ink-900);              /* main copy */
+  --text-muted:      var(--ink-500);              /* Ink 500 · muted */
+  --text-secondary:  var(--ink-700);              /* Ink 700 · subtitles */
+
+  --line:            var(--paper-300);            /* dividers / borders */
+  --line-strong:     var(--paper-300);                     /* stronger card border (still Paper family) */
+
+  --vermillion:      var(--cinnabar-app);         /* CTA / FRAME accent */
+  --vermillion-hover: var(--cinnabar-frame);
+
+  --success:         var(--success-green);
+  --warn:            var(--honey-500);
+  --error:           var(--danger-deep);
+
+  /* Status tint tokens — brand-legal: 半透明 Cinnabar / Honey / Success on
+   * paper. Replaces the previous ad-hoc pale pastels that were leaking
+   * outside §07. Alpha kept low so 米纸底 shows through. */
+  --tint-error:      rgba(200, 56, 56, 0.10);        /* Cinnabar App @ 10% */
+  --tint-warn:       rgba(196, 154, 45, 0.12);       /* Honey @ 12% */
+  --tint-success:    rgba(90, 127, 62, 0.10);        /* Moss Green @ 10% */
+  --tint-ink-deep:   var(--ink-900);                 /* log bg now uses Ink 900 (was a rogue near-black) */
+
+  /* Legacy aliases (kept so older rules keep compiling — same values). */
+  --ink:             var(--text-primary);
+  --paper:           var(--bg-elevated);
+  --rice:            var(--bg);
+  --muted:           var(--text-muted);
+  /* Brand manual §08 Typography (docs/M2/M2-品牌手册-v1.0.html):
+   *   English primary : Cormorant Garamond → EB Garamond → Garamond
+   *                     → Times New Roman → Songti SC → serif
+   *   Chinese primary : Noto Serif SC → 思源宋体 → 宋体 → STSong → serif
+   *   All-serif everywhere · never mix sans in one artefact.
+   *   ❌ PingFang / Inter / Optima
+   *
+   * Font-size ladder — three tiers only (per manual "不搞 5-6 级"):
+   *   --fs-display : 32-72px  · Hero title
+   *   --fs-body    : 14-18px  · everything else that isn't a caption
+   *   --fs-caption : 10-12px  · timestamps, badge chips, meta */
+  /* Body / long-form reading — Newsreader is optimised for reading at
+   * text sizes, tighter and more even color than Cormorant. Chinese runs
+   * fall to Noto Serif SC in the same stack. */
+  --font-serif: "Newsreader", "Fraunces", "Source Serif 4", "Noto Serif SC",
+                "思源宋体", "Songti SC", "STSong", "Times New Roman", serif;
+  /* Display / hero / card titles — Fraunces has personality without going
+   * feminine-thin. This is the closest freely-available match to the
+   * Copernicus family Anthropic uses on claude.ai. */
+  --font-display: "Fraunces", "Newsreader", "Noto Serif SC", "思源宋体", serif;
+  --font-sans:    var(--font-serif);    /* alias — brand mandates all-serif */
+  --font-mono:    "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+
+  /* Three size tiers — clamped so tablets / 4K get sensible scaling. */
+  --fs-display: clamp(28px, 3.6vw, 40px);
+  --fs-body:    18px;                   /* was 17px — user asked for bigger */
+  --fs-body-lg: 20px;                   /* card values, quota highlights */
+  --fs-caption: 12px;
+  --fs-mono:    14px;                   /* SN / MAC / hex — narrow but legible */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  /* Body reads with Newsreader (English) + Noto Serif SC (Chinese).
+   * Newsreader has an opsz axis that auto-adjusts stroke and spacing to
+   * the size it's rendered at; combined with weight 450 for CJK and 1.7
+   * line-height we get a comfortable long-form reading rhythm. palt
+   * tightens Chinese punctuation so mixed CJK+Latin doesn't feel loose. */
+  font-family: var(--font-serif);
+  font-weight: 450;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.7;
+  font-size: var(--fs-body);
+  font-feature-settings: "palt" 1, "kern" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+}
+/* Form controls inherit body font but with a touch more weight so the
+ * english letterforms feel steady at 14-16 px. */
+input, select, button, textarea { font-family: inherit; font-weight: 500; }
+/* Display / heading pairing — Fraunces adds a modern warmth that
+ * Newsreader on its own would lack. Applied to every card + hero title. */
+h1, h2, h3, h4,
+.wo-card__title, .admin-card__title,
+.hero__title, .admin-card__title, .admin-login__title,
+.slot__banner-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  font-optical-sizing: auto;
+}
+strong, b { font-weight: 600; }
+/* Tabular numerals wherever numbers matter — SN counters, quota, byte
+ * sizes. Fraunces has this feature built in. */
+.wo-card__value, .admin-form__status, .slot__pct,
+.admin-meta dd, .admin-audit td { font-variant-numeric: tabular-nums; }
+
+/* ── Corner toggles (debug + lang) ── */
+.corner-toggles {
+  position: fixed;
+  top: 16px;
+  right: clamp(16px, 3vw, 40px);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.btn--corner {
+  padding: 4px 12px;
+  font-size: var(--fs-caption);
+  min-width: 42px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+}
+.debug-on #debugBtn { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+
+/* ── Hero (logo + title + slogan) ── */
+.hero {
+  position: relative;
+  text-align: center;
+  padding: clamp(40px, 6vw, 80px) 24px clamp(24px, 3vw, 40px);
+  background: var(--rice);
+  border-bottom: 1px solid var(--line);
+}
+.hero__logo {
+  display: inline-block;
+  width: clamp(240px, 32vw, 460px);
+  margin: 0 auto clamp(16px, 2vw, 28px);
+}
+.hero__logo svg { width: 100%; height: auto; display: block; }
+.hero__title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(20px, 2.6vw, 32px);
+  letter-spacing: 4px;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.hero__subtitle {
+  color: var(--muted);
+  font-size: clamp(15px, 1.4vw, 18px);
+  margin: 0 0 12px;
+  letter-spacing: 1px;
+}
+.hero__version {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-family: "SF Mono", "Menlo", monospace;
+}
+.hero__version strong { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .hero { padding: 60px 16px 24px; }
+  .hero__logo { width: 200px; }
+  .corner-toggles { top: 12px; right: 12px; }
+}
+
+/* ── Container ── */
+/* Fluid width — fills the viewport with sane padding at every breakpoint.
+ * Content is capped at 1800px on ultra-wide monitors so lines don't get
+ * uncomfortably long, but the grid inside still spans the full container. */
+.container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 4vw, 64px);
+}
+
+@media (min-width: 1600px) {
+  .container { padding: 40px 72px; }
+}
+@media (max-width: 640px) {
+  .container { padding: 20px 16px; }
+}
+
+/* ── Environment check ── */
+.env-check {
+  background: var(--rice);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  font-size: var(--fs-body);
+}
+.env-check__row { display: flex; gap: 12px; align-items: center; margin: 4px 0; }
+.env-check__row .badge { min-width: 20px; }
+.env-check.error { border-color: var(--error); background: var(--tint-error); }
+
+/* ── Workorder card ── */
+/* Auto-fit columns: 4 fit on desktop (1280+), 5-6 on wide screens (1600+),
+ * collapses to 2 on tablets and 1 on phones. */
+.wo-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px clamp(16px, 2vw, 32px);
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px 24px;
+  align-items: start;
+}
+.wo-card__item { }
+.wo-card__label { color: var(--muted); font-size: var(--fs-caption); margin-bottom: 4px; }
+.wo-card__value { color: var(--ink); font-size: var(--fs-body); font-weight: 500; font-variant-numeric: tabular-nums; }
+.wo-card__value.vermillion { color: var(--vermillion); }
+.wo-card__value.error { color: var(--error); font-weight: 600; }
+.wo-card__banner {
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: var(--fs-body);
+  text-align: center;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.wo-card__banner--error {
+  background: var(--tint-error);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+.wo-card__banner--ready {
+  background: var(--tint-success);
+  color: var(--success);
+  border: 1px solid var(--success);
+  font-size: var(--fs-body-lg);
+  padding: 16px 20px;
+  letter-spacing: 0.5px;
+}
+/* The rule cell always takes the full row so preview text doesn't wrap. */
+.wo-card__item--wide { grid-column: 1 / -1; }
+.wo-card__select {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  width: 100%;
+  max-width: 480px;
+  cursor: pointer;
+}
+.wo-card__select:focus { outline: 2px solid var(--vermillion); outline-offset: 1px; }
+.wo-card__preview {
+  margin-top: 6px;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: var(--fs-body);
+  color: var(--vermillion);
+  letter-spacing: 0.5px;
+}
+
+/* ── Action bar ── */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.actions__hint {
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: var(--fs-body);
+  padding-left: 2px;
+}
+.btn {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 10px 22px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover:not(:disabled) { background: var(--rice); }
+/* Brand grays only — no ad-hoc opacity that mixes non-palette values. */
+.btn:disabled {
+  color: var(--ink-500);
+  border-color: var(--paper-300);
+  background: var(--paper-100);
+  cursor: not-allowed;
+}
+.btn--primary {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  color: #fff;
+}
+.btn--primary:hover:not(:disabled) { background: var(--vermillion-hover); border-color: var(--vermillion-hover); }
+.btn--ghost { background: transparent; }
+/* Outline variant — secondary CTAs (upload / query / any non-hero action).
+ * Ink-outlined on paper: distinct from primary Cinnabar so operators know
+ * which button is THE one for this screen. */
+.btn--outline {
+  background: transparent;
+  border-color: var(--ink-900);
+  color: var(--ink-900);
+}
+.btn--outline:hover:not(:disabled) { background: var(--ink-900); color: var(--paper-200); }
+
+/* ── Board grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.slot {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.slot__hdr { display: flex; justify-content: space-between; align-items: baseline; }
+.slot__title { font-weight: 500; font-size: var(--fs-body); color: var(--ink); }
+.slot__state { font-size: var(--fs-body); color: var(--muted); }
+.slot__state.working { color: var(--vermillion); }
+.slot__state.ok      { color: var(--success); }
+.slot__state.error   { color: var(--error); }
+
+.slot__row { font-size: var(--fs-body); display: flex; justify-content: space-between; }
+.slot__row .k { color: var(--muted); }
+.slot__row .v { color: var(--ink); font-variant-numeric: tabular-nums; }
+.slot__sn    { font-family: "SF Mono", "Menlo", monospace; letter-spacing: 0.5px; color: var(--vermillion); }
+
+.progress {
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.progress__bar {
+  height: 100%;
+  background: var(--vermillion);
+  width: 0%;
+  transition: width 0.2s ease-out;
+}
+
+/* ── Empty slot state ── */
+.slot--empty {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--muted);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 200px;
+}
+.slot--empty p { margin: 0; font-size: var(--fs-body); }
+
+/* ── Big pass/fail banner (worker-facing) ── */
+.slot__banner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  border-radius: 6px;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: 4px;
+  text-align: center;
+}
+.slot__banner-icon { font-size: 56px; line-height: 1; }
+.slot__banner-text { font-size: 40px; line-height: 1; }
+.slot--pass .slot__banner {
+  display: flex;
+  background: var(--tint-success);
+  color: var(--success);
+  border: 2px solid var(--success);
+}
+.slot--fail .slot__banner {
+  display: flex;
+  background: var(--tint-error);
+  color: var(--error);
+  border: 2px solid var(--error);
+}
+
+/* Non-debug mode: hide detail rows so the big banner dominates. */
+.debug-off .slot--pass .slot__body,
+.debug-off .slot--fail .slot__body { display: none; }
+
+.debug-off .slot--pass .slot__banner-icon,
+.debug-off .slot--fail .slot__banner-icon { font-size: 88px; }
+.debug-off .slot--pass .slot__banner-text,
+.debug-off .slot--fail .slot__banner-text { font-size: 64px; }
+.debug-off .slot--pass .slot__banner,
+.debug-off .slot--fail .slot__banner { padding: 44px 16px; }
+
+.debug-off .slot { min-height: 240px; }
+
+/* Non-debug mode: hide dev-facing bits. */
+.debug-off #envCheck,
+.debug-off #log,
+.debug-off .actions__hint,
+.debug-off #rescanBtn,
+.debug-off .debug-only { display: none; }
+
+/* Debug badge styling on the toggle button when ON. */
+.debug-on #debugBtn { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+
+/* Firmware picker card. */
+.fw-picker {
+  background: var(--tint-warn);
+  border: 1px dashed var(--warn);
+  border-radius: 8px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+}
+.fw-picker .wo-card__label { margin-bottom: 8px; }
+.fw-picker .wo-card__select { max-width: 480px; margin-bottom: 8px; }
+.fw-row {
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.fw-hint { color: var(--muted); font-size: var(--fs-caption); }
+.fw-selected {
+  margin-top: 6px;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.btn--small { padding: 6px 14px; font-size: var(--fs-body); }
+
+/* ── Log filter controls ── */
+.log-controls {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.log-controls__label { color: var(--muted); font-size: var(--fs-body); letter-spacing: 1px; }
+.log-controls__select {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  min-width: 220px;
+}
+.log-controls__select:focus { outline: 2px solid var(--vermillion); }
+.debug-off .log-controls { display: none; }
+
+/* ── Console log (debug tail) ── */
+.log {
+  margin-top: 32px;
+  background: var(--tint-ink-deep);
+  color: var(--paper-100);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: var(--fs-mono);
+  line-height: 1.5;
+  max-height: 240px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.log__line { }
+.log__line.err { color: var(--danger-deep); }
+.log__line.ok  { color: var(--success-green); }
+
+/* ── Empty grid hint (no devices plugged) ── */
+.grid-empty {
+  margin: 32px 0;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 2vw, 22px);
+  letter-spacing: 2px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+/* Non-debug: hide chip / MAC / elapsed rows so workers see only SN + progress. */
+.debug-off .slot__row--debug { display: none; }
+
+/* ── Browser block screen (fires before app boots) ── */
+.block-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: var(--rice);
+}
+.block-card {
+  max-width: 600px;
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: clamp(24px, 4vw, 48px);
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+.block-icon {
+  font-size: 64px;
+  line-height: 1;
+  color: var(--vermillion);
+  margin-bottom: 16px;
+}
+.block-title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+.block-subtitle {
+  color: var(--muted);
+  font-size: var(--fs-body);
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+.block-tailored {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  margin: 8px 0 28px;
+  line-height: 1.6;
+}
+.block-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.block-btn {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  padding: 12px 24px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.block-btn:hover:not(:disabled) { background: var(--rice); }
+.block-btn:disabled { opacity: 0.6; cursor: default; }
+.block-btn--primary {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  color: #fff;
+  font-weight: 500;
+}
+.block-btn--primary:hover { background: var(--vermillion-hover); border-color: var(--vermillion-hover); }
+.block-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 16px;
+  row-gap: 6px;
+  text-align: left;
+  font-size: var(--fs-body);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin: 0;
+}
+.block-meta dt { color: var(--muted); }
+.block-meta dd { margin: 0; color: var(--ink); word-break: break-all; }
+.block-ua { font-size: var(--fs-caption); }
+.block-reason {
+  margin-top: 20px;
+  font-size: var(--fs-body);
+  color: var(--muted);
+}
+
+/* ── Small helpers ── */
+.badge {
+  display: inline-block;
+  width: 16px; height: 16px; line-height: 16px;
+  border-radius: 50%;
+  text-align: center;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: #fff;
+}
+.badge.ok    { background: var(--success); }
+.badge.err   { background: var(--error); }
+.badge.warn  { background: var(--warn); }
+.mono { font-family: "SF Mono", "Menlo", monospace; }
+.hidden { display: none !important; }

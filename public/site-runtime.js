@@ -703,6 +703,7 @@
     if (url.startsWith('http')) return url;
     if (url === 'customer-login') return lang === 'en' ? '/en/auth' : `/${lang}/auth`;
     if (url === 'blog') return lang === 'en' ? '/en/blog' : `/${lang}/blog`;
+    if (url === 'firmware' || url === '/firmware') return '/firmware';
     if (url === 'download-app' || url === 'download' || url === 'page/download-app' || url === '/page/download-app') {
       return lang === 'en' ? '/download' : `/${lang}/download`;
     }

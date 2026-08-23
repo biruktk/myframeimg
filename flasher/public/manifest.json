@@ -1,0 +1,37 @@
+{
+  "name": "MyFrame Flasher",
+  "version": "0.1.0",
+  "chip": "ESP32-C5",
+  "esptoolJsVersion": "0.6.0",
+  "defaultServerUrl": "/firmware/api",
+  "syncBaud": 115200,
+  "transferBaud": 921600,
+  "consoleBaud": 115200,
+  "flashOffset": 0,
+  "smokeTestTimeoutMs": 5000,
+  "smokeTestPatterns": [
+    "ESP-ROM:esp32c5",
+    "boot:",
+    "cpu_start"
+  ],
+  "devMode": {
+    "enabled": true,
+    "_note": "Firmware list is fetched dynamically from mock-server /firmwares \u2014 which scans flasher-web/firmware/*.bin. Drop new .bin files there and click \u300c\u91cd\u65b0\u626b\u63cf\u76ee\u5f55\u300d in the UI.",
+    "mockWorkorder": {
+      "id": "WO-DEV-0001",
+      "shortCode": "DEV001",
+      "quota": 999,
+      "used": 0,
+      "fwSha": "bb9cb25",
+      "snRules": [
+        {
+          "id": "sn-wo-seq",
+          "label": "\u5de5\u5355 + \u6d41\u6c34",
+          "template": "MYF-{wo}-{seq:5}-{check:1}",
+          "seqStart": 1,
+          "check": "luhn-mod10"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MyFrame Production Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ── Corner toggles (float above hero) ────────────────── -->
+  <div class="corner-toggles">
+    <button id="debugBtn" class="btn btn--ghost btn--corner" aria-label="Toggle debug mode">○ DEBUG</button>
+    <button id="langBtn" class="btn btn--ghost btn--corner" aria-label="Toggle language">EN</button>
+  </div>
+
+  <!-- ── Hero (logo + title + slogan combined) ────────────── -->
+  <section class="hero">
+    <div class="hero__logo" aria-label="MyFrame">
+      <!-- Inlined from docs/M2/M2-品牌资产/myframe-logo-v2.svg (2026-08-08 · 朱砂 #C83838) -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-label="MyFrame">
+        <text x="80" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:400;font-size:88px;letter-spacing:8px;fill:#1A1A1A;">MY</text>
+        <text x="270" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:500;font-size:88px;letter-spacing:8px;fill:#C83838;">FRAME</text>
+      </svg>
+    </div>
+    <h1 class="hero__title" data-i18n="app.title">MyFrame 生产工具</h1>
+    <p class="hero__subtitle" data-i18n="app.subtitle">MyFrame 固件烧录 · 面向工厂产线 &amp; 现场服务</p>
+    <p class="hero__version">
+      <strong data-i18n="app.brand">Flasher</strong> v0.1.0 · <span id="workMode">—</span>
+    </p>
+  </section>
+
+  <main class="container">
+    <div id="topError" class="env-check error hidden"></div>
+
+    <!-- ① Environment check ────────────────────────────────── -->
+    <section id="envCheck" class="env-check" aria-label="environment check"></section>
+
+    <!-- ② Workorder card (hidden until bootstrap loads) ─────── -->
+    <section id="woCard" class="wo-card hidden" aria-label="workorder"></section>
+
+    <!-- ②b Firmware picker (always visible — worker needs to pick .myfw) -->
+    <section id="fwPicker" class="fw-picker" aria-label="firmware picker"></section>
+
+    <!-- ③ Actions ───────────────────────────────────────────── -->
+    <div class="actions">
+      <button id="connectBtn" class="btn btn--primary" data-i18n="action.connect">授权新设备（首次插入需授权）</button>
+      <button id="rescanBtn" class="btn btn--ghost" data-i18n="action.rescan">重新扫描已授权设备</button>
+      <button id="clearBtn" class="btn btn--ghost" data-i18n="action.clear">清空列表</button>
+      <span id="modeBadge" class="mono" style="margin-left:auto;color:var(--muted);font-size:13px;"></span>
+    </div>
+    <div class="actions__hint" data-i18n="hint.autoflash">已授权的设备插上即自动烧录 · 支持多设备并发</div>
+
+    <!-- ④ Board grid + empty hint ─────────────────────────── -->
+    <section id="grid" class="grid" aria-label="board grid"></section>
+    <p id="gridEmpty" class="grid-empty">请插入设备</p>
+
+    <!-- ⑤ Log tail (debug-only) ────────────────────────────── -->
+    <div class="log-controls">
+      <label class="log-controls__label" data-i18n="log.filter_label">过滤</label>
+      <select id="logFilter" class="log-controls__select">
+        <option value="all" data-i18n="log.filter_all">全部</option>
+      </select>
+      <button id="logClearBtn" class="btn btn--ghost btn--small" type="button" data-i18n="log.clear">清空日志</button>
+    </div>
+    <pre id="log" class="log" aria-label="log"></pre>
+  </main>
+
+  <script type="module">
+    // ── Browser gate ───────────────────────────────────────────────
+    // Must be the very first thing to run: if this is not a Chromium-based
+    // browser with Web Serial, replace the page with a "please use Chrome"
+    // screen and abort all further loading.
+    import { assertSupported } from './browser-check.js';
+    if (!assertSupported()) throw new Error('unsupported browser');
+
+    import * as api from './api.js';
+    import * as ui from './ui.js';
+    import { t } from './i18n.js';
+    import { authorizeAndFlash, rescanAuthorized, startAutoFlash } from './flasher.js';
+
+    // Boot sequence — env check → bootstrap → wire actions → start auto-flash.
+    (async () => {
+      ui.initSwitches();
+      ui.renderEmpty();
+      const envOk = ui.renderEnvCheck();
+
+      let cfg;
+      try {
+        cfg = await api.bootstrap();
+      } catch (e) {
+        ui.showError(t('err.boot_fail', { msg: e.message }));
+        return;
+      }
+      const setModeLabels = () => {
+        document.getElementById('modeBadge').textContent = cfg.isDev
+          ? t('mode.dev')
+          : t('mode.prod', { id: cfg.workorderId });
+        document.getElementById('workMode').textContent = cfg.isDev
+          ? t('header.workmode.dev')
+          : t('header.workmode.prod');
+      };
+      setModeLabels();
+      window.addEventListener('mff:lang-change', setModeLabels);
+      // Uploaded .myfw elevates the session out of dev mode (see
+      // api.js setActiveToken). Re-render the mode badge so it stops
+      // saying "DEV" once the operator adopted a real bearer.
+      window.addEventListener('mff:mode-change', setModeLabels);
+
+      if (!envOk) {
+        ui.showError(t('err.env_blocked'));
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('rescanBtn').disabled = true;
+        return;
+      }
+
+      // Firmware picker is rendered empty — no server scan, no default file.
+      // The operator MUST explicitly pick a .myfw for the current batch;
+      // silently defaulting to a server-hosted firmware would let workers
+      // flash the wrong version by accident. See getFirmwareBytes() which
+      // throws until a user file is picked.
+      await ui.renderFirmwarePicker();
+
+      // Kick off auto-flash: scans already-authorized ports and registers
+      // hot-plug listeners. Also loads workorder metadata and renders card.
+      try {
+        await startAutoFlash();
+      } catch (e) {
+        ui.showError(t('err.wo_load', { msg: e.message }));
+      }
+
+      document.getElementById('connectBtn').addEventListener('click', async () => {
+        try {
+          await authorizeAndFlash();
+        } catch (e) {
+          if (e.name !== 'NotFoundError') {
+            ui.showError(t('err.op_fail', { msg: e.message }));
+          }
+        }
+      });
+
+      document.getElementById('rescanBtn').addEventListener('click', async () => {
+        try { await rescanAuthorized(); } catch (e) { ui.showError(t('err.op_fail', { msg: e.message })); }
+      });
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        // Prevent accidental clear while a burn is mid-flight — those slots
+        // have async serial handles that keep running even after DOM removal
+        // and their progress goes silently invisible to the operator.
+        const inProgress = document.querySelectorAll('.slot--in_progress').length;
+        if (inProgress > 0) {
+          const msg = t('action.clear_confirm', { n: inProgress });
+          if (!window.confirm(msg)) return;
+        }
+        ui.renderEmpty();
+      });
+    })().catch((e) => {
+      document.body.innerHTML = `<pre style="padding:32px;color:#B71C1C">Fatal: ${e.message}\n\n${e.stack}</pre>`;
+    });
+  </script>
+</body>
+</html>

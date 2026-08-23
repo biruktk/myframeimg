@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MyFrame Admin · Production Center</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <!-- ── Login-only language toggle (panel has its own inline one) ── -->
+  <div class="corner-toggles corner-toggles--login-only">
+    <button id="langBtnLogin" class="btn btn--ghost btn--corner" aria-label="Toggle language">EN</button>
+  </div>
+
+  <!-- ── Login gate ─────────────────────────────────────────── -->
+  <section id="loginGate" class="admin-login">
+    <div class="admin-login__card">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" class="admin-login__logo" aria-label="MyFrame">
+        <text x="80" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:400;font-size:88px;letter-spacing:8px;fill:#1A1A1A;">MY</text>
+        <text x="270" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:500;font-size:88px;letter-spacing:8px;fill:#C83838;">FRAME</text>
+      </svg>
+      <h1 class="admin-login__title" data-i18n="admin.login.title">管理员登录</h1>
+      <p class="admin-login__subtitle" data-i18n="admin.login.subtitle">生产工单 · License · 固件包管理</p>
+      <form id="loginForm" class="admin-login__form">
+        <label class="admin-login__label" for="pwd" data-i18n="admin.login.password">密码</label>
+        <input id="pwd" type="password" class="admin-login__input" autocomplete="current-password" required />
+        <button type="submit" class="btn btn--primary admin-login__submit" data-i18n="admin.login.submit">登录</button>
+        <p id="loginError" class="admin-login__error hidden"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── Admin panel (hidden until login) ──────────────────── -->
+  <section id="adminPanel" class="admin-panel hidden">
+    <header class="admin-panel__hdr">
+      <div class="admin-panel__brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" class="admin-panel__logo" aria-label="MyFrame">
+          <text x="80" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:400;font-size:88px;letter-spacing:8px;fill:#1A1A1A;">MY</text>
+          <text x="270" y="120" style="font-family:'Cormorant Garamond','Noto Serif SC',serif;font-weight:500;font-size:88px;letter-spacing:8px;fill:#C83838;">FRAME</text>
+        </svg>
+        <span class="admin-panel__crumb" data-i18n="admin.panel.crumb">Admin · 生产中心</span>
+      </div>
+      <div class="admin-panel__actions">
+        <a href="index.html" class="btn btn--ghost" data-i18n="admin.panel.open_flasher">打开烧录页 ↗</a>
+        <button id="langBtn" class="btn btn--ghost" aria-label="Toggle language">EN</button>
+        <button id="logoutBtn" class="btn btn--ghost" data-i18n="admin.panel.logout">退出登录</button>
+      </div>
+    </header>
+
+    <main class="admin-panel__body">
+      <section class="admin-card">
+        <h2 class="admin-card__title" data-i18n="admin.fw.title">固件源管理 · Firmware Sources</h2>
+        <p class="admin-card__hint" data-i18n="admin.fw.hint">
+          管理员可上传新的 .bin 固件版本。上传的版本保存在服务端 Blob 存储，可随时删除；git 里内建的版本只可读，不能通过界面删除。
+        </p>
+        <div class="admin-form">
+          <div class="admin-form__row">
+            <label data-i18n="admin.fw.upload">上传新固件</label>
+            <label class="btn btn--outline btn--small" style="margin-right:8px">
+              <span data-i18n="admin.fw.pick">选择 .bin 文件</span>
+              <input id="fwUploadInput" type="file" accept=".bin,application/octet-stream" style="display:none" />
+            </label>
+            <span id="fwUploadStatus" class="admin-form__status"></span>
+          </div>
+          <div class="admin-form__row" style="align-items:flex-start">
+            <label data-i18n="admin.fw.list">当前可用</label>
+            <div id="fwManagerList" class="admin-form__control" style="border:0;padding:0;background:transparent"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2 class="admin-card__title" data-i18n="admin.build.title">生成工单固件包</h2>
+
+        <div class="admin-form">
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.workorder">工单号</label>
+            <select id="woId" class="admin-form__control"></select>
+          </div>
+
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.new_wo">新建工单</label>
+            <input id="newWoId" type="text" placeholder="WO-YYYYMMDD-NNN" class="admin-form__control" style="max-width:280px;margin-right:8px" />
+            <button id="newWoBtn" type="button" class="btn btn--small" data-i18n="admin.build.new_wo_button">创建</button>
+            <span id="newWoStatus" class="admin-form__status" style="margin-left:8px"></span>
+          </div>
+
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.firmware">固件</label>
+            <select id="fwName" class="admin-form__control"></select>
+          </div>
+
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.sn_rule">SN 规则</label>
+            <select id="snRule" class="admin-form__control"></select>
+          </div>
+
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.quota">烧写数量</label>
+            <input id="quota" type="number" min="1" max="100000" value="10" class="admin-form__control" />
+          </div>
+
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.expires">有效期至</label>
+            <input id="expiresAt" type="date" class="admin-form__control" />
+          </div>
+
+          <div class="admin-form__actions">
+            <button id="buildBtn" class="btn btn--primary" data-i18n="admin.build.button">生成固件包</button>
+            <span id="buildStatus" class="admin-form__status"></span>
+          </div>
+        </div>
+        <button id="fwRescanBtn" type="button" style="display:none"></button>
+        <input id="licenseId" type="hidden" />
+        <input id="factoryId" type="hidden" value="F-DEMO" />
+      </section>
+
+      <section class="admin-card">
+        <h2 class="admin-card__title" data-i18n="admin.audit.title">烧录审计 · SN ↔ MAC 追溯</h2>
+        <p class="admin-card__hint" data-i18n="admin.audit.hint">
+          每一次成功烧录都在服务器落库。任何一台产品出问题，用 MAC 或 SN 都能反查到对应工单和烧录时间。
+        </p>
+        <div class="admin-form">
+          <div class="admin-form__row">
+            <label data-i18n="admin.build.workorder">工单号</label>
+            <select id="auditWoId" class="admin-form__control"></select>
+            <button id="auditRefreshBtn" type="button" class="btn btn--outline btn--small" data-i18n="admin.audit.query">查询</button>
+            <button id="auditExportBtn" type="button" class="btn btn--outline btn--small" data-i18n="admin.audit.export">导出 CSV</button>
+          </div>
+        </div>
+        <div id="auditSummary" class="fw-selected" style="margin-top:12px;"></div>
+        <div id="auditTableWrap" class="admin-audit__wrap"><table id="auditTable" class="admin-audit"></table></div>
+      </section>
+
+      <section id="buildLog" class="admin-card admin-card--log">
+        <h2 class="admin-card__title" data-i18n="admin.log.title">操作日志</h2>
+        <pre id="adminLog" class="admin-log"></pre>
+      </section>
+    </main>
+  </section>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>

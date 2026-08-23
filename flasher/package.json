@@ -1,0 +1,24 @@
+{
+  "name": "myframe-flasher-web",
+  "version": "1.1.0",
+  "private": true,
+  "description": "MyFrame Production Center — Vercel-deployable firmware flasher + admin console",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod",
+    "preview": "vercel deploy",
+    "bundle:blob-client": "echo 'export { put, upload } from \"@vercel/blob/client\";' > /tmp/blob-entry.mjs && esbuild /tmp/blob-entry.mjs --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=public/vendor/vercel-blob-client.js"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.38.2",
+    "@vercel/blob": "^0.27.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "vercel": "^39.0.0"
+  }
+}
