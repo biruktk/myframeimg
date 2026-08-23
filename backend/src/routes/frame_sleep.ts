@@ -2,7 +2,7 @@ import express from "express";
 import { Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
-import { publishSleepConfig, publishMqttAction, isMqttConnected } from "../services/frame_mqtt";
+import { publishSleepConfig, publishMqttAction, isMqttConnected, normalizeTzOffset } from "../services/frame_mqtt";
 
 function normalizeMacKey(raw: string): string {
   try {
@@ -59,6 +59,7 @@ export function frameSleepRouter(): Router {
     var enabled = body.enabled === true || body.enabled === "true";
     var startTime = String(body.startTime ?? "").trim();
     var endTime = String(body.endTime ?? "").trim();
+    var timezoneOffsetMinutes = normalizeTzOffset(body.timezoneOffsetMinutes);
     if (!TIME_RE.test(startTime)) {
       res.status(422).json({ ok: false, error: "invalid_start_time", message: "Use HH:MM format" });
       return;
@@ -68,7 +69,8 @@ export function frameSleepRouter(): Router {
       return;
     }
     var publishMac = macKey;
-    var sleepConfig = { enabled: enabled, startTime: startTime, endTime: endTime };
+    // Local wall-clock times are persisted for UI; firmware receives UTC (publishSleepConfig).
+    var sleepConfig = { enabled: enabled, startTime: startTime, endTime: endTime, timezoneOffsetMinutes: timezoneOffsetMinutes };
     db.mutate(function(draft) {
       var frame = draft.frames.find(function(f) {
         return normalizeMacKey(f.id) === macKey || normalizeMacKey(f.bleMac) === macKey;

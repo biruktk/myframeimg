@@ -6,6 +6,7 @@ import { requirePairingToken } from "../middleware/security";
 import {
   getFrame,
   isMqttConnected,
+  normalizeTzOffset,
   publishFrameCommand,
 } from "../services/frame_mqtt";
 
@@ -18,11 +19,59 @@ function normalizeMacKey(raw: string): string {
 }
 
 const TIME_RE = /^\d{2}:\d{2}$/;
-const ALLOWED_ACTIONS = new Set(["wifi_sleep", "strategy_bin"]);
+const ALLOWED_ACTIONS = new Set(["wifi_sleep", "strategy_bin", "ota"]);
+
+/**
+ * Backend idempotency guard for the sleep-save bundle.
+ * The mini-app relays `wifi_sleep` AND `strategy_bin` with the SAME msgid when
+ * saving sleep mode (Promise.all). Per firmware spec, saving sleep must emit
+ * STRICTLY ONE `wifi_sleep` command — the bundled `strategy_bin` schedule
+ * re-sync is redundant and must never reach the frame. This guard tracks
+ * recent relays per hardware MAC and suppresses a `strategy_bin` whose msgid
+ * matches a `wifi_sleep` relayed to the same MAC within the cooldown window
+ * (either arrival order, thanks to a short grace buffer).
+ */
+const recentRelaysByMac = new Map<string, { msgid: string; action: string; atMs: number }>();
+const SLEEP_BUNDLE_MS = 5000;
+const GRACE_MS = 400;
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** True when a wifi_sleep with this msgid was relayed to this MAC recently. */
+function wifiSleepSeenForMsgid(mac: string, msgid: string): boolean {
+  const rec = recentRelaysByMac.get(mac);
+  return (
+    !!rec &&
+    rec.action === "wifi_sleep" &&
+    rec.msgid === msgid &&
+    Date.now() - rec.atMs < SLEEP_BUNDLE_MS
+  );
+}
+
+/**
+ * Decide whether a strategy_bin relay is the bundled sleep re-sync and must be
+ * suppressed. Waits up to GRACE_MS for a same-msgid wifi_sleep to land (the
+ * mini-app fires both concurrently, so order is not guaranteed).
+ */
+async function shouldSuppressBundledStrategyBin(mac: string, msgid: string): Promise<boolean> {
+  const deadline = Date.now() + GRACE_MS;
+  while (Date.now() < deadline) {
+    if (wifiSleepSeenForMsgid(mac, msgid)) return true;
+    await waitMs(50);
+  }
+  return false;
+}
+
 
 function validateActionPayload(action: string, data: Record<string, unknown>): string | null {
-  const begintime = String(data.begintime ?? "");
-  const endtime = String(data.endtime ?? "");
+  if (action === "ota") {
+    // OTA carries an optional target version; no schedule/time fields to validate.
+    return null;
+  }
+  const begintime = String(data.begintime ?? data.beginTime ?? "");
+  const endtime = String(data.endtime ?? data.endTime ?? "");
   if (!TIME_RE.test(begintime) || !TIME_RE.test(endtime)) {
     return "begintime/endtime must use HH:MM format";
   }
@@ -83,18 +132,37 @@ export function frameCommandRouter(): Router {
       return;
     }
     if (action === "wifi_sleep") {
+      const localBegintime = String(data.begintime ?? data.beginTime ?? "00:00");
+      const localEndtime = String(data.endtime ?? data.endTime ?? "00:00");
+      const timezoneOffsetMinutes = normalizeTzOffset(
+        data.timezoneOffsetMinutes ?? data.tzOffsetMinutes ?? data.utcOffsetMinutes,
+      );
       db.mutate((draft) => {
         if (!draft.wifiSleepByBleMac) draft.wifiSleepByBleMac = {};
+        // Persist the user's LOCAL wall-clock times + offset for client UI display
+        // and sleep-window calculation. Firmware receives UTC (see publishFrameCommand).
         draft.wifiSleepByBleMac[macKey] = {
           mode: Number(data.mode),
-          begintime: String(data.begintime ?? "00:00"),
-          endtime: String(data.endtime ?? "00:00"),
+          begintime: localBegintime,
+          endtime: localEndtime,
+          timezoneOffsetMinutes,
           updatedAtMs: Date.now(),
         };
       });
+      recentRelaysByMac.set(macKey, { msgid, action, atMs: Date.now() });
+    }
+    if (action === "strategy_bin" && (await shouldSuppressBundledStrategyBin(macKey, msgid))) {
+      console.log(
+        "[frame-command] Suppressed bundled strategy_bin for %s (sleep save, msgid %s)",
+        macKey,
+        msgid,
+      );
+      res.json({ ok: true, sent: true, action, msgid, suppressed: true, reason: "sleep_bundle" });
+      return;
     }
     try {
       await publishFrameCommand(macKey, action, data, msgid);
+      recentRelaysByMac.set(macKey, { msgid, action, atMs: Date.now() });
     } catch (e) {
       res.status(502).json({ ok: false, error: "publish_failed", message: String((e as Error)?.message || e) });
       return;

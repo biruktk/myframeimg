@@ -1,4 +1,4 @@
-import { notifyPhotoUploaded } from "../services/wechat_subscribe_notify";
+import { incrementWechatMessageQuota, notifyPhotoUploaded } from "../services/wechat_subscribe_notify";
 import crypto from "crypto";
 import express from "express";
 import fs from "fs";
@@ -254,6 +254,11 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
 
       // Notify frame subscribers + uploader (MAC-normalized lookup on server)
       {
+        // Quota banking: client reports a granted wx subscription on this upload.
+        if (String(req.body.subscription_granted ?? "") === "true") {
+          incrementWechatMessageQuota(verifyUserJwtBearer(req)?.userId);
+        }
+
         const uploaderId = verifyUserJwtBearer(req)?.userId;
         sendPushToFrameSubscribers(
           deviceId || db.read().device.id,
@@ -265,6 +270,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           uploaderUserId: uploaderId,
           photoName: mqttBasename,
           frameName: deviceId || "MyFrame",
+          quotaUserId: uploaderId,
         }).catch((e: unknown) => console.warn("[photo] wechat subscribe notify error", e));
       }
 
@@ -489,6 +495,11 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       });
 
       {
+        // Quota banking: client reports a granted wx subscription on this upload.
+        if (String(req.body.subscription_granted ?? "") === "true") {
+          incrementWechatMessageQuota(verifyUserJwtBearer(req)?.userId);
+        }
+
         const uploaderId = verifyUserJwtBearer(req)?.userId;
         sendPushToFrameSubscribers(
           deviceId || db.read().device.id,
@@ -500,6 +511,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           uploaderUserId: uploaderId,
           photoName: mqttBasename,
           frameName: deviceId || "MyFrame",
+          quotaUserId: uploaderId,
         }).catch((e: unknown) => console.warn("[photo] wechat subscribe notify error", e));
       }
 

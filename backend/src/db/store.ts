@@ -122,6 +122,8 @@ export type MyframeDb = {
     googleSub?: string;
     /** WeChat Mini Program openid (optional). */
     wechatOpenId?: string;
+    /** Granted subscription-message quota (incremented per wx.requestSubscribeMessage accept). */
+    wechatMessageQuota?: number;
     /** WeChat mobile app (iOS/Android) openid (optional). */
     iosOpenId?: string;
     /** WeChat UnionID (shared across apps). */
@@ -193,13 +195,15 @@ export type MyframeDb = {
     displayName?: string | null;
     wifiStatus: "online" | "offline" | "never_provisioned";
     firmwareVersion: string;
+    /** FPGA/panel firmware version reported by the device (`fpga_ver`). */
+    fpgaVersion?: string;
     lastSeenAtMs: number | null;
     uptimeMs: number;
     pendingQueue: string[];
     nextDeliveryAtMs: number | null;
     location?: { lat: number; lng: number };
     ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
-    sleepConfig?: { enabled: boolean; startTime: string; endTime: string };
+    sleepConfig?: { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number };
     playbackConfig?: { intervalMinutes: number; mode: "sequential" | "random"; durationHours: number };
     playbackConfigUpdatedAtMs?: number;
     stationMac?: string;
@@ -207,6 +211,24 @@ export type MyframeDb = {
     storageUsed?: number;
     storageTotal?: number;
     photoQueueDepth?: number;
+    /** Last firmware uplink ACK progress (strategy_bin_ack / download_complete / refresh_complete / strategy_stop_ack). */
+    deliveryProgress?: {
+      status:
+        | "pending"
+        | "received_by_device"
+        | "downloading"
+        | "download_completed"
+        | "displayed"
+        | "failed"
+        | "stopping_received"
+        | "stopped";
+      total?: number;
+      downloaded?: number;
+      failed?: number;
+      stoppedAtMs?: number;
+      ackMsgid?: string;
+      updatedAtMs: number;
+    };
   }>;
   device: {
     id: string;
@@ -306,8 +328,8 @@ export type MyframeDb = {
     expiresAtMs: number;
     consumedAtMs: number | null;
   }>;
-  sleepConfigs?: Record<string, { enabled: boolean; startTime: string; endTime: string }>;
-  wifiSleepByBleMac?: Record<string, { mode: number; begintime: string; endtime: string; updatedAtMs: number }>;
+  sleepConfigs?: Record<string, { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number }>;
+  wifiSleepByBleMac?: Record<string, { mode: number; begintime: string; endtime: string; timezoneOffsetMinutes?: number; updatedAtMs: number }>;
   faqs: Array<{
     id: string;
     question: string;

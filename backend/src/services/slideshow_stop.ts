@@ -1,9 +1,8 @@
 /**
  * Powerful stop after playlist/album delete.
- * Clears server slideshow rotation, MQTT-notifies the frame, then plays a
- * fallback image so the panel does not keep showing deleted playlist content:
- *   1) latest single cast (.bin) for that MAC
- *   2) FRAME_IDLE_PLAY_URL / FRAME_CONNECTED_PLAY_URL env .bin
+ * Clears server slideshow rotation and MQTT-notifies the frame with
+ * `strategy_stop` only. Firmware requirement: the frame keeps the last
+ * displayed image as-is — no fallback `play` is dispatched.
  */
 import path from "path";
 import fs from "fs";
@@ -12,7 +11,6 @@ import {
   isMqttConnected,
   normalizeMac,
   publishMqttAction,
-  publishPlayImage,
   publishStrategyCommand,
   resolveMqttHardwareMac,
 } from "./frame_mqtt";
@@ -238,12 +236,30 @@ export function resolveFallbackPlayUrl(
   return null;
 }
 
+/** Centralized idempotency guard: hardware MAC -> last strategy_stop dispatch (ms).
+ * Every stop path (stop-playlist, DELETE slideshow, album_delete_sync,
+ * deleted-playlist, slideshow-empty) funnels through stopPlaybackForMacKeys,
+ * so this single lock guarantees at most ONE strategy_stop per MAC per window
+ * even when multiple HTTP routes / retries fire in rapid succession. */
+const recentStopTimestamps = new Map<string, number>();
+const STOP_COOLDOWN_MS = 5000;
+
+/** Normalize any MAC spelling to the canonical hardware key (uppercase, no separators). */
+function canonicalStopMac(raw: string): string {
+  return String(raw || "")
+    .toUpperCase()
+    .replace(/[:-]/g, "");
+}
+
 /**
- * Notify the frame to stop playlist playback and show a fallback image.
+ * Notify the frame to stop playlist playback.
+ * FIRMWARE REQUIREMENT: `strategy_stop` halts rotation and the frame keeps the
+ * last displayed image as-is. We must NOT send a follow-up `play` (that would
+ * force a display refresh).
  */
 export async function notifyFrameStopPlayback(
   macRaw: string,
-  options?: { excludeTokens?: Set<string>; playFallback?: boolean },
+  _options?: { excludeTokens?: Set<string>; playFallback?: boolean; fallbackImageUrl?: string | null },
 ): Promise<{ fallbackUrl: string | null }> {
   const mac = resolveMqttHardwareMac(macRaw) ?? normalizeMac(macRaw);
   if (!mac || !isMqttConnected()) return { fallbackUrl: null };
@@ -251,21 +267,7 @@ export async function notifyFrameStopPlayback(
   await publishMqttAction(mac, "strategy_stop").catch((err) => {
     console.warn("[slideshow-stop] strategy_stop action failed", mac, err);
   });
-
-  const playFallback = options?.playFallback === true;
-  let fallbackUrl: string | null = null;
-  if (playFallback) {
-    fallbackUrl = resolveFallbackPlayUrl(mac, options?.excludeTokens);
-    if (fallbackUrl) {
-      await publishPlayImage(mac, fallbackUrl).catch((err) => {
-        console.warn("[slideshow-stop] fallback play failed", mac, err);
-        fallbackUrl = null;
-      });
-    } else {
-      console.warn("[slideshow-stop] no fallback .bin for", mac);
-    }
-  }
-  return { fallbackUrl };
+  return { fallbackUrl: null };
 }
 
 /** Clear slideshow DB state and MQTT-notify each affected MAC (with fallback play). */
@@ -280,10 +282,48 @@ export async function stopPlaybackForMacKeys(
   const unique = [
     ...new Set(macKeys.map((k) => normalizeMac(k) || k).filter(Boolean)),
   ];
+
+  // IDEMPOTENCY LOCK + STATE CHECK (runs BEFORE clearing so we can see whether
+  // the frame actually had an active slideshow to stop).
+  const data = db.read();
+  const dispatchKeys: string[] = [];
+  const now0 = Date.now();
+  for (const key of unique) {
+    const n = normalizeMac(key) || key;
+    // Resolve to the Wi‑Fi STA MAC (ESP32: BLE + 2) so both the slideshow lookup
+    // and the MQTT dispatch target the topic the frame actually subscribes to.
+    const hw = resolveMqttHardwareMac(key) ?? n;
+    const canonical = canonicalStopMac(hw);
+    const slideshow = data.slideshowsByBleMac?.[hw] ?? data.slideshowsByBleMac?.[n];
+    const hadActive = !!slideshow && (slideshow.imageIds ?? []).length > 0;
+    const lastStop = recentStopTimestamps.get(canonical) || 0;
+
+    if (!hadActive) {
+      console.log(
+        "[slideshow-stop] Skipped strategy_stop for %s (no active slideshow)",
+        canonical,
+      );
+      continue;
+    }
+    if (now0 - lastStop < STOP_COOLDOWN_MS) {
+      console.log(
+        "[slideshow] Suppressed duplicate strategy_stop for %s (last stop %dms ago)",
+        canonical,
+        now0 - lastStop,
+      );
+      continue;
+    }
+    // Claim the lock synchronously (no await between check and set) so that
+    // concurrent requests in the same event-loop turn are serialized and only
+    // the first one dispatches strategy_stop for this MAC.
+    recentStopTimestamps.set(canonical, now0);
+    dispatchKeys.push(hw);
+  }
+
   const cleared = clearSlideshowEntries(unique);
   const notified: string[] = [];
   const fallbackUrls: Record<string, string | null> = {};
-  for (const key of unique) {
+  for (const key of dispatchKeys) {
     try {
       const r = await notifyFrameStopPlayback(key, options);
       notified.push(key);
@@ -307,8 +347,7 @@ export async function stopPlaybackForDeletedPlaylist(playlist: {
 }> {
   const macKeys = macKeysForDeletedPlaylist(playlist);
   const exclude = mediaTokensFromIds(playlist.photoIds ?? []);
-  // PROTOCOL COMPLIANCE (STRICT 1-to-1): playlist delete MUST dispatch ONLY
-  // `strategy_stop` — never a fallback `play` after stopping.
+  // Firmware requirement: strategy_stop only — the frame keeps the last image.
   return stopPlaybackForMacKeys(macKeys, {
     excludeTokens: exclude,
     playFallback: false,

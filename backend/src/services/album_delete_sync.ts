@@ -25,7 +25,7 @@ import {
 import {
   macKeysForDeletedPlaylist,
   mediaTokensFromIds,
-  stopPlaybackForMacKeys,
+  notifyFrameStopPlayback,
 } from "./slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "./slideshow_index";
 
@@ -171,7 +171,7 @@ export function syncSlideshowDelete(
         strategy: random,
         begintime: now.toString(),
         endtime,
-        idle: 0,
+        idle: 1,
         updatedAtMs: now,
         currentIndex: startIndex,
         nextPlayAtMs: now + playlist.intervalMinutes * 60 * 1000,
@@ -180,20 +180,23 @@ export function syncSlideshowDelete(
     }
   });
 
-  // PROTOCOL COMPLIANCE: when nothing remains to play, dispatch ONLY
-  // `strategy_stop` (playFallback: false) — never an empty `strategy_bin`,
-  // never a fallback `play`.
+  // When nothing remains to play: halt rotation with `strategy_stop` ONLY.
+  // Firmware requirement: the frame keeps the last displayed image as-is —
+  // never a follow-up `play`, never an empty `strategy_bin`.
   if (result.macsStopped.length > 0) {
-    void stopPlaybackForMacKeys(result.macsStopped, { playFallback: false })
-      .then(() => {
-        console.log(
-          "[album-delete-sync] strategy_stop dispatched macs=%s",
-          result.macsStopped.join(","),
-        );
-      })
-      .catch((err) => {
-        console.warn("[album-delete-sync] strategy_stop failed", err);
-      });
+    void (async () => {
+      for (const key of result.macsStopped) {
+        const mac = resolveMqttHardwareMac(key) ?? normalizeMac(key);
+        if (!mac) continue;
+        await notifyFrameStopPlayback(mac, { playFallback: false }).catch((err) => {
+          console.warn("[album-delete-sync] strategy_stop failed", mac, err);
+        });
+      }
+      console.log(
+        "[album-delete-sync] strategy_stop dispatched macs=%s",
+        result.macsStopped.join(","),
+      );
+    })();
   }
 
   for (const key of result.macsUpdated) {
@@ -210,7 +213,7 @@ export function syncSlideshowDelete(
       intervalMinutes: playlist.intervalMinutes,
       begintime: now.toString(),
       endtime,
-      idle: 0,
+      idle: 1,
       imageUrls,
     }).catch((e) => {
       console.warn("[album-delete-sync] mqtt strategy failed", key, e);

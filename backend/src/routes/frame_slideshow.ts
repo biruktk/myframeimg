@@ -18,6 +18,9 @@ function normalizeMacKey(raw: string): string {
   }
 }
 
+/** Idempotency guard: MAC -> last successful strategy_stop dispatch (ms). */
+const lastStopTimestamp: Record<string, number> = {};
+
 function isPairingTokenValid(req: Request): boolean {
   const expected = String(process.env.FRAME_PAIRING_TOKEN ?? "").trim();
   if (!expected) return true;
@@ -48,6 +51,9 @@ export function frameSlideshowRouter(): Router {
       res.status(400).json({ ok: false, error: "invalid_mac", message: "MAC / device identifier too short" });
       return;
     }
+    // Canonical Wi-Fi STA MAC — the slideshow record and the MQTT topic must both
+    // use this (not the caller's BLE MAC) so the manifest lookup matches.
+    const publishMac = resolveMqttHardwareMac(macKey) ?? macKey;
 
     const body = req.body as {
       imageIds?: unknown;
@@ -95,7 +101,7 @@ export function frameSlideshowRouter(): Router {
         }
       }
     }
-    const idle = Math.round(Number(body.idle ?? 0));
+    const idle = Math.round(Number(body.idle ?? 1));
     const skipPlay = body.skipPlay === true || String(body.skipPlay ?? "").trim() === "true";
 
     if (intervalMinutes < 1 || !isFinite(intervalMinutes)) {
@@ -114,7 +120,7 @@ export function frameSlideshowRouter(): Router {
     // In that case a fresh send must play immediately instead of waiting a full
     // interval (otherwise a delete → re-send stalls the panel for up to
     // intervalMinutes on the stale fallback image).
-    const priorSlideshow = db.read().slideshowsByBleMac?.[macKey];
+    const priorSlideshow = db.read().slideshowsByBleMac?.[publishMac];
     const hadActiveSlideshow =
       !!priorSlideshow && (priorSlideshow.imageIds ?? []).length > 0;
     const effectiveSkipPlay = skipPlay;
@@ -129,7 +135,7 @@ export function frameSlideshowRouter(): Router {
         count: ids.length,
         skipPlay: effectiveSkipPlay,
       });
-      draft.slideshowsByBleMac[macKey] = {
+      draft.slideshowsByBleMac[publishMac] = {
         imageIds: ids,
         intervalMinutes,
         strategy: isRandomStrategy(strategy) ? 2 : 1,
@@ -161,7 +167,6 @@ export function frameSlideshowRouter(): Router {
       .filter((url): url is string => url !== null);
 
     if (isMqttConnected()) {
-      const publishMac = resolveMqttHardwareMac(macKey);
       if (publishMac) {
         publishStrategyCommand(publishMac, {
           strategy: isRandomStrategy(strategy) ? 2 : 1,
@@ -172,10 +177,10 @@ export function frameSlideshowRouter(): Router {
           imageUrls,
         })
           .then(() => {
-            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", macKey, imageUrls.length);
+            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", publishMac, imageUrls.length);
           })
           .catch((e) => {
-            console.warn("[slideshow] mqtt strategy failed", macKey, e);
+            console.warn("[slideshow] mqtt strategy failed", publishMac, e);
           });
       } else {
         console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
@@ -186,6 +191,56 @@ export function frameSlideshowRouter(): Router {
 
     notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
     res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
+  });
+
+  // GET /api/v1/frames/manifest?mac=<MAC> — firmware polls this over plain HTTP
+  // (http://{host}:{port}{path}) and expects data.imgList as a flat array of
+  // relative /frame-media/*.bin paths. No auth: the frame has no tokens.
+  router.get("/v1/frames/manifest", (req: Request, res: Response) => {
+    const macRaw = String(req.query.mac ?? "").trim();
+    // Resolve to the STA MAC so a BLE-MAC query still matches the STA-keyed
+    // slideshow record.
+    const macKey = macRaw ? (resolveMqttHardwareMac(macRaw) ?? normalizeMacKey(macRaw)) : "";
+    const data = db.read();
+    const slideshow = macKey ? (data.slideshowsByBleMac?.[macKey] ?? null) : null;
+    const ids: string[] = Array.isArray(slideshow?.imageIds) ? slideshow.imageIds : [];
+
+    const host = process.env.PUBLIC_BASE_URL
+      ? new URL(process.env.PUBLIC_BASE_URL).hostname
+      : "myframe.ink";
+    const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80;
+
+    const seen = new Set<string>();
+    const imgList: string[] = [];
+    const MAX_BODY_BYTES = 16384;
+    let bodyBytes = 200; // approx fixed JSON overhead
+
+    for (const id of ids) {
+      const upload =
+        data.uploads.find((u) => u.id === id) ??
+        data.uploads.find((u) => u.filename === id);
+      const filename = String(upload?.filename ?? "").trim();
+      if (!filename) continue;
+
+      // Firmware constraints: .bin suffix, <=128 bytes, [a-zA-Z0-9_.-] only.
+      const basename = filename.split("/").pop() ?? "";
+      if (!basename.endsWith(".bin")) continue;
+      if (Buffer.byteLength(basename, "utf8") > 128) continue;
+      if (!/^[a-zA-Z0-9_.-]+$/.test(basename)) continue;
+      if (seen.has(basename)) continue; // unique
+      seen.add(basename);
+
+      const rel = `/frame-media/${basename}`;
+      if (bodyBytes + Buffer.byteLength(rel, "utf8") > MAX_BODY_BYTES) break;
+      bodyBytes += Buffer.byteLength(rel, "utf8");
+      imgList.push(rel);
+    }
+
+    res.json({
+      code: 0,
+      msg: "success",
+      data: { host, port, imgList },
+    });
   });
 
   // DELETE /api/frames/:mac/slideshow 2014 clear slideshow, stop playlist (strategy_stop only, no fallback play).
@@ -225,11 +280,22 @@ export function frameSlideshowRouter(): Router {
     const exclude = Array.isArray(req.body?.excludeImageIds)
       ? (req.body.excludeImageIds as unknown[]).map((x) => String(x))
       : [];
+    // IDEMPOTENCY GUARD: if the frame already has no active slideshow AND we
+    // dispatched a strategy_stop to this MAC within the last 10s, skip the
+    // duplicate MQTT dispatch (back-to-back album deletes / double taps).
+    const currentSlideshow = db.read().slideshowsByBleMac?.[macKey];
+    const lastStopAt = lastStopTimestamp[macKey] ?? 0;
+    const alreadyStopped = !currentSlideshow && Date.now() - lastStopAt < 5_000;
+    if (alreadyStopped) {
+      res.json({ ok: true, macKey, stopped: false, reason: "already_stopped" });
+      return;
+    }
     void stopPlaybackForMacKeys([macKey], {
       playFallback: false,
       excludeTokens: new Set(exclude.filter(Boolean)),
     })
       .then((result) => {
+        lastStopTimestamp[macKey] = Date.now();
         res.json({ ok: true, macKey, ...result });
       })
       .catch((err) => {

@@ -2,14 +2,16 @@ import { Router } from "express";
 import { db } from "../db/store";
 import { requirePairingToken } from "../middleware/security";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
+import { isFirmwareVersionNewer, latestFirmwareRelease } from "../data/firmware_releases";
 import {
   classifyFramePresence,
+  DEFAULT_UTC_OFFSET_MINUTES,
   FRAME_HEART_INTERVAL_MS,
   getFrame,
   HEARTBEAT_ONLINE_MS,
   HEARTBEAT_TIMEOUT_MS,
-  isFrameMqttOnline,
   isMqttConnected,
+  isTimeInWindow,
   normalizeMac,
   publishLoginAck,
   publishRetainedMqttConfig,
@@ -18,17 +20,22 @@ import {
 
 export const framePairingRouter = Router();
 
-function isInSleepWindow(paired: { sleepConfig?: { enabled: boolean; startTime: string; endTime: string } } | undefined): boolean {
-  if (!paired?.sleepConfig?.enabled) return false;
-  var now = new Date();
-  var curMin = now.getHours() * 60 + now.getMinutes();
-  var startParts = paired.sleepConfig.startTime.split(":").map(Number);
-  var endParts = paired.sleepConfig.endTime.split(":").map(Number);
-  if (startParts.length < 2 || endParts.length < 2) return false;
-  var startMin = startParts[0] * 60 + startParts[1];
-  var endMin = endParts[0] * 60 + endParts[1];
-  if (startMin <= endMin) return curMin >= startMin && curMin < endMin;
-  return curMin >= startMin || curMin < endMin;
+/**
+ * True when the current UTC instant falls inside the frame's configured sleep /
+ * offline window. Consults the active `wifi_sleep` config first, then the legacy
+ * `sleepConfig` (ntp) path. Both store LOCAL wall-clock times + a timezone offset.
+ */
+function isInSleepWindow(data: ReturnType<typeof db.read>, mac: string, paired: {
+  sleepConfig?: { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number };
+} | undefined): boolean {
+  var ws = data.wifiSleepByBleMac?.[normalizeMac(mac)];
+  if (ws && Number(ws.mode) !== 0 && ws.begintime && ws.endtime) {
+    return isTimeInWindow(new Date(), ws.begintime, ws.endtime, ws.timezoneOffsetMinutes ?? DEFAULT_UTC_OFFSET_MINUTES);
+  }
+  if (paired?.sleepConfig?.enabled) {
+    return isTimeInWindow(new Date(), paired.sleepConfig.startTime, paired.sleepConfig.endTime, paired.sleepConfig.timezoneOffsetMinutes ?? DEFAULT_UTC_OFFSET_MINUTES);
+  }
+  return false;
 }
 
 function frameStatusPayload(macRaw: string) {
@@ -52,24 +59,31 @@ function frameStatusPayload(macRaw: string) {
   var now = Date.now();
   var lastSeen = rec?.lastSeen ?? paired?.lastSeenAtMs ?? 0;
   var ageMs = lastSeen > 0 ? now - lastSeen : null;
-  var memAlive = isFrameMqttOnline(mac);
-  var dbAlive =
-    paired != null &&
-    paired.wifiStatus !== "never_provisioned" &&
-    paired.lastSeenAtMs != null &&
-    now - paired.lastSeenAtMs < HEARTBEAT_TIMEOUT_MS;
-  var frameReachable = memAlive || dbAlive;
-  var sleeping = isInSleepWindow(paired);
+  // Reachability is driven by the real last-heartbeat age — NOT the DB
+  // `lastSeenAtMs`, which photo-upload/send paths also touch and would
+  // otherwise make an offline frame appear `mqtt_connected`.
+  var frameAlive = ageMs != null && ageMs < HEARTBEAT_TIMEOUT_MS;
+  var frameReachable = frameAlive;
+  // Only report "sleeping" when the frame is actually alive and inside its
+  // scheduled sleep window (never for a dead/offline frame).
+  var sleeping = frameAlive && isInSleepWindow(data, mac, paired);
   var presence = classifyFramePresence(ageMs, sleeping);
   // App "online" means reachable (fresh or idle within grace), not only last 2 minutes.
   var onlineForApp = presence !== "offline";
   var apiMqtt = isMqttConnected();
+  var delivery = rec?.delivery ?? paired?.deliveryProgress ?? null;
+  var fw = paired?.firmwareVersion || null;
+  var latest = latestFirmwareRelease();
+  var hasUpdate = !!fw && isFirmwareVersionNewer(latest.version, fw);
 
   return {
     ok: true,
     device_id: mac,
     online: onlineForApp,
     sleeping: sleeping,
+    // Frame Wi-Fi is currently powered down inside its sleep/offline window.
+    is_network_sleeping: sleeping,
+    isNetworkSleeping: sleeping,
     status: presence,
     reachable: frameReachable || presence === "idle" || presence === "online",
     app_paired: !!paired,
@@ -92,6 +106,20 @@ function frameStatusPayload(macRaw: string) {
     displayCode: rec?.lastResult ?? null,
     lastAction: rec?.lastAction ?? null,
     displayed: rec?.displayed ?? false,
+    delivery_status: delivery?.status ?? null,
+    delivery_total: delivery?.total ?? null,
+    delivery_downloaded: delivery?.downloaded ?? null,
+    delivery_failed: delivery?.failed ?? null,
+    delivery_updated_at_ms: delivery?.updatedAtMs ?? null,
+    delivery_stopped_at_ms: delivery?.stoppedAtMs ?? null,
+    delivery_ack_msgid: delivery?.ackMsgid ?? null,
+    firmwareVersion: fw,
+    fpgaVersion: paired?.fpgaVersion ?? null,
+    ota: {
+      hasUpdate: hasUpdate,
+      currentVersion: fw,
+      latestVersion: latest.version,
+    },
   };
 }
 
@@ -102,6 +130,36 @@ framePairingRouter.get("/frames/:mac/status", function(req, res) {
     return;
   }
   res.json(payload);
+});
+
+/** Firmware + OTA availability for a frame (dynamic, no hardcoded versions). */
+framePairingRouter.get("/frames/:mac/firmware", function(req, res) {
+  var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+  if (!mac) {
+    res.status(400).json({ ok: false, error: "invalid_mac" });
+    return;
+  }
+  var data = db.read();
+  var macNorm = normalizeMac(mac);
+  var paired = data.frames.find(function (f) {
+    return [f.id, f.bleMac, f.stationMac ?? ""].some(function (id) {
+      if (!id) return false;
+      if (resolveMqttHardwareMac(id) === mac) return true;
+      return normalizeMac(id) === macNorm || normalizeMac(id).slice(0, 10) === macNorm.slice(0, 10);
+    });
+  });
+  var fw = paired?.firmwareVersion || null;
+  var latest = latestFirmwareRelease();
+  res.json({
+    ok: true,
+    currentVersion: fw,
+    latestVersion: latest.version,
+    hasUpdate: !!fw && isFirmwareVersionNewer(latest.version, fw),
+    fpgaVersion: paired?.fpgaVersion ?? null,
+    releaseNotes: latest.releaseNotes,
+    frameOnline: paired?.wifiStatus === "online",
+    otaStatus: paired?.ota?.status ?? "idle",
+  });
 });
 
 framePairingRouter.post("/frames/:mac/login-ack", requirePairingToken, async function(req, res) {

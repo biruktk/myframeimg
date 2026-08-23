@@ -20,6 +20,27 @@ export const FRAME_HEART_INTERVAL_MS = 10 * 60 * 1000; // observed ~10 min
 export const HEARTBEAT_ONLINE_MS = Math.round(FRAME_HEART_INTERVAL_MS * 1.5); // 15 min — fresh
 export const HEARTBEAT_TIMEOUT_MS = FRAME_HEART_INTERVAL_MS * 3; // 30 min — still reachable
 
+/** Firmware uplink ACK progress states surfaced to client apps. */
+export type DeliveryProgress = {
+  status:
+    | "pending"
+    | "received_by_device"
+    | "downloading"
+    | "download_completed"
+    | "displayed"
+    | "failed"
+    | "stopping_received"
+    | "stopped";
+  total?: number;
+  downloaded?: number;
+  failed?: number;
+  /** Epoch ms when a `strategy_stop_ack` (result 113) confirmed the halt. */
+  stoppedAtMs?: number;
+  /** The downlink `msgid` this ACK acknowledged (traceability). */
+  ackMsgid?: string;
+  updatedAtMs: number;
+};
+
 export type FrameRecord = {
   lastSeen: number;
   status: "online" | "offline";
@@ -31,7 +52,54 @@ export type FrameRecord = {
   storageTotal?: number;
   storageUsed?: number;
   config: Record<string, unknown>;
+  delivery?: DeliveryProgress;
 };
+
+/** Default user timezone offset when the client does not send one (UTC+8). */
+export const DEFAULT_UTC_OFFSET_MINUTES = 8 * 60;
+
+/** Clamp a client-supplied timezone offset (minutes east of UTC) to a sane range. */
+export function normalizeTzOffset(raw: unknown): number {
+  const n = Number(raw);
+  if (Number.isFinite(n) && n >= -14 * 60 && n <= 14 * 60) return n;
+  return DEFAULT_UTC_OFFSET_MINUTES;
+}
+
+/** Convert an HH:MM wall-clock string to minutes since midnight. */
+export function hhmmToMinutes(hhmm: string): number {
+  const parts = String(hhmm ?? "").split(":").map(Number);
+  if (parts.length < 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return 0;
+  return parts[0] * 60 + parts[1];
+}
+
+/**
+ * Convert a local wall-clock HH:MM into UTC HH:MM given the user's timezone
+ * offset (minutes east of UTC). Firmware consumes `beginTime`/`endTime` in UTC.
+ */
+export function localToUtcHHMM(localHHMM: string, offsetMinutes: number): string {
+  const trimmed = String(localHHMM ?? "").trim();
+  if (!/^\d{2}:\d{2}$/.test(trimmed)) return trimmed || "00:00";
+  let total = hhmmToMinutes(trimmed) - offsetMinutes;
+  total = ((total % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(total / 60)).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+/**
+ * True when `nowUtc` falls inside the [startHHMM, endHHMM] wall-clock window in
+ * the given timezone offset. Supports windows that wrap midnight (start > end).
+ */
+export function isTimeInWindow(nowUtc: Date, startHHMM: string, endHHMM: string, offsetMinutes: number): boolean {
+  const utcMin = nowUtc.getUTCHours() * 60 + nowUtc.getUTCMinutes();
+  let local = utcMin + offsetMinutes;
+  local = ((local % 1440) + 1440) % 1440;
+  const startMin = hhmmToMinutes(startHHMM);
+  const endMin = hhmmToMinutes(endHHMM);
+  if (startMin === endMin) return false;
+  if (startMin < endMin) return local >= startMin && local < endMin;
+  return local >= startMin || local < endMin;
+}
 
 const DEFAULT_MQTT_BROKER_HOST = "47.76.164.162";
 const DEFAULT_MQTT_BROKER_PORT = 1883;
@@ -39,6 +107,15 @@ const DEFAULT_MQTT_USER = "device";
 const DEFAULT_MQTT_PASS = "framepass2026";
 
 const frames = new Map<string, FrameRecord>();
+
+/**
+ * Latest confirmed `strategy_stop_ack` (result 113) downlink msgid per MAC.
+ * The firmware re-transmits earlier `strategy_bin_ack` / `download_complete`
+ * batches on its heartbeat, so any ACK whose `ack_msgid` predates the stop
+ * must not downgrade a `stopped` delivery state back to `downloading`.
+ */
+const stopAckMsgidByMac = new Map<string, string>();
+
 let mqttClient: mqtt.MqttClient | null = null;
 
 let onPlayAckCb: ((mac: string) => void) | null = null;
@@ -51,23 +128,48 @@ export function normalizeMac(mac: string): string {
   return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
 }
 
-/** Resolve any device identifier to its 12‑hex station (MQTT) MAC.
- *  - If `raw` is already a 12‑hex string, return it.
- *  - Otherwise try to look up the frame in the DB by its BLE MAC or ID
- *    and return the stored `stationMac` (the Wi‑Fi MAC used for MQTT).
+/** Add a numeric offset to a 12‑hex MAC (ESP32 convention: Wi‑Fi STA = BLE + 2). */
+function addMacOffset(mac: string, offset: number): string {
+  const v = parseInt(mac, 16);
+  if (!Number.isFinite(v)) return mac;
+  return (v + offset).toString(16).toUpperCase().padStart(12, "0");
+}
+
+/** Resolve any device identifier to its 12‑hex station (MQTT/Wi‑Fi STA) MAC.
+ *  - A BLE MAC (or any 12‑hex that is not the station MAC) is resolved to the
+ *    frame's Wi‑Fi STA MAC (ESP32: BLE + 2) so downlinks land on the topic the
+ *    frame actually subscribes to: `/inkjoyap/{STA_MAC}`.
+ *  - Non‑12‑hex identifiers are looked up in the DB (bleMac/id → stationMac).
  */
 export function resolveMqttHardwareMac(raw: string): string | null {
   const m = String(raw ?? "").trim();
   if (!m) return null;
-  if (/^[A-F0-9]{12}$/i.test(m)) return m.toUpperCase();
+  const upper = normalizeMac(m);
 
   const data = db.read();
-  const norm = normalizeMac(m);
-  const match = data.frames.find(function (f) {
-    return normalizeMac(f.bleMac) === norm || normalizeMac(f.id) === norm;
-  });
-  if (match?.stationMac) return match.stationMac;
-  return m.toUpperCase();
+
+  if (!/^[A-F0-9]{12}$/.test(upper)) {
+    const match = data.frames.find(function (f) {
+      return normalizeMac(f.bleMac) === upper || normalizeMac(f.id) === upper;
+    });
+    if (match?.stationMac) return normalizeMac(match.stationMac);
+    return upper;
+  }
+
+  // A MAC is "known as the Wi‑Fi STA MAC" when an online frame's MQTT clientid
+  // matches it (the `frames` map is keyed by clientid), or an active slideshow
+  // is keyed by it (the app uses the STA MAC for slideshow routes). We do NOT
+  // trust DB `stationMac` here — it is sometimes the BLE MAC (bad pairing data).
+  const knownStation = (mac: string): boolean =>
+    frames.has(mac) ||
+    Object.prototype.hasOwnProperty.call(data.slideshowsByBleMac ?? {}, mac);
+
+  // Prefer whichever of {upper, upper±2} is the known STA MAC. ESP32 uses a
+  // deterministic BLE↔STA offset of 2, so this resolves BLE → STA both ways.
+  if (knownStation(upper)) return upper;
+  if (knownStation(addMacOffset(upper, 2))) return addMacOffset(upper, 2);
+  if (knownStation(addMacOffset(upper, -2))) return addMacOffset(upper, -2);
+  return upper;
 }
 
 function mqttDebugRx(topic: string, raw: Buffer) {
@@ -104,6 +206,28 @@ function mqttDebugTx(topic: string, payloadJson: string) {
   );
 }
 
+/** Coerce an unknown uplink value to an optional finite count. */
+function asCount(raw: unknown): number | undefined {
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/**
+ * True when an uplink ACK belongs to a `strategy_bin` dispatched BEFORE the
+ * most recent confirmed `strategy_stop` — i.e. a stale re-transmission that
+ * must not overwrite a `stopped` delivery state.
+ */
+function isStalePreStopAck(mac: string, ackMsgidRaw: unknown): boolean {
+  const stopMsgid = stopAckMsgidByMac.get(mac);
+  if (!stopMsgid) return false;
+  const ackMsgid = String(ackMsgidRaw ?? "");
+  if (!ackMsgid) return false;
+  const a = Number(ackMsgid);
+  const s = Number(stopMsgid);
+  if (!Number.isFinite(a) || !Number.isFinite(s)) return false;
+  return a < s;
+}
+
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
@@ -114,16 +238,32 @@ function handleMessage(topic: string, raw: Buffer) {
   }
 
   const tail = topic.split("/").pop() ?? "";
-  const clientid =
-    (typeof data.clientid === "string" && data.clientid) ||
-    (typeof data.stamac === "string" && data.stamac) ||
-    tail;
 
-  const mac =
-    resolveMqttHardwareMac(clientid) ??
-    resolveMqttHardwareMac(tail) ??
-    (normalizeMac(clientid).length === 12 ? normalizeMac(clientid) : null);
-  if (!mac) return;
+  // The MQTT `clientid` field is the frame's Wi-Fi STA MAC (authoritative).
+  // Use it verbatim — do NOT run it through resolveMqttHardwareMac, which can
+  // otherwise resolve a STA MAC back to its BLE sibling (±2) via stale slideshow
+  // keys and mis-key the in-memory `frames` map.
+  const clientidRaw =
+    typeof data.clientid === "string" ? normalizeMac(data.clientid) : "";
+
+  let mac = clientidRaw.length === 12 ? clientidRaw : "";
+  if (!mac) {
+    const stamacRaw = typeof data.stamac === "string" ? data.stamac : tail;
+    mac =
+      resolveMqttHardwareMac(stamacRaw) ??
+      resolveMqttHardwareMac(tail) ??
+      "";
+    if (mac.length !== 12) {
+      for (const seg of topic.split("/")) {
+        const n = normalizeMac(seg);
+        if (/^[A-F0-9]{12}$/.test(n)) {
+          mac = resolveMqttHardwareMac(n) ?? n;
+          break;
+        }
+      }
+    }
+  }
+  if (mac.length !== 12) return;
 
   const action = String(data.action ?? "");
   appendFrameLog({
@@ -182,7 +322,95 @@ function handleMessage(topic: string, raw: Buffer) {
       rec.lastUploadMs = rec.lastSeen;
     }
     if (action === "play_ack" && rec.displayed === true) {
+      rec.delivery = { status: "displayed", updatedAtMs: Date.now() };
       if (onPlayAckCb) onPlayAckCb(mac);
+    }
+  }
+
+  // Hardware uplink ACK tracking — firmware reports true device progress.
+  if (action === "strategy_bin_ack") {
+    if (!isStalePreStopAck(mac, d?.ack_msgid)) {
+      const ackMsgid = typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined;
+      const res = Number(result);
+      if (res === 113) {
+        // result 113 = completed/rendered — advance past download to displayed,
+        // preserving the download counts recorded by the earlier download_complete.
+        rec.delivery = {
+          status: "displayed",
+          total: rec.delivery?.total,
+          downloaded: rec.delivery?.downloaded,
+          failed: rec.delivery?.failed,
+          ackMsgid,
+          updatedAtMs: Date.now(),
+        };
+      } else {
+        // result 100 (or any other) = command received.
+        rec.delivery = {
+          status: "received_by_device",
+          total: asCount(d?.total ?? d?.totalCount),
+          downloaded: asCount(d?.downloaded ?? d?.success ?? 0),
+          failed: asCount(d?.failed ?? d?.fail ?? 0),
+          ackMsgid,
+          updatedAtMs: Date.now(),
+        };
+      }
+    }
+  } else if (action === "download_complete") {
+    if (!isStalePreStopAck(mac, d?.ack_msgid)) {
+      const total = asCount(d?.total ?? d?.totalCount) ?? 0;
+      const downloaded = asCount(d?.downloaded ?? d?.success) ?? 0;
+      const reused = asCount(d?.reused) ?? 0;
+      const failed = asCount(d?.failed ?? d?.fail) ?? 0;
+      // Images may already be cached on the device (`reused`), in which case
+      // nothing is newly downloaded but the download is still complete.
+      const present = downloaded + reused;
+      let dlStatus: DeliveryProgress["status"];
+      if (failed > 0) dlStatus = "failed";
+      else if (total > 0 && present >= total) dlStatus = "download_completed";
+      else dlStatus = "downloading";
+      rec.delivery = {
+        status: dlStatus,
+        total,
+        downloaded,
+        failed,
+        ackMsgid: typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined,
+        updatedAtMs: Date.now(),
+      };
+    }
+  } else if (action === "refresh_complete" || action === "refresh_ack") {
+    rec.delivery = {
+      status: "displayed",
+      total: rec.delivery?.total,
+      downloaded: rec.delivery?.downloaded,
+      failed: rec.delivery?.failed,
+      updatedAtMs: Date.now(),
+    };
+  } else if (action === "download_failed" || (action === "play_ack" && rec.displayed === false && Number(result) === 104)) {
+    rec.delivery = {
+      status: "failed",
+      total: asCount(d?.total ?? d?.totalCount ?? rec.delivery?.total),
+      downloaded: asCount(d?.downloaded ?? d?.success ?? rec.delivery?.downloaded),
+      failed: asCount(d?.failed ?? d?.fail ?? rec.delivery?.failed),
+      updatedAtMs: Date.now(),
+    };
+  } else if (action === "strategy_stop_ack") {
+    const res = Number(result);
+    const ackMsgid = typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined;
+    if (res === 113) {
+      // Halt confirmed by the frame: mark the active loop stopped/inactive.
+      if (ackMsgid) stopAckMsgidByMac.set(mac, ackMsgid);
+      rec.delivery = {
+        status: "stopped",
+        stoppedAtMs: Date.now(),
+        ackMsgid,
+        updatedAtMs: Date.now(),
+      };
+    } else if (res === 100) {
+      rec.delivery = {
+        status: "stopping_received",
+        ackMsgid,
+        updatedAtMs: Date.now(),
+      };
     }
   }
   db.mutate((draft) => {
@@ -209,12 +437,19 @@ function handleMessage(topic: string, raw: Buffer) {
     }
     match.wifiStatus = "online";
     match.lastSeenAtMs = Date.now();
-    if (!match.stationMac) match.stationMac = mac;
+    // The MQTT `clientid` (`mac`) is the authoritative Wi‑Fi STA MAC.
+    match.stationMac = mac;
+    // The heart/login `stamac` field carries the BLE MAC (colons included).
+    const bleMac = normalizeMac(String(data.stamac ?? ""));
+    if (bleMac.length === 12) match.bleMac = bleMac;
+    if (rec.delivery) match.deliveryProgress = { ...rec.delivery };
     if (d && typeof d === "object") {
       const bat = Number(d.battery);
       if (Number.isFinite(bat) && bat >= 0) match.battery = bat;
       const fv = normalizeFirmwareVersion(String(d.version ?? d.ver ?? ""));
       if (fv && fv !== "0.0.0") match.firmwareVersion = fv;
+      const fg = normalizeFirmwareVersion(String(d.fpga_ver ?? d.fpgaVersion ?? ""));
+      if (fg && fg !== "0.0.0") match.fpgaVersion = fg;
       if (d.wifi_name && typeof d.wifi_name === "string") match.wifiSsid = d.wifi_name;
     }
   });
@@ -267,6 +502,10 @@ export function startFrameMqtt(): void {
     console.log("[frame-mqtt] connected");
     mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
+    });
+    // Firmware publishes ACKs on /inkjoyap/{MAC}/ack as well as /device/report/{MAC}.
+    mqttClient?.subscribe("/inkjoyap/+/ack", { qos: 1 }, (err) => {
+      if (err) console.error("[frame-mqtt] subscribe /inkjoyap/+/ack error", err);
     });
   });
 
@@ -338,11 +577,13 @@ export type FramePresence = "online" | "idle" | "sleeping" | "offline";
 
 /** Classify presence from last-seen age + optional scheduled sleep. */
 export function classifyFramePresence(ageMs: number | null | undefined, sleeping = false): FramePresence {
-  if (sleeping) return "sleeping";
+  // A frame that has not heartbeated within the grace window is offline,
+  // regardless of any scheduled sleep window.
   if (ageMs == null || !Number.isFinite(ageMs) || ageMs < 0) return "offline";
+  if (ageMs >= HEARTBEAT_TIMEOUT_MS) return "offline";
+  if (sleeping) return "sleeping";
   if (ageMs < HEARTBEAT_ONLINE_MS) return "online";
-  if (ageMs < HEARTBEAT_TIMEOUT_MS) return "idle";
-  return "offline";
+  return "idle";
 }
 
 function mqttBrokerDefaults() {
@@ -524,14 +765,18 @@ export function publishMqttAction(macRaw: string, action: string, msgid?: string
   });
 }
 
-/** Send sleep schedule to the frame via ntp config. */
+/** Send sleep schedule to the frame via ntp config (legacy `config` action). */
 export function publishSleepConfig(
   macRaw: string,
-  config: { enabled: boolean; startTime: string; endTime: string },
+  config: { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number },
   msgid?: string,
 ): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
+  // Firmware expects sleep_start/sleep_end in UTC.
+  const offset = normalizeTzOffset(config.timezoneOffsetMinutes);
+  const sleepStart = localToUtcHHMM(config.startTime, offset);
+  const sleepEnd = localToUtcHHMM(config.endTime, offset);
   // Retained so reconnecting frames keep the latest sleep/wake preference.
   return publishJson(
     "/inkjoyap/" + mac,
@@ -542,8 +787,8 @@ export function publishSleepConfig(
       data: {
         ntp: {
           enable: config.enabled ? 1 : 0,
-          sleep_start: config.startTime,
-          sleep_end: config.endTime,
+          sleep_start: sleepStart,
+          sleep_end: sleepEnd,
         },
       },
     },
@@ -609,33 +854,31 @@ export function publishStrategyCommand(
 
   // Use configured host or default to myframe.ink
   const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink");
-  const port = 443; // Always HTTPS per V1.3 spec
+  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
 
-  // Ensure begintime/endtime are in HH:MM format per V1.3 spec
-  const begintime = formatTimeHHMM(config.begintime);
-  const endtime = formatTimeHHMM(config.endtime);
+  // The firmware `begintime`/`endtime` is a DAILY playback window ("HH:MM").
+  // Firmware confirmed: "00:00"–"00:00" is a ZERO-length window and the frame
+  // never rotates; "00:00"–"23:59" means "all day". Clients were sending a
+  // playback *duration* as epoch-ms, which `formatTimeHHMM` turned into a
+  // wall-clock window the frame was outside of. Always send the full-day form
+  // so playlists start and rotate immediately.
+  const begintime = "00:00";
+  const endtime = "23:59";
 
   const data: Record<string, unknown> = {
-    idle: config.idle,
-    strategy: config.strategy,
+    idle: Number(config.idle),
+    strategy: Number(config.strategy),
     host,
     port,
-    path: "/api/v1/frames/manifest",
-    updatetype: "2",
+    path: `/api/v1/frames/manifest?mac=${mac}`,
+    updatetype: 2,
     begintime,
     endtime,
-    intervalminutes: config.intervalMinutes,
+    intervalminutes: Number(config.intervalMinutes),
     updatedays: 1,
     updatetimelist: [] as string[],
   };
 
-  // Include full image manifest for playlist/slideshow sync
-  if (config.imageUrls && config.imageUrls.length > 0) {
-    data.imgs = config.imageUrls.map((url, idx) => ({
-      imgid: `playlist_${Date.now()}_${idx}`,
-      imgurl: url,
-    }));
-  }
 
   return publishJson("/inkjoyap/" + mac, {
     msgid: msgid ?? Date.now().toString(),
@@ -657,11 +900,36 @@ export function publishFrameCommand(
 ): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
+
+  // Firmware protocol normalization before relay:
+  // - wifi_sleep   -> camelCase beginTime/endTime (accept lowercase client input too)
+  // - strategy_bin -> strict integer numerics (updatetype, idle, strategy, ...)
+  let outData: Record<string, unknown> = data;
+  if (action === "wifi_sleep") {
+    // Strictly camelCase per firmware: only mode/beginTime/endTime, no legacy keys.
+    // Client sends the user's LOCAL HH:mm + timezone offset; firmware consumes UTC.
+    const offset = normalizeTzOffset(data.timezoneOffsetMinutes ?? data.tzOffsetMinutes ?? data.utcOffsetMinutes);
+    outData = {
+      mode: Number(data.mode ?? 0),
+      beginTime: localToUtcHHMM(formatTimeHHMM(String(data.beginTime ?? data.begintime ?? "")), offset),
+      endTime: localToUtcHHMM(formatTimeHHMM(String(data.endTime ?? data.endtime ?? "")), offset),
+    };
+  } else if (action === "strategy_bin") {
+    outData = {
+      ...data,
+      idle: Number(data.idle ?? 1),
+      strategy: Number(data.strategy ?? 1),
+      updatetype: Number(data.updatetype ?? 2),
+      intervalminutes: Number(data.intervalminutes ?? data.intervalMinutes ?? 1),
+      updatedays: Number(data.updatedays ?? 1),
+    };
+  }
+
   return publishJson(`/inkjoyap/${mac}`, {
     msgid: msgid ?? Date.now().toString(),
     action: action,
     stamac: mac,
-    data: data,
+    data: outData,
   });
 }
 
@@ -682,22 +950,22 @@ export function publishMqttConfig(
   const mid = msgid ?? Date.now().toString();
   const strategy = Number(config.data.strategy ?? 1);
   const intervalMinutes = Number(config.data.intervalMinutes ?? 10);
-  const endtime = formatTimeHHMM(String(config.data.endtime ?? ""));
-  const begintime = formatTimeHHMM(String(config.data.begintime ?? ""));
+  const endtime = "23:59";
+  const begintime = "00:00";
   const host = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink";
-  const port = 443;
+  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
 
   return publishJson(`/inkjoyap/${mac}`, {
     msgid: mid,
     action: config.action,
     stamac: mac,
     data: {
-      idle: config.data.idle ?? 0,
+      idle: Number(config.data.idle ?? 1),
       strategy,
       host,
       port,
-      path: "/api/v1/frames/manifest",
-      updatetype: "2",
+      path: `/api/v1/frames/manifest?mac=${mac}`,
+      updatetype: 2,
       begintime,
       endtime,
       intervalminutes: intervalMinutes,

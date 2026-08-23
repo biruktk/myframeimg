@@ -25,7 +25,12 @@ export const WECHAT_SUBSCRIBE_TEMPLATES = {
   MEMBER_JOIN: "b-ygJwQ_PU6yVkbijtyMQu9XjD3F5Doquuu-r1PhXdM",
 } as const;
 
-let cachedAccessToken: { token: string; expiresAtMs: number } | null = null;
+// ── In-memory access_token cache (7000s effective TTL, refresh ~200s early)
+//    with promise-deduplication so concurrent sends share ONE refresh call.
+let cachedToken: string | null = null;
+let tokenExpiresAtMs = 0;
+let tokenRefreshPromise: Promise<string | null> | null = null;
+
 const recentSubDispatches = new Map<string, number>();
 
 /** Helper to record persistent in-app notifications into db.data.notifications */
@@ -55,29 +60,85 @@ export function recordAppNotification(opts: {
   });
 }
 
-async function getWechatAccessToken(): Promise<string | null> {
-  if (cachedAccessToken && Date.now() < cachedAccessToken.expiresAtMs) {
-    return cachedAccessToken.token;
-  }
+/** Increment the user's subscription-message quota (+1 per granted action). */
+export function incrementWechatMessageQuota(userId: string | null | undefined): void {
+  const id = String(userId || "").trim();
+  if (!id) return;
+  db.mutate((draft) => {
+    const user = draft.users.find((u) => u.id === id);
+    if (!user) return;
+    user.wechatMessageQuota = Math.min(50, (user.wechatMessageQuota ?? 0) + 1);
+  });
+}
+
+/** Force quota to 0 (WeChat errcode 43101 = no remaining subscription quota). */
+export function resetWechatMessageQuota(userId: string | null | undefined): void {
+  const id = String(userId || "").trim();
+  if (!id) return;
+  db.mutate((draft) => {
+    const user = draft.users.find((u) => u.id === id);
+    if (!user) return;
+    user.wechatMessageQuota = 0;
+  });
+}
+
+/** Decrement quota by 1 after a successful send (never below 0). */
+export function decrementWechatMessageQuota(userId: string | null | undefined): void {
+  const id = String(userId || "").trim();
+  if (!id) return;
+  db.mutate((draft) => {
+    const user = draft.users.find((u) => u.id === id);
+    if (!user) return;
+    user.wechatMessageQuota = Math.max(0, (user.wechatMessageQuota ?? 0) - 1);
+  });
+}
+
+async function fetchFreshAccessToken(): Promise<string | null> {
   const appid = env("WECHAT_MINI_APPID") || env("WECHAT_APPID");
   const secret = env("WECHAT_MINI_APPSECRET") || env("WECHAT_APPSECRET");
   if (!appid || !secret) return null;
-
   try {
-    const url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=" + encodeURIComponent(appid) + "&secret=" + encodeURIComponent(secret);
+    const url =
+      "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=" +
+      encodeURIComponent(appid) +
+      "&secret=" +
+      encodeURIComponent(secret);
     const res = await fetch(url);
-    const json = (await res.json()) as { access_token?: string; expires_in?: number };
+    const json = (await res.json()) as {
+      access_token?: string;
+      expires_in?: number;
+    };
     if (json.access_token) {
-      cachedAccessToken = {
-        token: json.access_token,
-        expiresAtMs: Date.now() + Math.max(600, (json.expires_in ?? 7200) - 300) * 1000,
-      };
+      const ttlSec = Math.max(600, json.expires_in ?? 7200);
+      // Cache for ~7000s of the 7200s lifetime; refresh once we are within
+      // 200s of expiry so a stale token is never used.
+      cachedToken = json.access_token;
+      tokenExpiresAtMs = Date.now() + (ttlSec - 200) * 1000;
       return json.access_token;
     }
+    console.warn("[wechat-subscribe] token fetch returned no access_token:", json);
   } catch (e) {
     console.error("[wechat-subscribe] failed to fetch access_token:", e);
   }
   return null;
+}
+
+async function getWechatAccessToken(): Promise<string | null> {
+  if (cachedToken && Date.now() < tokenExpiresAtMs) {
+    return cachedToken;
+  }
+  // Mutex: concurrent callers share the single in-flight refresh.
+  if (tokenRefreshPromise) return tokenRefreshPromise;
+  tokenRefreshPromise = fetchFreshAccessToken().finally(() => {
+    tokenRefreshPromise = null;
+  });
+  return tokenRefreshPromise;
+}
+
+/** Invalidate the cached token immediately (errcode 40001 invalid token). */
+export function invalidateWechatAccessToken(): void {
+  cachedToken = null;
+  tokenExpiresAtMs = 0;
 }
 
 export async function sendWechatSubscribeMessage(opts: {
@@ -85,6 +146,7 @@ export async function sendWechatSubscribeMessage(opts: {
   templateId: string;
   page?: string;
   data: Record<string, { value: string }>;
+  quotaUserId?: string;
 }): Promise<{ errcode: number; errmsg: string }> {
   if (!opts.touser || !opts.templateId) {
     console.log("[WECHAT DISPATCH ERROR] No openid found for frame owner / uploader!");
@@ -105,13 +167,26 @@ export async function sendWechatSubscribeMessage(opts: {
     }
   }
 
+  // Quota gate: skip the WeChat API entirely when the user has no granted
+  // subscription quota (0 delay, 0 error noise).
+  const quotaUserId = String(opts.quotaUserId ?? "").trim();
+  if (quotaUserId) {
+    const user = db.read().users.find((u) => u.id === quotaUserId);
+    const quota = user?.wechatMessageQuota ?? 0;
+    if (quota <= 0) {
+      console.log("[WECHAT QUOTA] skipping push (quota=0) for user:", quotaUserId, "openid:", opts.touser);
+      return { errcode: 0, errmsg: "quota_skipped" };
+    }
+  }
+
   console.log("[WECHAT DISPATCH] Sending to openid:", opts.touser, "Template:", opts.templateId);
 
-  try {
+  const doSend = async (): Promise<{ errcode: number; errmsg: string }> => {
     const token = await getWechatAccessToken();
     if (!token) return { errcode: -2, errmsg: "access_token_failed" };
 
-    const url = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=" + encodeURIComponent(token);
+    const url =
+      "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=" + encodeURIComponent(token);
     const body = {
       touser: opts.touser,
       template_id: opts.templateId,
@@ -128,8 +203,38 @@ export async function sendWechatSubscribeMessage(opts: {
     const json = (await res.json()) as { errcode?: number; errmsg?: string; msgid?: number };
     const errcode = json.errcode ?? -3;
     const errmsg = json.errmsg ?? "unknown_error";
-    console.log("[WECHAT NOTIFY DISPATCH RESULT]:", { errcode, errmsg, msgid: json.msgid, openid: opts.touser, templateId: opts.templateId });
+    console.log("[WECHAT NOTIFY DISPATCH RESULT]:", {
+      errcode,
+      errmsg,
+      msgid: json.msgid,
+      openid: opts.touser,
+      templateId: opts.templateId,
+    });
     return { errcode, errmsg };
+  };
+
+  try {
+    let result = await doSend();
+    if (result.errcode === 0) {
+      // Success → consume one unit of granted quota.
+      if (quotaUserId) decrementWechatMessageQuota(quotaUserId);
+      return result;
+    }
+    if (result.errcode === 43101) {
+      // Subscription quota exhausted → zero it and stop trying (clean).
+      console.warn("[WECHAT QUOTA] errcode 43101 — subscription quota exhausted for:", opts.touser);
+      if (quotaUserId) resetWechatMessageQuota(quotaUserId);
+      return result;
+    }
+    if (result.errcode === 40001) {
+      // Invalid access_token → invalidate cache and retry ONCE.
+      console.warn("[WECHAT TOKEN] errcode 40001 — invalidating cached token and retrying once");
+      invalidateWechatAccessToken();
+      result = await doSend();
+      if (result.errcode === 0 && quotaUserId) decrementWechatMessageQuota(quotaUserId);
+      return result;
+    }
+    return result;
   } catch (e) {
     console.error("[wechat-subscribe] network error:", e);
     return { errcode: -4, errmsg: String(e) };
@@ -142,6 +247,7 @@ export async function notifyPhotoUploaded(opts: {
   openId?: string;
   photoName: string;
   frameName: string;
+  quotaUserId?: string;
 }): Promise<void> {
   const data = db.read();
   let openId = opts.openId;
@@ -179,8 +285,6 @@ export async function notifyPhotoUploaded(opts: {
       type: isPlaylist ? "playlist_started" : "photo_uploaded",
       title: isPlaylist ? "Playlist Started" : "Photo Sent",
       body: isPlaylist ? ("Playlist " + photoClean + " sent to frame " + frameClean) : ("Photo " + photoClean + " sent to frame " + frameClean),
-
-
     });
   }
 
@@ -197,6 +301,7 @@ export async function notifyPhotoUploaded(opts: {
     touser: openId,
     templateId: WECHAT_SUBSCRIBE_TEMPLATES.UPLOAD,
     page: "pages/index/index",
+    quotaUserId: opts.quotaUserId || targetUser?.id,
     data: {
       thing1: { value: cleanThing(opts.photoName, "轮播列表", 20) },
       phrase2: { value: phrase2Value },
@@ -252,6 +357,7 @@ export async function notifyMemberJoined(opts: {
     touser: openId,
     templateId: WECHAT_SUBSCRIBE_TEMPLATES.MEMBER_JOIN,
     page: "pages/family/index",
+    quotaUserId: opts.targetUserId,
     data: {
       thing1: { value: cleanThing(opts.albumName, "家庭相册", 20) },
       name2: { value: cleanThing(opts.joinerName, "家庭成员", 20) },
