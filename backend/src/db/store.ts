@@ -132,6 +132,8 @@ export type MyframeDb = {
     appLastPlatform?: string;
     /** E.164 phone number (from WeChat getPhoneNumber). */
     phone?: string;
+    /** User profile avatar URL. */
+    avatarUrl?: string;
     /** Apple Sign-In `sub` (user identifier). */
     appleSub?: string;
     /** FCM push notification tokens (registered by mobile apps). */

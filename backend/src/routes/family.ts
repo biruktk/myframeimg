@@ -461,7 +461,7 @@ familyRouter.get("/family/members", (_req, res) => {
       userId: m.userId,
       name: u?.name ?? "(unknown)",
       email: u?.email ?? "",
-      avatar: null as string | null,
+      avatar: u?.avatarUrl ?? null,
       role: m.role,
     };
   });

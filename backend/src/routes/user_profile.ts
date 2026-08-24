@@ -1,4 +1,8 @@
+import express from "express";
 import { Router, Request, Response } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { db, type MyframeDb } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
 import { normalizeMac } from "../services/frame_mqtt";
@@ -14,6 +18,33 @@ import {
 } from "../services/frame_user_roles";
 
 export const userProfileRouter = Router();
+
+// Multer config for avatar upload (max 2MB, image only)
+const avatarUploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads", "avatars");
+if (!fs.existsSync(avatarUploadDir)) fs.mkdirSync(avatarUploadDir, { recursive: true });
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, avatarUploadDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".jpg";
+    cb(null, `avatar_${Date.now()}${ext}`);
+  },
+});
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files allowed"));
+    }
+    cb(null, true);
+  },
+});
+
+// Serve uploaded avatars statically
+userProfileRouter.use("/avatars", (req, res, next) => {
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  next();
+}, express.static(avatarUploadDir));
 
 userProfileRouter.use((req, res, next) => {
   // Only guard /api/v1/user/* — do NOT block other /api routes mounted later
@@ -76,6 +107,7 @@ userProfileRouter.get("/v1/user/profile", (req: Request, res: Response) => {
       nickname: account.name || "User",
       email: account.email,
       phone: account.phone ?? null,
+      avatarUrl: account.avatarUrl ?? null,
       role: account.familyGroupId ? "member" : "owner",
     },
     configurations_persisted: persisted,
@@ -140,6 +172,9 @@ userProfileRouter.put("/v1/user/profile", (req: Request, res: Response) => {
     if (typeof body.nickname === "string" && body.nickname.trim()) {
       u.name = body.nickname.trim();
     }
+    if (typeof body.avatarUrl === "string") {
+      u.avatarUrl = body.avatarUrl.trim() || null;
+    }
     const nextConfigs = { ...(u.syncConfigurations ?? {}) };
     if (typeof body.language === "string") nextConfigs.language = body.language;
     if (typeof body.theme === "string") nextConfigs.theme = body.theme;
@@ -202,6 +237,46 @@ userProfileRouter.put("/v1/user/profile", (req: Request, res: Response) => {
     ok: true,
     sync_version: next?.syncVersion ?? 0,
     sync_updated_at: next?.syncUpdatedAtMs ?? Date.now(),
+    profile: {
+      nickname: next?.name || "User",
+      email: next?.email,
+      avatarUrl: next?.avatarUrl ?? null,
+    },
+  });
+});
+
+
+/** POST /api/v1/user/avatar — upload user profile avatar. */
+userProfileRouter.post("/v1/user/avatar", avatarUpload.single("avatar"), (req: Request, res: Response) => {
+  const user = authed(req);
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ ok: false, error: "no_file" });
+    return;
+  }
+  // Construct public URL
+  const publicBase = process.env.PUBLIC_BASE_URL || `https://${req.get("host")}`;
+  const avatarUrl = `${publicBase}/api/v1/user/avatars/${file.filename}`;
+
+  const data = db.read();
+  const idx = data.users.findIndex((u) => u.id === user.userId);
+  if (idx === -1) {
+    res.status(404).json({ ok: false, error: "user_not_found" });
+    return;
+  }
+
+  db.mutate((draft) => {
+    const u = draft.users[idx]!;
+    u.avatarUrl = avatarUrl;
+    bumpUserSyncVersion(u);
+  });
+
+  const updated = db.read().users.find((u) => u.id === user.userId);
+  res.json({
+    ok: true,
+    avatarUrl,
+    sync_version: updated?.syncVersion ?? 0,
+    sync_updated_at: updated?.syncUpdatedAtMs ?? Date.now(),
   });
 });
 
