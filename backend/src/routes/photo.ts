@@ -80,6 +80,17 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
       const skipPlay = String(req.body.skip_play ?? "").trim() === "true";
+      // Source isolation: explicit source from the client wins; otherwise fall
+      // back to legacy defaults (skipPlay=true ⇒ playlist cast; else direct cast).
+      const rawSource = String(req.body.source ?? "").trim();
+      const allowedSources = ["personal_album", "playlist", "direct_cast", "guest_invite", "ai_generated"] as const;
+      type UploadSource = (typeof allowedSources)[number];
+      const source: UploadSource = (allowedSources as readonly string[]).includes(rawSource)
+        ? (rawSource as UploadSource)
+        : (skipPlay ? "playlist" : "direct_cast");
+      const playlistId = String(req.body.playlist_id ?? "").trim() || undefined;
+      const albumId = String(req.body.album_id ?? "").trim() || undefined;
+      const displayName = String(req.body.display_name ?? "").trim() || undefined;
 
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -232,6 +243,12 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           uploaderUserId: verifyUserJwtBearer(req)?.userId,
           sourcePlatform:
             platformFromRequest(req, verifyUserJwtBearer(req)?.platform) || undefined,
+          // Source isolation: playlist photos are tagged so the user's general
+          // gallery feed can exclude them.
+          source: source,
+          playlistId: source === "playlist" ? playlistId : undefined,
+          albumId: source === "personal_album" ? albumId : undefined,
+          displayName: displayName,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);
@@ -326,6 +343,18 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       const slideshowStyle = String(req.body.slideshow_style ?? "").trim();
       const transport = String(req.body.transport ?? "").trim();
       const skipPlay = String(req.body.skip_play ?? "").trim() === "true";
+      // Source isolation: explicit source from the client wins; otherwise fall
+      // back to legacy defaults (skipPlay=true ⇒ playlist cast; else direct cast;
+      // guest invite routes tag as guest_invite).
+      const rawSource = String(req.body.source ?? "").trim();
+      const allowedSources = ["personal_album", "playlist", "direct_cast", "guest_invite", "ai_generated"] as const;
+      type UploadSource = (typeof allowedSources)[number];
+      const source: UploadSource = (allowedSources as readonly string[]).includes(rawSource)
+        ? (rawSource as UploadSource)
+        : (skipPlay ? "playlist" : "direct_cast");
+      const playlistId = String(req.body.playlist_id ?? "").trim() || undefined;
+      const albumId = String(req.body.album_id ?? "").trim() || undefined;
+      const displayName = String(req.body.display_name ?? "").trim() || undefined;
 
       const buf = fs.readFileSync(file.path);
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -477,6 +506,12 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
           uploaderUserId: verifyUserJwtBearer(req)?.userId,
           sourcePlatform:
             platformFromRequest(req, verifyUserJwtBearer(req)?.platform) || undefined,
+          // Source isolation: playlist photos are tagged so the user's general
+          // gallery feed can exclude them.
+          source: source,
+          playlistId: source === "playlist" ? playlistId : undefined,
+          albumId: source === "personal_album" ? albumId : undefined,
+          displayName: displayName,
         });
         if (draft.uploads.length > 2000) {
           draft.uploads = draft.uploads.slice(0, 2000);

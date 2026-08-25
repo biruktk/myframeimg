@@ -100,6 +100,9 @@ userPortalRouter.get("/user/dashboard", (req: Request, res: Response) => {
       if (auth.platform && u.sourcePlatform && u.sourcePlatform !== auth.platform) {
         return false;
       }
+      // Strict playlist/personal isolation on the dashboard as well.
+      const source = (u as { source?: string }).source;
+      if (source === "playlist" || source === "direct_cast") return false;
       return frameIds.includes(u.deviceId);
     })
     .sort((a, b) => b.atMs - a.atMs);
@@ -270,6 +273,12 @@ userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
       if (auth.platform && u.sourcePlatform && u.sourcePlatform !== auth.platform) {
         return false;
       }
+      // Strict playlist/personal isolation: photos uploaded for a playlist
+      // (source === "playlist") belong to the playlist view, NOT to the
+      // user's general photo gallery. Without this filter, every photo sent
+      // via a playlist also appears in the Personal Album grid.
+      const source = (u as { source?: string }).source;
+      if (source === "playlist" || source === "direct_cast") return false;
       if (u.uploaderUserId === auth.userId) return true;
       const d = String(u.deviceId || "");
       const hex = d.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
@@ -289,6 +298,102 @@ userPortalRouter.get("/user/gallery", (req: Request, res: Response) => {
         atMs: u.atMs,
         deviceId: u.deviceId,
         filename: u.filename,
+      };
+    });
+  res.json({ ok: true, photos });
+});
+
+/**
+ * GET /api/v1/playlists/:id/photos — strictly returns photos that were
+ * uploaded with source === "playlist" AND playlistId === :id (or that are
+ * referenced by the playlist's photoIds array). Excludes personal_album
+ * and direct_cast uploads so a playlist view never bleeds into the
+ * user's general gallery feed.
+ */
+userPortalRouter.get("/v1/playlists/:id/photos", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const id = String(req.params.id || "").trim();
+  if (!id) {
+    res.status(400).json({ ok: false, error: "missing_playlist_id" });
+    return;
+  }
+  if (!playlistEditableByUser(id, auth.userId)) {
+    res.status(403).json({ ok: false, error: "playlist_not_editable" });
+    return;
+  }
+  const data = db.read();
+  const pl = data.playlists.find((p) => p.id === id);
+  const photoIds = new Set(Array.isArray(pl?.photoIds) ? pl!.photoIds : []);
+  const mediaBase = String(
+    process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL || "",
+  ).replace(/\/$/, "");
+  const photos = data.uploads
+    .filter((u) => {
+      const source = (u as { source?: string }).source;
+      const playlistId = (u as { playlistId?: string }).playlistId;
+      if (source === "playlist" && playlistId === id) return true;
+      if (photoIds.has(u.id)) return true;
+      return false;
+    })
+    .sort((a, b) => b.atMs - a.atMs)
+    .map((u) => {
+      const p = u.previewFilename
+        ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
+        : `/frame-media/${encodeURIComponent(u.filename)}`;
+      return {
+        id: u.id,
+        url: mediaBase ? `${mediaBase}${p}` : p,
+        thumbUrl: mediaBase ? `${mediaBase}${p}` : p,
+        atMs: u.atMs,
+        deviceId: u.deviceId,
+        filename: u.filename,
+        source: (u as { source?: string }).source ?? "playlist",
+        playlistId: (u as { playlistId?: string }).playlistId ?? id,
+      };
+    });
+  res.json({ ok: true, playlistId: id, photos });
+});
+
+/**
+ * GET /api/v1/albums/personal/photos — strictly returns photos that were
+ * uploaded with source === "personal_album" for the requesting user.
+ * Excludes playlist and direct_cast uploads so a Personal Album view
+ * never bleeds into playlist photos.
+ */
+userPortalRouter.get("/v1/albums/personal/photos", (req: Request, res: Response) => {
+  const auth = authUser(req, res);
+  if (!auth) return;
+  const albumIdRaw = String(req.query.album_id ?? "").trim();
+  const data = db.read();
+  const mediaBase = String(
+    process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL || "",
+  ).replace(/\/$/, "");
+  const photos = data.uploads
+    .filter((u) => {
+      const source = (u as { source?: string }).source;
+      if (source !== "personal_album") return false;
+      if (u.uploaderUserId !== auth.userId) return false;
+      if (albumIdRaw) {
+        const uAlbumId = (u as { albumId?: string }).albumId ?? "";
+        if (uAlbumId !== albumIdRaw) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => b.atMs - a.atMs)
+    .map((u) => {
+      const p = u.previewFilename
+        ? `/frame-media/${encodeURIComponent(u.previewFilename)}`
+        : `/frame-media/${encodeURIComponent(u.filename)}`;
+      return {
+        id: u.id,
+        url: mediaBase ? `${mediaBase}${p}` : p,
+        thumbUrl: mediaBase ? `${mediaBase}${p}` : p,
+        atMs: u.atMs,
+        deviceId: u.deviceId,
+        filename: u.filename,
+        source: (u as { source?: string }).source ?? "personal_album",
+        albumId: (u as { albumId?: string }).albumId ?? albumIdRaw,
       };
     });
   res.json({ ok: true, photos });
@@ -385,6 +490,12 @@ userPortalRouter.post(
     const uploadId = `gal_${now}_${Math.random().toString(16).slice(2, 10)}`;
     const deviceId = String(req.body?.device_id ?? "").trim() || null;
     const filename = path.basename(file.filename || "photo.jpg");
+    const sourceRaw = String(req.body?.source ?? "").trim();
+    const source: "personal_album" | "playlist" | "direct_cast" =
+      sourceRaw === "playlist" ? "playlist"
+      : sourceRaw === "direct_cast" ? "direct_cast"
+      : "personal_album";
+    const albumId = String(req.body?.album_id ?? "").trim() || undefined;
     db.mutate((draft) => {
       draft.uploads.unshift({
         id: uploadId,
@@ -398,6 +509,10 @@ userPortalRouter.post(
         deliveryMode: "gallery_sync",
         deliveryCheckedAtMs: now,
         uploaderUserId: auth.userId,
+        // Gallery uploads are personal_album by default so they remain visible
+        // in the user's Personal gallery feed.
+        source: source,
+        albumId: source === "personal_album" ? albumId : undefined,
       });
       if (draft.uploads.length > 2000) {
         draft.uploads = draft.uploads.slice(0, 2000);

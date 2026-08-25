@@ -276,6 +276,22 @@ export type MyframeDb = {
     uploaderUserId?: string;
     /** App origin of the upload, for gallery isolation across UnionID-shared accounts. */
     sourcePlatform?: string;
+    /**
+     * Logical upload context so playlist photos can be excluded from the user's
+     * general photo gallery:
+     *   - "personal_album" — saved to the user's personal album (Personal Gallery)
+     *   - "playlist"       — sent as part of a named playlist (should NOT appear in Personal)
+     *   - "direct_cast"    — quick cast / single send, also NOT in Personal (default)
+     *   - "guest_invite"   — uploaded by a guest via an invite link
+     *   - "ai_generated"   — produced by AI silent mode
+     */
+    source?: "personal_album" | "playlist" | "direct_cast" | "guest_invite" | "ai_generated";
+    /** Set when source === "playlist"; refers to data.playlists[].id. */
+    playlistId?: string;
+    /** Set when source === "personal_album"; refers to a named personal album id. */
+    albumId?: string;
+    /** Client-supplied display name / timestamped file identifier. */
+    displayName?: string;
   }>;
   playlists: Array<{
     id: string;
