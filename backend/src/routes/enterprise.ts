@@ -6,7 +6,7 @@ import path from "path";
 import { db } from "../db/store";
 import { hasScope, authenticateEnterpriseApiKey, generateEnterpriseApiKey, hashApiSecret } from "../services/enterprise_api_keys";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
-import { sendPushToFrameSubscribers } from "../services/firebase_admin";
+import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 
 function readBearer(req: express.Request): string | null {
   const raw = String(req.header("authorization") ?? "").trim();
@@ -298,7 +298,10 @@ export function enterpriseRouter(uploadDir: string, publicBaseUrl: string): Rout
 
     // Notify frame subscribers
     for (const deviceId of accepted) {
-      sendPushToFrameSubscribers(deviceId, "New Photo from Guest", "A guest has shared a photo to your frame.");
+      sendLocalizedPushToFrameSubscribers(
+        deviceId,
+        (s) => ({ title: s.guestPhotoTitle, body: s.guestPhotoBody }),
+      );
     }
 
     res.status(202).json({

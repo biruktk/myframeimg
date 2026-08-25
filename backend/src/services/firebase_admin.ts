@@ -6,6 +6,56 @@ import path from "path";
 
 import { db } from "../db/store";
 
+// —— Localized push notification strings ——
+
+type PushStrings = {
+  photoUploadedTitle: string;
+  photoUploadedBody: (mac: string) => string;
+  guestPhotoTitle: string;
+  guestPhotoBody: string;
+  slideshowUpdatedTitle: string;
+  slideshowUpdatedBody: (name: string) => string;
+};
+
+const pushStringsEn: PushStrings = {
+  photoUploadedTitle: "New Photo Uploaded",
+  photoUploadedBody: (mac) =>
+    `A photo was uploaded to your frame${mac ? " (" + mac + ")" : ""}.`,
+  guestPhotoTitle: "New Photo from Guest",
+  guestPhotoBody: "A guest has shared a photo to your frame.",
+  slideshowUpdatedTitle: "Playlist Updated",
+  slideshowUpdatedBody: (name) =>
+    `Frame "${name}" started playing new playlist.`,
+};
+
+const pushStringsZh: PushStrings = {
+  photoUploadedTitle: "新照片已上传",
+  photoUploadedBody: (mac) =>
+    `一张新照片已成功上传至您的相框${mac ? "（" + mac + "）" : ""}。`,
+  guestPhotoTitle: "收到访客照片",
+  guestPhotoBody: "有访客向您的相框分享了一张照片。",
+  slideshowUpdatedTitle: "播放列表已更新",
+  slideshowUpdatedBody: (name) => `相框「${name}」已开始轮播新照片。`,
+};
+
+function getPushStrings(lang?: string): PushStrings {
+  const code = String(lang ?? "").toLowerCase().trim();
+  if (code === "zh" || code.startsWith("zh-")) return pushStringsZh;
+  return pushStringsEn;
+}
+
+/**
+ * Resolve the preferred language for a user from their syncConfigurations.
+ * Falls back to 'en'.
+ */
+function getUserLanguage(userId: string): string {
+  const data = db.read();
+  const user = data.users.find((u) => u.id === userId);
+  const lang = user?.syncConfigurations?.language;
+  if (lang && typeof lang === "string") return lang.toLowerCase().trim();
+  return "en";
+}
+
 let _app: App | null = null;
 
 function getServiceAccountPath(): string | null {
@@ -68,6 +118,76 @@ function findFrameForDevice(frameDeviceId: string) {
     if (norm && normalizeDeviceKey(f.bleMac ?? "") === norm) return true;
     return false;
   });
+}
+
+/**
+ * Convenience: send a localized push to a single user.
+ * Looks up the user's preferred language from syncConfigurations.
+ */
+export async function sendLocalizedPushToUser(
+  userId: string,
+  buildStrings: (strings: PushStrings) => { title: string; body: string },
+): Promise<void> {
+  const lang = getUserLanguage(userId);
+  const strings = getPushStrings(lang);
+  const { title, body } = buildStrings(strings);
+  return sendPushToUser(userId, title, body);
+}
+
+/**
+ * Convenience: send a localized push to all frame subscribers.
+ * Each recipient gets the push in their own preferred language.
+ */
+export function sendLocalizedPushToFrameSubscribers(
+  frameDeviceId: string,
+  buildStrings: (strings: PushStrings) => { title: string; body: string },
+  options?: string | FramePushOptions,
+): void {
+  const opts: FramePushOptions =
+    typeof options === "string" ? { excludeUserId: options } : options ?? {};
+
+  const data = db.read();
+  const frame = findFrameForDevice(frameDeviceId);
+  const userIds = new Set<string>();
+
+  if (frame?.ownerUserId) userIds.add(frame.ownerUserId);
+  for (const uid of frame?.sharedToUserIds ?? []) {
+    if (uid) userIds.add(uid);
+  }
+  const owner = frame?.ownerUserId
+    ? data.users.find((u) => u.id === frame.ownerUserId)
+    : undefined;
+  if (owner?.familyGroupId) {
+    const group = data.familyGroups?.find((g) => g.id === owner.familyGroupId);
+    if (group) {
+      for (const m of group.members) {
+        if (m.userId) userIds.add(m.userId);
+      }
+    }
+  }
+  if (opts.alsoNotifyUserId) userIds.add(opts.alsoNotifyUserId);
+  if (opts.excludeUserId) userIds.delete(opts.excludeUserId);
+  userIds.delete("");
+
+  if (userIds.size === 0) {
+    console.warn(
+      `[push] no recipients for device=${frameDeviceId} frameFound=${Boolean(frame)}`,
+    );
+    return;
+  }
+
+  console.log(
+    `[push] device=${frameDeviceId} frame=${frame?.id ?? "none"} recipients=${[...userIds].join(",")}`,
+  );
+
+  for (const uid of userIds) {
+    const lang = getUserLanguage(uid);
+    const strings = getPushStrings(lang);
+    const { title, body } = buildStrings(strings);
+    sendPushToUser(uid, title, body).catch((e) =>
+      console.error(`[push] sendPushToUser ${uid} failed:`, e),
+    );
+  }
 }
 
 export async function sendPushToUser(

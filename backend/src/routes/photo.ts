@@ -8,7 +8,7 @@ import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
 import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
-import { sendPushToFrameSubscribers } from "../services/firebase_admin";
+import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
   initQueue,
@@ -260,10 +260,13 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         }
 
         const uploaderId = verifyUserJwtBearer(req)?.userId;
-        sendPushToFrameSubscribers(
-          deviceId || db.read().device.id,
-          "New Photo Uploaded",
-          `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
+        const devId = deviceId || db.read().device.id;
+        sendLocalizedPushToFrameSubscribers(
+          devId,
+          (s) => ({
+            title: s.photoUploadedTitle,
+            body: s.photoUploadedBody(deviceId ?? ""),
+          }),
           { alsoNotifyUserId: uploaderId },
         );
         notifyPhotoUploaded({
@@ -501,10 +504,13 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         }
 
         const uploaderId = verifyUserJwtBearer(req)?.userId;
-        sendPushToFrameSubscribers(
-          deviceId || db.read().device.id,
-          "New Photo Uploaded",
-          `A photo was uploaded to your frame${deviceId ? " (" + deviceId + ")" : ""}.`,
+        const devId = deviceId || db.read().device.id;
+        sendLocalizedPushToFrameSubscribers(
+          devId,
+          (s) => ({
+            title: s.photoUploadedTitle,
+            body: s.photoUploadedBody(deviceId ?? ""),
+          }),
           { alsoNotifyUserId: uploaderId },
         );
         notifyPhotoUploaded({
