@@ -6,6 +6,7 @@ import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
 import {
   isMqttConnected,
+  publishPlayImage,
   publishStrategyCommand,
   resolveMqttHardwareMac,
 } from "../services/frame_mqtt";
@@ -58,15 +59,35 @@ export function frameSlideshowRouter(): Router {
     const body = req.body as {
       imageIds?: unknown;
       intervalMinutes?: unknown;
+      /** Optional explicit unit tag — "second" | "minute". Default: "minute". */
+      intervalUnit?: unknown;
+      /** Seconds-since-epoch or minutes-since-epoch, per `intervalUnit`. */
+      interval?: unknown;
       strategy?: unknown;
       begintime?: unknown;
       endtime?: unknown;
       idle?: unknown;
       skipPlay?: unknown;
+      /** When true (default), publish first photo immediately after the
+       *  strategy_bin MQTT command so the device shows the first image right
+       *  away instead of waiting for the first interval tick. */
+      immediatePlay?: unknown;
     };
     const rawIds = body.imageIds;
     const ids = Array.isArray(rawIds) ? rawIds.map((x) => String(x ?? "").trim()).filter((x) => x.length > 0) : [];
-    let intervalMinutes = Math.round(Number(body.intervalMinutes));
+    // Interval unit normalisation: support both `intervalMinutes` (legacy)
+    // and the explicit `interval` + `intervalUnit` pair. Default to MINUTES
+    // for backwards compatibility with existing Flutter/Mini-Program clients.
+    const intervalUnit = String(body.intervalUnit) === "second" ? "second" : "minute";
+    let intervalMinutes = 0;
+    if (typeof body.intervalMinutes === "number" || typeof body.intervalMinutes === "string") {
+      intervalMinutes = Math.round(Number(body.intervalMinutes));
+    } else if (typeof body.interval === "number" || typeof body.interval === "string") {
+      const raw = Math.round(Number(body.interval));
+      intervalMinutes = intervalUnit === "second"
+        ? Math.max(1, Math.round(raw / 60))
+        : Math.max(1, raw);
+    }
     if (Number.isNaN(intervalMinutes) || intervalMinutes < 1) {
       if (u) {
         const usr = db.read().users.find(x => x.id === u.userId);
@@ -78,6 +99,8 @@ export function frameSlideshowRouter(): Router {
     if (Number.isNaN(intervalMinutes) || intervalMinutes < 1) {
       intervalMinutes = 10;
     }
+    const immediatePlay =
+      body.immediatePlay === true || String(body.immediatePlay ?? "").trim() === "true" || !body.skipPlay;
     let strategy = Math.round(Number(body.strategy ?? 0));
     if (strategy !== 1 && strategy !== 2) {
       if (u) {
@@ -178,6 +201,20 @@ export function frameSlideshowRouter(): Router {
         })
           .then(() => {
             console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", publishMac, imageUrls.length);
+            // Immediate first-photo push: when the client asked for the first
+            // image to render now (skipPlay=false OR immediatePlay=true), fire a
+            // dedicated `play` command so the device refreshes without waiting
+            // for the first interval timer tick. We do this AFTER strategy_bin
+            // so the firmware has the manifest it needs to resolve the URL.
+            if (immediatePlay && imageUrls.length > 0) {
+              const firstUrl = imageUrls[0];
+              const publicHost = process.env.PUBLIC_BASE_URL
+                ? new URL(process.env.PUBLIC_BASE_URL).hostname
+                : "myframe.ink";
+              publishPlayImage(publishMac, firstUrl, publicHost)
+                .then(() => console.log("[slideshow] immediate first-photo pushed mac=%s", publishMac))
+                .catch((e) => console.warn("[slideshow] immediate first-photo failed", publishMac, e));
+            }
           })
           .catch((e) => {
             console.warn("[slideshow] mqtt strategy failed", publishMac, e);
@@ -190,7 +227,7 @@ export function frameSlideshowRouter(): Router {
     }
 
     notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
+    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, intervalUnit, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay, immediatePlay });
   });
 
   // GET /api/v1/frames/manifest?mac=<MAC> — firmware polls this over plain HTTP

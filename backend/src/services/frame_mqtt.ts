@@ -865,6 +865,17 @@ export function publishStrategyCommand(
   const begintime = "00:00";
   const endtime = "23:59";
 
+  // Interval unit contract:
+  //   - intervalminutes  → firmware-conventional field, in MINUTES (legacy)
+  //   - interval_sec     → explicit SECONDS, set to the same value converted
+  //     from minutes. This lets the device's NVS refresh timer use either
+  //     field and immediately honour the requested cadence without the device
+  //     falling back to a hard-coded 5-minute deep-sleep wake cycle.
+  //   - global_interval   → mirror in seconds for cross-checking with the
+  //     manifest endpoint.
+  const intervalMinutes = Math.max(1, Math.round(Number(config.intervalMinutes) || 1));
+  const intervalSec = Math.max(60, intervalMinutes * 60);
+
   const data: Record<string, unknown> = {
     idle: Number(config.idle),
     strategy: Number(config.strategy),
@@ -874,7 +885,9 @@ export function publishStrategyCommand(
     updatetype: 2,
     begintime,
     endtime,
-    intervalminutes: Number(config.intervalMinutes),
+    intervalminutes: intervalMinutes,
+    interval_sec: intervalSec,
+    global_interval: intervalSec,
     updatedays: 1,
     updatetimelist: [] as string[],
   };
@@ -949,7 +962,8 @@ export function publishMqttConfig(
   if (!mac) return Promise.reject(new Error("invalid_mac"));
   const mid = msgid ?? Date.now().toString();
   const strategy = Number(config.data.strategy ?? 1);
-  const intervalMinutes = Number(config.data.intervalMinutes ?? 10);
+  const intervalMinutes = Math.max(1, Math.round(Number(config.data.intervalMinutes ?? 10)));
+  const intervalSec = Math.max(60, intervalMinutes * 60);
   const endtime = "23:59";
   const begintime = "00:00";
   const host = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink";
@@ -969,6 +983,8 @@ export function publishMqttConfig(
       begintime,
       endtime,
       intervalminutes: intervalMinutes,
+      interval_sec: intervalSec,
+      global_interval: intervalSec,
       updatedays: 1,
       updatetimelist: [] as string[],
     },
