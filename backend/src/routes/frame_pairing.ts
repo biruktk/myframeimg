@@ -76,6 +76,13 @@ function frameStatusPayload(macRaw: string) {
   var latest = latestFirmwareRelease();
   var hasUpdate = !!fw && isFirmwareVersionNewer(latest.version, fw);
 
+  // Provisioning-in-progress hint: the frame is paired in the DB but has never
+  // sent an MQTT heartbeat (lastSeen is 0) and is not currently alive. Clients
+  // should treat this as "still connecting to Wi-Fi" and keep polling rather
+  // than flashing a "Frame not paired" error dialog during the first ~30s after
+  // BluFi provisioning completes.
+  var provisioning = !frameAlive && !!paired && lastSeen === 0;
+
   return {
     ok: true,
     device_id: mac,
@@ -87,6 +94,9 @@ function frameStatusPayload(macRaw: string) {
     status: presence,
     reachable: frameReachable || presence === "idle" || presence === "online",
     app_paired: !!paired,
+    // True when the frame was provisioned via BluFi but hasn't heartbeated yet.
+    // Clients should keep polling (not show error) during the provisioning window.
+    provisioning: provisioning,
     battery: rec?.battery ?? paired?.battery ?? 100,
     wifi: paired?.wifiSsid ?? data.device.room ?? "",
     storage_used_mb: rec?.storageUsed ?? paired?.storageUsed ?? Math.round(data.device.usedBytes / 1024 / 1024),
