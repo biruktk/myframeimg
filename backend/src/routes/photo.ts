@@ -1,13 +1,13 @@
 import { incrementWechatMessageQuota, notifyPhotoUploaded } from "../services/wechat_subscribe_notify";
 import crypto from "crypto";
-import express from "express";
+import express, { Request, Response } from "express";
 import fs from "fs";
 import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
-import { isMqttConnected, publishPlayImage, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, publishPlayImage, publishStrategyCommand, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -646,6 +646,160 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       buffer: buf,
     } as Express.Multer.File;
     await handleFrameUpload(req, res, deviceId);
+  });
+
+  /**
+   * POST /api/frames/:mac/cast/batch — unified multi-image direct cast.
+   *
+   * The system share extensions (iOS Share Extension, Android Share Intent)
+   * upload multiple photos then call this endpoint to trigger an immediate
+   * device-side rotation. Unlike /api/frames/:mac/slideshow, this endpoint:
+   *
+   *   1. Does NOT persist a persistent slideshow record — it is a one-shot
+   *      "play this batch now" call. The persistent slideshow flow remains
+   *      in the /slideshow route.
+   *   2. Verifies every photo_id exists in `data.uploads` before dispatching.
+   *   3. Publishes `strategy_bin` (with the full image URL manifest) AND
+   *      **immediately** publishes a `play` command for `photo_ids[0]` so
+   *      the device wakes up with the first shared image without waiting
+   *      for the first interval tick. This is the critical fix for the
+   *      system-share multi-image flow where the share UI used to close
+   *      before the device received its first rotation.
+   *
+   * Body: { photo_ids: string[], interval?: number, intervalUnit?: "second"|"minute",
+   *         strategy?: 1|2, immediate_play?: boolean, idle?: number,
+   *         begintime?: string, endtime?: string, source?: string }
+   */
+  router.post("/frames/:mac/cast/batch", requirePairingToken, async (req: Request, res: Response) => {
+    const mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
+    if (!mac) {
+      res.status(400).json({ ok: false, error: "invalid_mac" });
+      return;
+    }
+    const body = (req.body ?? {}) as {
+      photo_ids?: unknown;
+      imageIds?: unknown;
+      intervalMinutes?: unknown;
+      interval?: unknown;
+      intervalUnit?: unknown;
+      strategy?: unknown;
+      immediatePlay?: unknown;
+      immediate_play?: unknown;
+      idle?: unknown;
+      begintime?: unknown;
+      endtime?: unknown;
+      source?: unknown;
+    };
+    // Accept both snake_case and camelCase IDs.
+    const rawIds = body.photo_ids ?? body.imageIds;
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      res.status(400).json({ ok: false, error: "missing_photo_ids", message: "Provide photo_ids[] (or imageIds[])." });
+      return;
+    }
+    const photoIds = rawIds.map((x) => String(x ?? "").trim()).filter((x) => x.length > 0);
+    if (photoIds.length === 0) {
+      res.status(400).json({ ok: false, error: "missing_photo_ids", message: "photo_ids[] contained no valid IDs." });
+      return;
+    }
+
+    // Verify every photo_id actually exists in the upload store (by id OR
+    // by filename — share extensions return `frame_play_basename`).
+    const data = db.read();
+    const imageUrls: string[] = [];
+    const baseUrl = String(process.env.PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
+    for (const id of photoIds) {
+      const upload = data.uploads.find((u) => u.id === id) ?? data.uploads.find((u) => u.filename === id);
+      if (!upload) {
+        res.status(404).json({ ok: false, error: "photo_not_found", photo_id: id, message: "One or more photo IDs were not found in the upload store." });
+        return;
+      }
+      imageUrls.push(`${baseUrl}/frame-media/${encodeURIComponent(upload.filename)}`);
+    }
+
+    // Interval unit normalisation (matches the /slideshow route contract).
+    const intervalUnit = String(body.intervalUnit) === "second" ? "second" : "minute";
+    let intervalMinutes = 0;
+    if (typeof body.intervalMinutes === "number" || typeof body.intervalMinutes === "string") {
+      intervalMinutes = Math.round(Number(body.intervalMinutes));
+    } else if (typeof body.interval === "number" || typeof body.interval === "string") {
+      const raw = Math.round(Number(body.interval));
+      intervalMinutes = intervalUnit === "second" ? Math.max(1, Math.round(raw / 60)) : Math.max(1, raw);
+    }
+    if (!intervalMinutes || intervalMinutes < 1) intervalMinutes = 10;
+
+    const strategy = Math.round(Number(body.strategy ?? 1));
+    const finalStrategy = strategy === 2 ? 2 : 1;
+
+    const idle = Math.max(0, Math.round(Number(body.idle ?? 1)));
+    const immediatePlay = body.immediatePlay === true
+      || body.immediate_play === true
+      || (body.immediatePlay !== false && body.immediate_play !== false);
+
+    console.log(
+      "[cast/batch] mac=%s ids=%d interval=%dmin strategy=%d immediatePlay=%s",
+      mac, photoIds.length, intervalMinutes, finalStrategy, immediatePlay
+    );
+
+    // Dispatch strategy_bin SYNCHRONOUSLY so the manifest is in place before
+    // the immediate play command lands. strategy_bin is what tells the
+    // device to fetch the new manifest and start rotating.
+    try {
+      await publishStrategyCommand(mac, {
+        strategy: finalStrategy,
+        intervalMinutes,
+        begintime: String(body.begintime ?? "00:00"),
+        endtime: String(body.endtime ?? "23:59"),
+        idle,
+        imageUrls,
+      });
+    } catch (e) {
+      console.warn("[cast/batch] strategy_bin dispatch failed", mac, e);
+      // Continue — we can still send the immediate play command.
+    }
+
+    // CRITICAL: immediately push the first photo so the device wakes up
+    // with the first shared image without waiting for the first interval
+    // tick. The share UI closes before the device would otherwise render
+    // anything, leaving the user staring at a stale frame.
+    if (immediatePlay && imageUrls.length > 0 && isMqttConnected()) {
+      const publicHost = baseUrl ? new URL(baseUrl).hostname : "myframe.ink";
+      try {
+        await publishPlayImage(mac, imageUrls[0], publicHost);
+        console.log("[cast/batch] immediate first-photo pushed mac=%s", mac);
+      } catch (e) {
+        console.warn("[cast/batch] immediate first-photo failed", mac, e);
+      }
+    }
+
+    // Persist a transient marker in the slideshow map so subsequent status
+    // polls show the batch as the active manifest. Mark as `source` so the
+    // strict playlist/personal_album isolation filter excludes these from
+    // the user's general photo gallery.
+    db.mutate((draft) => {
+      if (!draft.slideshowsByBleMac) draft.slideshowsByBleMac = {};
+      draft.slideshowsByBleMac![mac] = {
+        imageIds: photoIds,
+        intervalMinutes,
+        strategy: finalStrategy,
+        begintime: String(body.begintime ?? ""),
+        endtime: String(body.endtime ?? ""),
+        idle,
+        updatedAtMs: Date.now(),
+        currentIndex: 0,
+        nextPlayAtMs: Date.now(),
+        source: String(body.source ?? "direct_cast"),
+      };
+    });
+
+    res.json({
+      ok: true,
+      macKey: mac,
+      imageIds: photoIds,
+      intervalMinutes,
+      strategy: finalStrategy,
+      immediatePlay,
+      image_urls: imageUrls,
+    });
   });
 
   router.get("/photo/delivery-status", requirePairingToken, (req, res) => {

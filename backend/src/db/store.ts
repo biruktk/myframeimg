@@ -367,6 +367,8 @@ export type MyframeDb = {
       updatedAtMs: number;
       currentIndex: number;
       nextPlayAtMs: number;
+      /** Logical source — "playlist" | "direct_cast" — used by isolation filters. */
+      source?: string;
     }
   >;
   commerceEvents: Array<{
