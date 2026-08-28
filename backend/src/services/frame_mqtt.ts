@@ -1007,7 +1007,7 @@ export function publishStrategyCommand(
    * still override via config.host.
    */
   const media = frameMediaOrigin();
-  const plainHttpMedia = media.protocol === "http:";
+  const plainHttpMedia = media.protocol === "http";
   const host = config.host ?? (plainHttpMedia ? media.host : "myframe.ink");
   const port = Number(process.env.FRAME_MANIFEST_PORT ?? media.port ?? 80) || 80;
 
