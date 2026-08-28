@@ -141,6 +141,38 @@ export function frameMediaOrigin(): { base: string; host: string; port: number }
   }
 }
 
+/**
+ * Origin the FRAME uses to fetch the DYNAMIC manifest
+ * (`strategy_bin.data.host/port` + `path`).
+ *
+ * This must differ from [frameMediaOrigin]: the raw-IP :80 vhost is an nginx
+ * block that only serves `/frame-media/` + `/firmware/` (everything else 404s),
+ * while `myframe.ink:80` proxies the API but serves `.bin` through an untuned
+ * block that the ESP32 fails to download from. So the frame fetches the
+ * manifest straight from the Node API port (no DNS, no nginx) and then
+ * downloads images from the tuned static origin advertised in the manifest
+ * body itself.
+ *
+ * Override with `FRAME_MANIFEST_BASE_URL` (e.g. http://47.76.164.162:3001).
+ */
+export function frameManifestOrigin(): { host: string; port: number } {
+  const override = process.env.FRAME_MANIFEST_BASE_URL?.trim();
+  if (override) {
+    try {
+      const u = new URL(override);
+      return {
+        host: u.hostname,
+        port: u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80,
+      };
+    } catch {
+      /* fall through */
+    }
+  }
+  const media = frameMediaOrigin();
+  const apiPort = Number(process.env.FRAME_MANIFEST_PORT ?? process.env.PORT ?? 3001) || 3001;
+  return { host: media.host, port: apiPort };
+}
+
 const frames = new Map<string, FrameRecord>();
 
 /**
@@ -995,11 +1027,13 @@ export function publishStrategyCommand(
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
 
-  // Frame-facing download origin: plain-HTTP media host (never the HTTPS
-  // marketing domain — the firmware has no TLS and fails hostname lookups).
-  const media = frameMediaOrigin();
-  const host = config.host ?? media.host;
-  const port = media.port; // Firmware downloads over plain HTTP (never TLS)
+  // `strategy_bin` host/port is where the frame fetches the DYNAMIC manifest —
+  // that must be the API origin, NOT the static media vhost (raw-IP :80 only
+  // serves /frame-media/ and 404s /api/...). Image downloads then use the
+  // host/port advertised inside the manifest body (the tuned static origin).
+  const manifestOrigin = frameManifestOrigin();
+  const host = config.host ?? manifestOrigin.host;
+  const port = manifestOrigin.port;
 
   // The firmware `begintime`/`endtime` is a DAILY playback window ("HH:MM").
   // Firmware confirmed: "00:00"–"00:00" is a ZERO-length window and the frame
@@ -1143,8 +1177,8 @@ export function publishMqttConfig(
   const intervalSec = Math.max(60, intervalMinutes * 60);
   const endtime = "23:59";
   const begintime = "00:00";
-  const host = frameMediaOrigin().host;
-  const port = frameMediaOrigin().port; // Firmware downloads over plain HTTP (never TLS)
+  const host = frameManifestOrigin().host;
+  const port = frameManifestOrigin().port; // manifest is served by the Node API, not the static vhost
 
   return publishJson(`/inkjoyap/${mac}`, {
     msgid: mid,
