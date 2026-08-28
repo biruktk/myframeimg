@@ -917,17 +917,40 @@ export function publishFrameCommand(
   // Firmware protocol normalization before relay:
   // - wifi_sleep   -> camelCase beginTime/endTime (accept lowercase client input too)
   // - strategy_bin -> strict integer numerics (updatetype, idle, strategy, ...)
+  // Time contract: clients send the user's LOCAL HH:mm + timezoneOffsetMinutes,
+  // OR a client-computed UTC HH:mm via utcBeginTime/utcEndTime (or isUtc === true).
+  // In every case the firmware receives strict UTC HH:mm.
   let outData: Record<string, unknown> = data;
   if (action === "wifi_sleep") {
     // Strictly camelCase per firmware: only mode/beginTime/endTime, no legacy keys.
-    // Client sends the user's LOCAL HH:mm + timezone offset; firmware consumes UTC.
     const offset = normalizeTzOffset(data.timezoneOffsetMinutes ?? data.tzOffsetMinutes ?? data.utcOffsetMinutes);
+    const clientBeganUtc =
+      (data.isUtc === true || String(data.isUtc ?? "").trim() === "true") &&
+      /^\d{2}:\d{2}$/.test(String(data.utcBeginTime ?? data.utc_begintime ?? ""));
+    const clientEndedUtc =
+      (data.isUtc === true || String(data.isUtc ?? "").trim() === "true") &&
+      /^\d{2}:\d{2}$/.test(String(data.utcEndTime ?? data.utc_endtime ?? ""));
+    const beginTime = clientBeganUtc
+      ? String(data.utcBeginTime ?? data.utc_begintime)
+      : localToUtcHHMM(formatTimeHHMM(String(data.beginTime ?? data.begintime ?? "")), offset);
+    const endTime = clientEndedUtc
+      ? String(data.utcEndTime ?? data.utc_endtime)
+      : localToUtcHHMM(formatTimeHHMM(String(data.endTime ?? data.endtime ?? "")), offset);
     outData = {
       mode: Number(data.mode ?? 0),
-      beginTime: localToUtcHHMM(formatTimeHHMM(String(data.beginTime ?? data.begintime ?? "")), offset),
-      endTime: localToUtcHHMM(formatTimeHHMM(String(data.endTime ?? data.endtime ?? "")), offset),
+      beginTime,
+      endTime,
     };
   } else if (action === "strategy_bin") {
+    // Client sends LOCAL HH:mm begintime/endtime + timezoneOffsetMinutes.
+    // Firmware consumes UTC, so convert like wifi_sleep.
+    const offset = normalizeTzOffset(data.timezoneOffsetMinutes ?? data.tzOffsetMinutes ?? data.utcOffsetMinutes);
+    const clientBeganUtc =
+      (data.isUtc === true || String(data.isUtc ?? "").trim() === "true") &&
+      /^\d{2}:\d{2}$/.test(String(data.utcBeginTime ?? data.utc_begintime ?? ""));
+    const clientEndedUtc =
+      (data.isUtc === true || String(data.isUtc ?? "").trim() === "true") &&
+      /^\d{2}:\d{2}$/.test(String(data.utcEndTime ?? data.utc_endtime ?? ""));
     outData = {
       ...data,
       idle: Number(data.idle ?? 1),
@@ -935,7 +958,17 @@ export function publishFrameCommand(
       updatetype: Number(data.updatetype ?? 2),
       intervalminutes: Number(data.intervalminutes ?? data.intervalMinutes ?? 1),
       updatedays: Number(data.updatedays ?? 1),
+      begintime: clientBeganUtc
+        ? String(data.utcBeginTime ?? data.utc_begintime)
+        : localToUtcHHMM(formatTimeHHMM(String(data.begintime ?? data.beginTime ?? "")), offset),
+      endtime: clientEndedUtc
+        ? String(data.utcEndTime ?? data.utc_endtime)
+        : localToUtcHHMM(formatTimeHHMM(String(data.endtime ?? data.endTime ?? "")), offset),
     };
+    // The offset/keys are client-side metadata only — never sent to firmware.
+    for (const k of ["timezoneOffsetMinutes", "tzOffsetMinutes", "utcOffsetMinutes", "utcBeginTime", "utc_begintime", "utcEndTime", "utc_endtime", "isUtc", "is_utc"]) {
+      delete outData[k];
+    }
   }
 
   return publishJson(`/inkjoyap/${mac}`, {
