@@ -37,6 +37,10 @@ export interface FrameDispatchItem {
   queuePosition?: number;
   /** Frame-side visible name for display (e.g. photo filename or playlist title). */
   displayName?: string;
+  /** Number of failed dispatch attempts so far (drives auto-retry). */
+  attempts?: number;
+  /** Last failure reason (surfaced via status API). */
+  lastError?: string;
 }
 
 /** Callback registered by the MQTT layer to actually publish a task. */
@@ -143,14 +147,43 @@ class FrameDispatchQueue {
   }
 
   private _fail(frameMac: string, task: FrameDispatchItem, reason?: string): void {
+    task.lastError = reason;
+    task.attempts = (task.attempts ?? 0) + 1;
+    task.updatedAtMs = Date.now();
+    this.tasks.set(task.taskId, task);
+
+    // Transient firmware download failures (weak WiFi truncation, a busy
+    // refresh cycle) recover on retry: re-dispatch the same task after a
+    // short backoff instead of failing the queue outright.
+    const maxAttempts = 3;
+    if ((task.attempts ?? 0) < maxAttempts) {
+      task.status = 'queued';
+      task.queuePosition = this._peekIndex(frameMac, task.taskId) + 1;
+      console.warn(
+        '[dispatch-queue] %s task %s failed (%s) — retry %d/%d in 6s',
+        frameMac, task.taskId, reason ?? 'unknown', task.attempts, maxAttempts,
+      );
+      const t = setTimeout(() => {
+        this._clearTimeout(task.taskId);
+        this._maybeDispatchNext(frameMac);
+      }, 6_000);
+      this.timeouts.set(task.taskId, t);
+      return;
+    }
+
     task.status = 'failed';
     task.updatedAtMs = Date.now();
     this.tasks.set(task.taskId, task);
     this._advance(frameMac, task);
     const next = this._peek(frameMac) ?? null;
     if (next) {
-      console.log('[dispatch-queue]', frameMac, 'task failed', reason, '→ advancing to', next);
+      console.log('[dispatch-queue]', frameMac, 'task failed permanently', reason, '→ advancing to', next);
     }
+  }
+
+  private _peekIndex(frameMac: string, taskId: string): number {
+    const queue = this.queues.get(frameMac) ?? [];
+    return queue.indexOf(taskId);
   }
 
   private _advance(frameMac: string, task: FrameDispatchItem): void {
@@ -225,6 +258,8 @@ class FrameDispatchQueue {
     completed: boolean;
     updatedAtMs: number;
     displayName?: string;
+    attempts?: number;
+    lastError?: string;
   } {
     return {
       taskId: task.taskId,
@@ -234,6 +269,8 @@ class FrameDispatchQueue {
       completed: task.status === 'completed',
       updatedAtMs: task.updatedAtMs ?? task.createdAt ?? Date.now(),
       displayName: task.displayName,
+      attempts: task.attempts,
+      lastError: task.lastError,
     };
   }
 }
