@@ -6,6 +6,7 @@ import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
 import {
+  frameMediaOrigin,
   isMqttConnected,
   publishPlayImage,
   publishStrategyCommand,
@@ -179,13 +180,17 @@ export function frameSlideshowRouter(): Router {
     // not found yet, still publish strategy_bin without imgs — the frame polls
     // /api/v1/frames/manifest for the current manifest regardless.
     const data = db.read();
+    // Frame-facing download origin — MUST be the plain-HTTP media host, not the
+    // HTTPS marketing domain. Field-verified: myframe.ink:443 => download failed,
+    // media origin over :80 => result 113 downloaded.
+    const mediaBase = frameMediaOrigin().base;
     const imageUrls = ids
       .map((id) => {
         const upload =
           data.uploads.find((u) => u.id === id) ??
           data.uploads.find((u) => u.filename === id);
         return upload
-          ? `${process.env.PUBLIC_BASE_URL?.replace(/\/$/, "")}/frame-media/${encodeURIComponent(upload.filename)}`
+          ? `${mediaBase}/frame-media/${encodeURIComponent(upload.filename)}`
           : null;
       })
       .filter((url): url is string => url !== null);
@@ -242,10 +247,11 @@ export function frameSlideshowRouter(): Router {
     const slideshow = macKey ? (data.slideshowsByBleMac?.[macKey] ?? null) : null;
     const ids: string[] = Array.isArray(slideshow?.imageIds) ? slideshow.imageIds : [];
 
-    const host = process.env.PUBLIC_BASE_URL
-      ? new URL(process.env.PUBLIC_BASE_URL).hostname
-      : "myframe.ink";
-    const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80;
+    // Manifest host/port the FIRMWARE will connect to. Must be the plain-HTTP
+    // media origin (no TLS stack on device, hostname lookups fail in the field).
+    const media = frameMediaOrigin();
+    const host = media.host;
+    const port = media.port;
 
     const seen = new Set<string>();
     const imgList: string[] = [];

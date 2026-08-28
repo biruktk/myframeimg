@@ -8,7 +8,7 @@ import { db } from "../db/store";
 import { dispatchQueue } from "../services/dispatch_queue";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
-import { isMqttConnected, publishPlayImage, publishStrategyCommand, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -713,7 +713,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     // by filename — share extensions return `frame_play_basename`).
     const data = db.read();
     const imageUrls: string[] = [];
-    const baseUrl = String(process.env.PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
+    const baseUrl = frameMediaOrigin().base;
     for (const id of photoIds) {
       const upload = data.uploads.find((u) => u.id === id) ?? data.uploads.find((u) => u.filename === id);
       if (!upload) {

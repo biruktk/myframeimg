@@ -107,6 +107,40 @@ const DEFAULT_MQTT_BROKER_PORT = 1883;
 const DEFAULT_MQTT_USER = "device";
 const DEFAULT_MQTT_PASS = "framepass2026";
 
+/**
+ * Origin the FRAME uses to download `.bin` payloads (play `imgurl`,
+ * strategy_bin manifest host/port, and the manifest response body).
+ *
+ * The XT/ESP32 firmware has no TLS stack and, in the field, fails to resolve
+ * hostnames — a `strategy_bin` pointing at `myframe.ink:80` returned
+ * `download_complete failed:3` while the identical file served from the raw
+ * IP over plain HTTP returned `result:113 downloaded:1`. So the frame-facing
+ * origin MUST come from `PUBLIC_MEDIA_BASE_URL` (plain-HTTP media host),
+ * never from `PUBLIC_BASE_URL` (the HTTPS marketing site).
+ */
+export function frameMediaOrigin(): { base: string; host: string; port: number } {
+  const raw =
+    process.env.PUBLIC_MEDIA_BASE_URL?.trim() ||
+    process.env.PUBLIC_BASE_URL?.trim() ||
+    "";
+  try {
+    const u = new URL(raw);
+    const port = u.port
+      ? Number(u.port)
+      : u.protocol === "https:"
+        ? 443
+        : Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80;
+    return {
+      base: raw.replace(/\/$/, ""),
+      host: u.hostname,
+      port,
+    };
+  } catch {
+    const fallbackPort = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80;
+    return { base: "", host: DEFAULT_MQTT_BROKER_HOST, port: fallbackPort };
+  }
+}
+
 const frames = new Map<string, FrameRecord>();
 
 /**
@@ -348,6 +382,20 @@ function handleMessage(topic: string, raw: Buffer) {
           updatedAtMs: Date.now(),
         };
         dispatchQueue.handleAck(mac, { action, ackMsgid, result: res });
+      } else if (res === 112) {
+        // result 112 = download/render FAILURE reported by firmware. Fail the
+        // task now instead of waiting out the 60s timeout, so the queue can
+        // advance and the client surfaces the error promptly.
+        rec.delivery = {
+          status: "failed",
+          total: asCount(d?.total ?? d?.totalCount ?? rec.delivery?.total),
+          downloaded: asCount(d?.downloaded ?? d?.success ?? rec.delivery?.downloaded),
+          failed: asCount(d?.failed ?? d?.fail ?? rec.delivery?.failed),
+          ackMsgid,
+          updatedAtMs: Date.now(),
+        };
+        console.warn("[frame-mqtt] strategy_bin_ack result 112 (download failed) mac=%s ack_msgid=%s", mac, ackMsgid);
+        dispatchQueue.handleFailure(mac, "strategy_bin_ack_112");
       } else {
         // result 100 (or any other) = command received.
         rec.delivery = {
@@ -381,6 +429,15 @@ function handleMessage(topic: string, raw: Buffer) {
         ackMsgid: typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined,
         updatedAtMs: Date.now(),
       };
+      if (dlStatus === "failed") {
+        // Firmware could not fetch the payload (bad host/port/TLS/DNS or a
+        // missing file). Release the FIFO slot immediately.
+        console.warn(
+          "[frame-mqtt] download_complete reported failures mac=%s total=%d downloaded=%d failed=%d src=%s",
+          mac, total, downloaded, failed, String(d?.source_action ?? ""),
+        );
+        dispatchQueue.handleFailure(mac, "download_complete_failed");
+      }
     }
   } else if (action === "refresh_complete" || action === "refresh_ack") {
     rec.delivery = {
@@ -763,6 +820,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
     let host = "";
     let port = 80;
     let imgurlForPlay = imageUrl;
+    const media = frameMediaOrigin();
     try {
       const u = new URL(imageUrl);
       // Stock firmware examples use path-only `imgurl` with `host` + `port` in `data`
@@ -771,33 +829,41 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
         imgurlForPlay = `${u.pathname}${u.search ?? ""}`;
       }
 
-      if (
-        u.protocol === "https:" &&
-        String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
-      ) {
-        reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_BASE_URL"));
-        return;
-      }
-
-      /**
-       * ESP32 fetches MYFM `.bin` from the same host/port as `image_url` (nginx :80).
-       * Do NOT override with PUBLIC_MEDIA_BASE_URL when that env points at the Node API (:3001).
-       */
       host = u.hostname;
       port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
-    } catch {
-      const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
-      if (mediaBaseRaw) {
-        try {
-          const mu = new URL(mediaBaseRaw);
-          host = mu.hostname;
-          port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
-        } catch {
-          host = publicHost ?? "";
+
+      /**
+       * The firmware has NO TLS stack and fails to resolve hostnames in the
+       * field. When the caller built the URL from the HTTPS marketing origin
+       * (`PUBLIC_BASE_URL`), rewrite host/port to the plain-HTTP media origin
+       * instead of publishing an unusable https/:443 target. Verified in the
+       * field: `myframe.ink:443` -> download_complete failed, while the same
+       * file from the media origin over :80 -> result 113 downloaded.
+       */
+      const isHttps = u.protocol === "https:";
+      if ((isHttps || host !== media.host) && media.host) {
+        if (isHttps && String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() === "1") {
+          console.warn(
+            "[frame-mqtt] play url is https (%s) — rewriting to frame media origin %s:%d (firmware has no TLS)",
+            host,
+            media.host,
+            media.port,
+          );
         }
-      } else {
-        host = publicHost ?? "";
+        host = media.host;
+        port = media.port;
       }
+
+      if (
+        port === 443 &&
+        String(process.env.FRAME_PLAY_ALLOW_HTTPS ?? "").trim() !== "1"
+      ) {
+        reject(new Error("mqtt_play_https_blocked_set_FRAME_PLAY_ALLOW_HTTPS_1_or_use_http_PUBLIC_MEDIA_BASE_URL"));
+        return;
+      }
+    } catch {
+      host = media.host || publicHost || "";
+      port = media.port;
     }
 
     const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());
@@ -929,9 +995,11 @@ export function publishStrategyCommand(
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
 
-  // Use configured host or default to myframe.ink
-  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink");
-  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
+  // Frame-facing download origin: plain-HTTP media host (never the HTTPS
+  // marketing domain — the firmware has no TLS and fails hostname lookups).
+  const media = frameMediaOrigin();
+  const host = config.host ?? media.host;
+  const port = media.port; // Firmware downloads over plain HTTP (never TLS)
 
   // The firmware `begintime`/`endtime` is a DAILY playback window ("HH:MM").
   // Firmware confirmed: "00:00"–"00:00" is a ZERO-length window and the frame
@@ -1075,8 +1143,8 @@ export function publishMqttConfig(
   const intervalSec = Math.max(60, intervalMinutes * 60);
   const endtime = "23:59";
   const begintime = "00:00";
-  const host = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink";
-  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
+  const host = frameMediaOrigin().host;
+  const port = frameMediaOrigin().port; // Firmware downloads over plain HTTP (never TLS)
 
   return publishJson(`/inkjoyap/${mac}`, {
     msgid: mid,

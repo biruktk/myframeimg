@@ -17,6 +17,7 @@
  */
 import { db } from "../db/store";
 import {
+  frameMediaOrigin,
   isMqttConnected,
   normalizeMac,
   publishStrategyCommand,
@@ -61,7 +62,8 @@ function resolveUploadUrl(
   uploads: { id: string; filename?: string }[],
   id: string,
 ): string | null {
-  const base = String(process.env.PUBLIC_BASE_URL ?? "").replace(/\/$/, "");
+  // Frame-facing download origin (plain-HTTP media host, never HTTPS domain).
+  const base = frameMediaOrigin().base;
   const baseName = id.split("/").pop() || id;
   const upload =
     uploads.find((u) => u.id === id) ??
