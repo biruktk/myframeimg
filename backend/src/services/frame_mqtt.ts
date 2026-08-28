@@ -648,13 +648,14 @@ export function startFrameMqtt(): void {
         await publishPlayImage(task.frameMac, urlStr, publicHostRaw);
         return msgid;
       } else if (task.type === 'playlist') {
-        // strategy_bin first, then an immediate play of the first image so the
-        // device wakes up with photo[0] instead of waiting for the interval tick.
+        // Strict firmware protocol: a playlist task emits ONLY `strategy_bin`
+        // (matches the original 1037346b behaviour). The frame autonomously
+        // fetches the manifest + .bin files and rotates per the configured
+        // interval — no server-side follow-up `play` command.
         const cfg = task.payload as {
           strategy: number; intervalMinutes: number;
           begintime: string; endtime: string; idle: number;
           host?: string; imageUrls?: string[]; msgid?: unknown;
-          immediatePlay?: boolean; publicHost?: string;
         };
         const msgid = String(cfg.msgid ?? Date.now().toString());
         await publishStrategyCommand(task.frameMac, {
@@ -666,17 +667,6 @@ export function startFrameMqtt(): void {
           host: cfg.host,
           imageUrls: cfg.imageUrls,
         }, msgid);
-        if (cfg.immediatePlay !== false && (cfg.imageUrls ?? []).length > 0) {
-          const firstUrl = (cfg.imageUrls ?? [])[0];
-          const publicHost = cfg.publicHost
-            ? String(cfg.publicHost)
-            : process.env.PUBLIC_MEDIA_BASE_URL
-              ? new URL(process.env.PUBLIC_MEDIA_BASE_URL).hostname
-              : "myframe.ink";
-          await publishPlayImage(task.frameMac, firstUrl, publicHost).catch((e) =>
-            console.warn("[dispatch-queue] playlist immediate first-photo failed", task.taskId, e),
-          );
-        }
         return msgid;
       } else {
         const cfg = task.payload as {
@@ -914,12 +904,13 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       port = u.port ? Number(u.port) : u.protocol === "https:" ? 443 : 80;
 
       /**
-       * The firmware has NO TLS stack and fails to resolve hostnames in the
-       * field. When the caller built the URL from the HTTPS marketing origin
-       * (`PUBLIC_BASE_URL`), rewrite host/port to the plain-HTTP media origin
-       * instead of publishing an unusable https/:443 target. Verified in the
-       * field: `myframe.ink:443` -> download_complete failed, while the same
-       * file from the media origin over :80 -> result 113 downloaded.
+       * ESP32 has no TLS stack and fails hostname lookups — every frame-facing
+       * download URL (play `imgurl`, manifest host/port) must reach the
+       * plain-HTTP media origin (47.76.164.162:80). Callers sometimes build
+       * the URL from PUBLIC_BASE_URL (https://myframe.ink), so we rewrite to
+       * the media origin whenever the URL is https or points at a different
+       * host. Field-verified: `myframe.ink:443` -> download_complete failed,
+       * `47.76.164.162:80` -> result 113 downloaded.
        */
       const isHttps = u.protocol === "https:";
       if ((isHttps || host !== media.host) && media.host) {
@@ -943,8 +934,18 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
         return;
       }
     } catch {
-      host = media.host || publicHost || "";
-      port = media.port;
+      const mediaBaseRaw = process.env.PUBLIC_MEDIA_BASE_URL?.trim();
+      if (mediaBaseRaw) {
+        try {
+          const mu = new URL(mediaBaseRaw);
+          host = mu.hostname;
+          port = mu.port ? Number(mu.port) : mu.protocol === "https:" ? 443 : 80;
+        } catch {
+          host = publicHost ?? "";
+        }
+      } else {
+        host = publicHost ?? "";
+      }
     }
 
     const pathProbe = decodeURIComponent(imgurlForPlay.split("?", 2)[0]!.toLowerCase());
