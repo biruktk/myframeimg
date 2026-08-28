@@ -3,7 +3,6 @@
  * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
  */
 
-import { dispatchQueue } from "./dispatch_queue";
 import crypto from "crypto";
 import fs from "fs";
 import { normalizeFirmwareVersion } from "../data/firmware_releases";
@@ -439,10 +438,7 @@ function handleMessage(topic: string, raw: Buffer) {
     }
     if (action === "play_ack" && rec.displayed === true) {
       rec.delivery = { status: "displayed", updatedAtMs: Date.now() };
-      dispatchQueue.handleAck(mac, { action, result: 113, deliveredMsgid: String(uploadMs) });
       if (onPlayAckCb) onPlayAckCb(mac);
-    } else if (action === "play_ack" && rec.displayed === false) {
-      dispatchQueue.handleFailure(mac, 'play_ack_displayed_false');
     }
   }
 
@@ -462,11 +458,8 @@ function handleMessage(topic: string, raw: Buffer) {
           ackMsgid,
           updatedAtMs: Date.now(),
         };
-        dispatchQueue.handleAck(mac, { action, ackMsgid, result: res });
       } else if (res === 112) {
-        // result 112 = download/render FAILURE reported by firmware. Fail the
-        // task now instead of waiting out the 60s timeout, so the queue can
-        // advance and the client surfaces the error promptly.
+        // result 112 = download/render FAILURE reported by firmware.
         rec.delivery = {
           status: "failed",
           total: asCount(d?.total ?? d?.totalCount ?? rec.delivery?.total),
@@ -476,7 +469,6 @@ function handleMessage(topic: string, raw: Buffer) {
           updatedAtMs: Date.now(),
         };
         console.warn("[frame-mqtt] strategy_bin_ack result 112 (download failed) mac=%s ack_msgid=%s", mac, ackMsgid);
-        dispatchQueue.handleFailure(mac, "strategy_bin_ack_112");
       } else {
         // result 100 (or any other) = command received.
         rec.delivery = {
@@ -510,15 +502,6 @@ function handleMessage(topic: string, raw: Buffer) {
         ackMsgid: typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined,
         updatedAtMs: Date.now(),
       };
-      if (dlStatus === "failed") {
-        // Firmware could not fetch the payload (bad host/port/TLS/DNS or a
-        // missing file). Release the FIFO slot immediately.
-        console.warn(
-          "[frame-mqtt] download_complete reported failures mac=%s total=%d downloaded=%d failed=%d src=%s",
-          mac, total, downloaded, failed, String(d?.source_action ?? ""),
-        );
-        dispatchQueue.handleFailure(mac, "download_complete_failed");
-      }
     }
   } else if (action === "refresh_complete" || action === "refresh_ack") {
     rec.delivery = {
@@ -528,7 +511,6 @@ function handleMessage(topic: string, raw: Buffer) {
       failed: rec.delivery?.failed,
       updatedAtMs: Date.now(),
     };
-    dispatchQueue.handleAck(mac, { action, result: 113 });
   } else if (action === "download_failed" || (action === "play_ack" && rec.displayed === false && Number(result) === 104)) {
     rec.delivery = {
       status: "failed",
@@ -537,7 +519,6 @@ function handleMessage(topic: string, raw: Buffer) {
       failed: asCount(d?.failed ?? d?.fail ?? rec.delivery?.failed),
       updatedAtMs: Date.now(),
     };
-    dispatchQueue.handleFailure(mac, 'explicit_failure_code');
   } else if (action === "strategy_stop_ack") {
     const res = Number(result);
     const ackMsgid = typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined;
@@ -550,9 +531,6 @@ function handleMessage(topic: string, raw: Buffer) {
         ackMsgid,
         updatedAtMs: Date.now(),
       };
-      // A successful strategy_stop completes the current dispatch task too —
-      // the frame is idle until the next queue task is dispatched.
-      dispatchQueue.handleAck(mac, { action, ackMsgid, result: res });
     } else if (res === 100) {
       rec.delivery = {
         status: "stopping_received",
@@ -634,63 +612,6 @@ export function startFrameMqtt(): void {
     console.log("[frame-mqtt] MQTT_URL not set — frame cloud MQTT disabled");
     return;
   }
-
-  // Register the per-frame FIFO dispatcher so the queue can publish
-  // play_image (single photo) vs strategy_bin (slideshow/playlist).
-  dispatchQueue.registerDispatcher(async (task) => {
-    try {
-      if (task.type === 'photo') {
-        const urlStr = String(task.payload.imageUrl ?? "");
-        const msgid = String(task.payload.msgid ?? Date.now().toString());
-        const publicHostRaw = task.payload.publicHost
-          ? String(task.payload.publicHost)
-          : undefined;
-        await publishPlayImage(task.frameMac, urlStr, publicHostRaw);
-        return msgid;
-      } else if (task.type === 'playlist') {
-        // Strict firmware protocol: a playlist task emits ONLY `strategy_bin`
-        // (matches the original 1037346b behaviour). The frame autonomously
-        // fetches the manifest + .bin files and rotates per the configured
-        // interval — no server-side follow-up `play` command.
-        const cfg = task.payload as {
-          strategy: number; intervalMinutes: number;
-          begintime: string; endtime: string; idle: number;
-          host?: string; imageUrls?: string[]; msgid?: unknown;
-        };
-        const msgid = String(cfg.msgid ?? Date.now().toString());
-        await publishStrategyCommand(task.frameMac, {
-          strategy: cfg.strategy,
-          intervalMinutes: cfg.intervalMinutes,
-          begintime: cfg.begintime,
-          endtime: cfg.endtime,
-          idle: cfg.idle,
-          host: cfg.host,
-          imageUrls: cfg.imageUrls,
-        }, msgid);
-        return msgid;
-      } else {
-        const cfg = task.payload as {
-          strategy: number; intervalMinutes: number;
-          begintime: string; endtime: string; idle: number;
-          host?: string; imageUrls?: string[]; msgid?: unknown;
-        };
-        const msgid = String(cfg.msgid ?? Date.now().toString());
-        await publishStrategyCommand(task.frameMac, {
-          strategy: cfg.strategy,
-          intervalMinutes: cfg.intervalMinutes,
-          begintime: cfg.begintime,
-          endtime: cfg.endtime,
-          idle: cfg.idle,
-          host: cfg.host,
-          imageUrls: cfg.imageUrls,
-        }, msgid);
-        return msgid;
-      }
-    } catch (err) {
-      console.error('[dispatch-queue] publish error', task.taskId, err);
-      throw err;
-    }
-  });
 
   const user = process.env.MQTT_USER;
   const pass = process.env.MQTT_PASSWORD;
@@ -1077,13 +998,9 @@ export function publishStrategyCommand(
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
 
-  // `strategy_bin` host/port is where the frame fetches the DYNAMIC manifest —
-  // that must be the API origin, NOT the static media vhost (raw-IP :80 only
-  // serves /frame-media/ and 404s /api/...). Image downloads then use the
-  // host/port advertised inside the manifest body (the tuned static origin).
-  const manifestOrigin = frameManifestOrigin();
-  const host = config.host ?? manifestOrigin.host;
-  const port = manifestOrigin.port;
+  // Use configured host or default to myframe.ink
+  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink");
+  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
 
   // The firmware `begintime`/`endtime` is a DAILY playback window ("HH:MM").
   // Firmware confirmed: "00:00"–"00:00" is a ZERO-length window and the frame
@@ -1094,17 +1011,6 @@ export function publishStrategyCommand(
   const begintime = "00:00";
   const endtime = "23:59";
 
-  // Interval unit contract:
-  //   - intervalminutes  → firmware-conventional field, in MINUTES (legacy)
-  //   - interval_sec     → explicit SECONDS, set to the same value converted
-  //     from minutes. This lets the device's NVS refresh timer use either
-  //     field and immediately honour the requested cadence without the device
-  //     falling back to a hard-coded 5-minute deep-sleep wake cycle.
-  //   - global_interval   → mirror in seconds for cross-checking with the
-  //     manifest endpoint.
-  const intervalMinutes = Math.max(1, Math.round(Number(config.intervalMinutes) || 1));
-  const intervalSec = Math.max(60, intervalMinutes * 60);
-
   const data: Record<string, unknown> = {
     idle: Number(config.idle),
     strategy: Number(config.strategy),
@@ -1114,9 +1020,7 @@ export function publishStrategyCommand(
     updatetype: 2,
     begintime,
     endtime,
-    intervalminutes: intervalMinutes,
-    interval_sec: intervalSec,
-    global_interval: intervalSec,
+    intervalminutes: Number(config.intervalMinutes),
     updatedays: 1,
     updatetimelist: [] as string[],
   };

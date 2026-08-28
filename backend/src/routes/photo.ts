@@ -5,7 +5,6 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 import { db } from "../db/store";
-import { dispatchQueue } from "../services/dispatch_queue";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
 import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveFrameMediaUrl, resolveMqttHardwareMac } from "../services/frame_mqtt";
@@ -177,35 +176,33 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       if (!skipPlay) {
         mqttMacForUpload = resolveMqttHardwareMac(deviceId);
         if (mqttMacForUpload) {
-          let publicHost = "";
-          try {
-            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
-          } catch {
-            /* ignore */
-          }
-          try {
-            // Single photo cast: per-frame FIFO dispatch queue (strict 1-to-1).
-            // The firmware must ACK the previous photo before the next is pushed.
-            const nowMs = Date.now();
-            dispatchQueue.enqueue({
-              taskId: uploadId,
-              frameMac: mqttMacForUpload,
-              type: "photo",
-              payload: {
-                imageUrl,
-                msgid: String(nowMs),
-                publicHost,
-              },
-              displayName: mqttBasename,
-            });
-            deliveredToFrame = true;
-            deliveryMode = "fifo_queued";
-            scheduleNextDelivery(deviceId);
-          } catch (err) {
-            console.error("[photo] dispatch queue enqueue failed:", err);
-            deliveryMode = "enqueue_failed";
+          if (!isMqttConnected()) {
+            deliveryMode = "mqtt_disconnected";
             enqueueUpload(deviceId, uploadId);
             queued = true;
+          } else if (!isDeliverySlotFree(deviceId)) {
+            deliveryMode = "queued_slot_busy";
+            enqueueUpload(deviceId, uploadId);
+            queued = true;
+          } else {
+            let publicHost = "";
+            try {
+              publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
+            } catch {
+              /* ignore */
+            }
+            try {
+              // Single photo cast: direct publishPlayImage (1037346b contract).
+              await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+              deliveredToFrame = true;
+              deliveryMode = "vps_mqtt";
+              scheduleNextDelivery(deviceId);
+            } catch (err) {
+              console.error("[photo] MQTT play publish failed:", err);
+              deliveryMode = "mqtt_publish_failed";
+              enqueueUpload(deviceId, uploadId);
+              queued = true;
+            }
           }
         }
       }
@@ -322,7 +319,6 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         delivered_to_frame: deliveredToFrame,
         delivery_mode: deliveryMode,
         queued: queued,
-        task_id: uploadId,
         image_url: imageUrl,
         /** `client_passthrough` = exact bytes from iOS/Flutter `.bin`; never re-dithered on VPS. */
         image_processing: imageProcessing,
@@ -443,35 +439,33 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       if (!skipPlay) {
         mqttMacForUpload = resolveMqttHardwareMac(deviceId);
         if (mqttMacForUpload) {
-          let publicHost = "";
-          try {
-            publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
-          } catch {
-            /* ignore */
-          }
-          try {
-            // Single photo cast: per-frame FIFO dispatch queue (strict 1-to-1).
-            // The firmware must ACK the previous photo before the next is pushed.
-            const nowMs = Date.now();
-            dispatchQueue.enqueue({
-              taskId: uploadId,
-              frameMac: mqttMacForUpload,
-              type: "photo",
-              payload: {
-                imageUrl,
-                msgid: String(nowMs),
-                publicHost,
-              },
-              displayName: mqttBasename,
-            });
-            deliveredToFrame = true;
-            deliveryMode = "fifo_queued";
-            scheduleNextDelivery(deviceId);
-          } catch (err) {
-            console.error("[photo] dispatch queue enqueue failed:", err);
-            deliveryMode = "enqueue_failed";
+          if (!isMqttConnected()) {
+            deliveryMode = "mqtt_disconnected";
             enqueueUpload(deviceId, uploadId);
             queued = true;
+          } else if (!isDeliverySlotFree(deviceId)) {
+            deliveryMode = "queued_slot_busy";
+            enqueueUpload(deviceId, uploadId);
+            queued = true;
+          } else {
+            let publicHost = "";
+            try {
+              publicHost = new URL(process.env.PUBLIC_MEDIA_BASE_URL || base).hostname;
+            } catch {
+              /* ignore */
+            }
+            try {
+              // Single photo cast: direct publishPlayImage (1037346b contract).
+              await publishPlayImage(deviceId, imageUrl, publicHost || undefined);
+              deliveredToFrame = true;
+              deliveryMode = "vps_mqtt";
+              scheduleNextDelivery(deviceId);
+            } catch (err) {
+              console.error("[photo] MQTT play publish failed:", err);
+              deliveryMode = "mqtt_publish_failed";
+              enqueueUpload(deviceId, uploadId);
+              queued = true;
+            }
           }
         }
       }
@@ -583,7 +577,6 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         delivered_to_frame: deliveredToFrame,
         delivery_mode: deliveryMode,
         queued: queued,
-        task_id: uploadId,
         image_url: imageUrl,
         image_processing: imageProcessing,
       });
@@ -748,27 +741,18 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     // Dispatch strategy_bin SYNCHRONOUSLY so the manifest is in place before
     // the immediate play command lands. strategy_bin is what tells the
     // device to fetch the new manifest and start rotating.
-    const taskId = `cb-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
     try {
-      dispatchQueue.enqueue({
-        taskId,
-        frameMac: mac,
-        type: "playlist",
-        payload: {
-          strategy: finalStrategy,
-          intervalMinutes,
-          begintime: String(body.begintime ?? "00:00"),
-          endtime: String(body.endtime ?? "23:59"),
-          idle,
-          imageUrls,
-          immediatePlay,
-          msgid: String(Date.now()),
-        },
-        displayName: `Batch (${photoIds.length})`,
+      await publishStrategyCommand(mac, {
+        strategy: finalStrategy,
+        intervalMinutes,
+        begintime: String(body.begintime ?? "00:00"),
+        endtime: String(body.endtime ?? "23:59"),
+        idle,
+        imageUrls,
       });
-      console.log("[cast/batch] queued mac=%s imgs=%d taskId=%s", mac, imageUrls.length, taskId);
+      console.log("[cast/batch] strategy_bin dispatched mac=%s imgs=%d", mac, imageUrls.length);
     } catch (e) {
-      console.warn("[cast/batch] dispatch queue enqueue failed", mac, e);
+      console.warn("[cast/batch] strategy_bin dispatch failed", mac, e);
     }
 
     // Persist a transient marker in the slideshow map so subsequent status
@@ -798,7 +782,6 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       intervalMinutes,
       strategy: finalStrategy,
       immediatePlay,
-      task_id: taskId,
       image_urls: imageUrls,
     });
   });

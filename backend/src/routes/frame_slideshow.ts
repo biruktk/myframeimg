@@ -1,15 +1,12 @@
 import { notifyPlaylistSent } from "../services/wechat_subscribe_notify";
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
-import { dispatchQueue } from "../services/dispatch_queue";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
 import {
   frameMediaOrigin,
-  frameManifestOrigin,
   isMqttConnected,
-  publishPlayImage,
   publishStrategyCommand,
   resolveFrameMediaUrl,
   resolveMqttHardwareMac,
@@ -190,35 +187,27 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
       .map((id) => resolveFrameMediaUrl(id, mediaDir))
       .filter((url): url is string => url !== null);
 
-    let taskId: string | null = null;
     if (isMqttConnected()) {
       if (publishMac) {
-        // PROTOCOL COMPLIANCE: dispatch the playlist via the per-frame FIFO
-        // queue (strategy_bin + immediate first-photo). The firmware must ACK
-        // any prior task before this one is pushed to the device.
-        taskId = `pl-${now}-${Math.random().toString(16).slice(2, 8)}`;
-        try {
-          dispatchQueue.enqueue({
-            taskId,
-            frameMac: publishMac,
-            type: "playlist",
-            payload: {
-              strategy: isRandomStrategy(strategy) ? 2 : 1,
-              intervalMinutes,
-              begintime,
-              endtime,
-              idle,
-              imageUrls,
-              immediatePlay,
-              msgid: String(now),
-            },
-            displayName: `Playlist (${ids.length})`,
+        // 1037346b contract: fire-and-forget strategy_bin dispatch from the
+        // request lifecycle (<500ms) so the frame starts cycling immediately.
+        // The frame autonomously fetches the manifest + .bin files and
+        // rotates per the configured interval — no server-side follow-up
+        // play command.
+        publishStrategyCommand(publishMac, {
+          strategy: isRandomStrategy(strategy) ? 2 : 1,
+          intervalMinutes,
+          begintime,
+          endtime,
+          idle,
+          imageUrls,
+        })
+          .then(() => {
+            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", publishMac, imageUrls.length);
+          })
+          .catch((e) => {
+            console.warn("[slideshow] mqtt strategy failed", publishMac, e);
           });
-          console.log("[slideshow] playlist queued mac=%s imgs=%d taskId=%s", publishMac, imageUrls.length, taskId);
-        } catch (e) {
-          console.warn("[slideshow] dispatch queue enqueue failed", publishMac, e);
-          taskId = null;
-        }
       } else {
         console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
       }
@@ -227,7 +216,7 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
     }
 
     notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, intervalUnit, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay, immediatePlay, task_id: taskId });
+    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
   });
 
   // GET /api/v1/frames/manifest?mac=<MAC> — firmware polls this over plain HTTP
