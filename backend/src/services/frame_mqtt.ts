@@ -5,8 +5,10 @@
 
 import { dispatchQueue } from "./dispatch_queue";
 import crypto from "crypto";
+import fs from "fs";
 import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
+import path from "path";
 import { db } from "../db/store";
 import { appendFrameLog } from "./frame_logs";
 
@@ -178,6 +180,46 @@ export function frameManifestOrigin(): { host: string; port: number } {
   const media = frameMediaOrigin();
   const port = Number(process.env.FRAME_MANIFEST_PORT ?? media.port) || media.port;
   return { host: media.host, port };
+}
+
+/**
+ * Resolve a frame-facing `/frame-media/<basename>` URL for an image id or
+ * filename. Checks the DB upload store first (source of truth), then falls
+ * back to the filesystem `uploads/` dir — so a playlist stays resolvable even
+ * after the DB upload row is pruned (the .bin file often survives longer, or
+ * the id is the exact filename already on disk).
+ *
+ * Returns `null` when the file can be verified neither in the DB nor on disk.
+ */
+export function resolveFrameMediaUrl(
+  id: string,
+  uploadDir: string,
+  opts?: { allowJpeg?: boolean },
+): string | null {
+  const raw = String(id ?? "").trim();
+  if (!raw) return null;
+
+  const data = db.read();
+  const upload =
+    data.uploads.find((u) => u.id === raw) ??
+    data.uploads.find((u) => u.filename === raw) ??
+    data.uploads.find((u) => u.filename === raw.split("/").pop());
+
+  let filename = String(upload?.filename ?? "").trim();
+  if (filename && !filename.endsWith(".bin") && opts?.allowJpeg !== true) {
+    filename = "";
+  }
+  if (!filename) {
+    // Filesystem fallback: exact file (or basename) present under uploads/.
+    const basename = raw.split("/").pop() ?? raw;
+    if (!basename.endsWith(".bin") && opts?.allowJpeg !== true) return null;
+    const onDisk = fs.existsSync(path.join(uploadDir, basename));
+    if (!onDisk) return null;
+    filename = basename;
+  }
+
+  const mediaBase = frameMediaOrigin().base;
+  return `${mediaBase}/frame-media/${encodeURIComponent(filename)}`;
 }
 
 const frames = new Map<string, FrameRecord>();

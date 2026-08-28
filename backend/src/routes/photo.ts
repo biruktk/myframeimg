@@ -8,7 +8,7 @@ import { db } from "../db/store";
 import { dispatchQueue } from "../services/dispatch_queue";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
-import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveFrameMediaUrl, resolveMqttHardwareMac } from "../services/frame_mqtt";
 import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -709,18 +709,16 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
       return;
     }
 
-    // Verify every photo_id actually exists in the upload store (by id OR
-    // by filename — share extensions return `frame_play_basename`).
-    const data = db.read();
+    // Verify every photo_id resolves (DB upload store, falling back to the
+    // filesystem so a batch stays dispatchable after DB rows are pruned).
     const imageUrls: string[] = [];
-    const baseUrl = frameMediaOrigin().base;
     for (const id of photoIds) {
-      const upload = data.uploads.find((u) => u.id === id) ?? data.uploads.find((u) => u.filename === id);
-      if (!upload) {
+      const url = resolveFrameMediaUrl(id, uploadDir);
+      if (!url) {
         res.status(404).json({ ok: false, error: "photo_not_found", photo_id: id, message: "One or more photo IDs were not found in the upload store." });
         return;
       }
-      imageUrls.push(`${baseUrl}/frame-media/${encodeURIComponent(upload.filename)}`);
+      imageUrls.push(url);
     }
 
     // Interval unit normalisation (matches the /slideshow route contract).

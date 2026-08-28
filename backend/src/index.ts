@@ -151,7 +151,7 @@ app.use("/api", userProfileRouter);
 app.use("/api", userPlaybackRulesRouter());
 app.use("/api", syncTransitRouter);
 app.use("/api", familyRouter);
-app.use("/api", frameSlideshowRouter());
+app.use("/api", frameSlideshowRouter(uploadDir));
 app.use("/api", framePairingRouter);
 app.use("/api", frameInviteRouter());
 app.use("/api", frameSleepRouter());

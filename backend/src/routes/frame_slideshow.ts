@@ -7,9 +7,11 @@ import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
 import {
   frameMediaOrigin,
+  frameManifestOrigin,
   isMqttConnected,
   publishPlayImage,
   publishStrategyCommand,
+  resolveFrameMediaUrl,
   resolveMqttHardwareMac,
 } from "../services/frame_mqtt";
 
@@ -38,9 +40,10 @@ function isPairingTokenValid(req: Request): boolean {
   return match === 0;
 }
 
-export function frameSlideshowRouter(): Router {
+export function frameSlideshowRouter(uploadDir?: string): Router {
   const router = Router();
   router.use(express.json({ limit: "512kb" }));
+  const mediaDir = uploadDir?.trim() || String(process.env.UPLOAD_DIR ?? "uploads").trim() || "uploads";
 
   router.post("/frames/:mac/slideshow", (req: Request, res: Response) => {
     const u = verifyUserJwtBearer(req);
@@ -183,16 +186,8 @@ export function frameSlideshowRouter(): Router {
     // Frame-facing download origin — MUST be the plain-HTTP media host, not the
     // HTTPS marketing domain. Field-verified: myframe.ink:443 => download failed,
     // media origin over :80 => result 113 downloaded.
-    const mediaBase = frameMediaOrigin().base;
     const imageUrls = ids
-      .map((id) => {
-        const upload =
-          data.uploads.find((u) => u.id === id) ??
-          data.uploads.find((u) => u.filename === id);
-        return upload
-          ? `${mediaBase}/frame-media/${encodeURIComponent(upload.filename)}`
-          : null;
-      })
+      .map((id) => resolveFrameMediaUrl(id, mediaDir))
       .filter((url): url is string => url !== null);
 
     let taskId: string | null = null;
@@ -259,10 +254,10 @@ export function frameSlideshowRouter(): Router {
     let bodyBytes = 200; // approx fixed JSON overhead
 
     for (const id of ids) {
-      const upload =
-        data.uploads.find((u) => u.id === id) ??
-        data.uploads.find((u) => u.filename === id);
-      const filename = String(upload?.filename ?? "").trim();
+      // Resolve via DB upload store, falling back to the filesystem so a
+      // playlist stays servable even after DB rows are pruned.
+      const url = resolveFrameMediaUrl(id, mediaDir);
+      const filename = url ? decodeURIComponent(url.split("/").pop() ?? "") : "";
       if (!filename) continue;
 
       // Firmware constraints: .bin suffix, <=128 bytes, [a-zA-Z0-9_.-] only.
