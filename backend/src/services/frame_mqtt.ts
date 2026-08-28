@@ -3,6 +3,7 @@
  * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
  */
 
+import { dispatchQueue } from "./dispatch_queue";
 import crypto from "crypto";
 import { normalizeFirmwareVersion } from "../data/firmware_releases";
 import mqtt from "mqtt";
@@ -323,7 +324,10 @@ function handleMessage(topic: string, raw: Buffer) {
     }
     if (action === "play_ack" && rec.displayed === true) {
       rec.delivery = { status: "displayed", updatedAtMs: Date.now() };
+      dispatchQueue.handleAck(mac, { action, result: 113, deliveredMsgid: String(uploadMs) });
       if (onPlayAckCb) onPlayAckCb(mac);
+    } else if (action === "play_ack" && rec.displayed === false) {
+      dispatchQueue.handleFailure(mac, 'play_ack_displayed_false');
     }
   }
 
@@ -343,6 +347,7 @@ function handleMessage(topic: string, raw: Buffer) {
           ackMsgid,
           updatedAtMs: Date.now(),
         };
+        dispatchQueue.handleAck(mac, { action, ackMsgid, result: res });
       } else {
         // result 100 (or any other) = command received.
         rec.delivery = {
@@ -385,6 +390,7 @@ function handleMessage(topic: string, raw: Buffer) {
       failed: rec.delivery?.failed,
       updatedAtMs: Date.now(),
     };
+    dispatchQueue.handleAck(mac, { action, result: 113 });
   } else if (action === "download_failed" || (action === "play_ack" && rec.displayed === false && Number(result) === 104)) {
     rec.delivery = {
       status: "failed",
@@ -393,6 +399,7 @@ function handleMessage(topic: string, raw: Buffer) {
       failed: asCount(d?.failed ?? d?.fail ?? rec.delivery?.failed),
       updatedAtMs: Date.now(),
     };
+    dispatchQueue.handleFailure(mac, 'explicit_failure_code');
   } else if (action === "strategy_stop_ack") {
     const res = Number(result);
     const ackMsgid = typeof d?.ack_msgid === "string" ? d.ack_msgid : undefined;
@@ -405,6 +412,9 @@ function handleMessage(topic: string, raw: Buffer) {
         ackMsgid,
         updatedAtMs: Date.now(),
       };
+      // A successful strategy_stop completes the current dispatch task too —
+      // the frame is idle until the next queue task is dispatched.
+      dispatchQueue.handleAck(mac, { action, ackMsgid, result: res });
     } else if (res === 100) {
       rec.delivery = {
         status: "stopping_received",
@@ -486,6 +496,73 @@ export function startFrameMqtt(): void {
     console.log("[frame-mqtt] MQTT_URL not set — frame cloud MQTT disabled");
     return;
   }
+
+  // Register the per-frame FIFO dispatcher so the queue can publish
+  // play_image (single photo) vs strategy_bin (slideshow/playlist).
+  dispatchQueue.registerDispatcher(async (task) => {
+    try {
+      if (task.type === 'photo') {
+        const urlStr = String(task.payload.imageUrl ?? "");
+        const msgid = String(task.payload.msgid ?? Date.now().toString());
+        const publicHostRaw = task.payload.publicHost
+          ? String(task.payload.publicHost)
+          : undefined;
+        await publishPlayImage(task.frameMac, urlStr, publicHostRaw);
+        return msgid;
+      } else if (task.type === 'playlist') {
+        // strategy_bin first, then an immediate play of the first image so the
+        // device wakes up with photo[0] instead of waiting for the interval tick.
+        const cfg = task.payload as {
+          strategy: number; intervalMinutes: number;
+          begintime: string; endtime: string; idle: number;
+          host?: string; imageUrls?: string[]; msgid?: unknown;
+          immediatePlay?: boolean; publicHost?: string;
+        };
+        const msgid = String(cfg.msgid ?? Date.now().toString());
+        await publishStrategyCommand(task.frameMac, {
+          strategy: cfg.strategy,
+          intervalMinutes: cfg.intervalMinutes,
+          begintime: cfg.begintime,
+          endtime: cfg.endtime,
+          idle: cfg.idle,
+          host: cfg.host,
+          imageUrls: cfg.imageUrls,
+        }, msgid);
+        if (cfg.immediatePlay !== false && (cfg.imageUrls ?? []).length > 0) {
+          const firstUrl = (cfg.imageUrls ?? [])[0];
+          const publicHost = cfg.publicHost
+            ? String(cfg.publicHost)
+            : process.env.PUBLIC_MEDIA_BASE_URL
+              ? new URL(process.env.PUBLIC_MEDIA_BASE_URL).hostname
+              : "myframe.ink";
+          await publishPlayImage(task.frameMac, firstUrl, publicHost).catch((e) =>
+            console.warn("[dispatch-queue] playlist immediate first-photo failed", task.taskId, e),
+          );
+        }
+        return msgid;
+      } else {
+        const cfg = task.payload as {
+          strategy: number; intervalMinutes: number;
+          begintime: string; endtime: string; idle: number;
+          host?: string; imageUrls?: string[]; msgid?: unknown;
+        };
+        const msgid = String(cfg.msgid ?? Date.now().toString());
+        await publishStrategyCommand(task.frameMac, {
+          strategy: cfg.strategy,
+          intervalMinutes: cfg.intervalMinutes,
+          begintime: cfg.begintime,
+          endtime: cfg.endtime,
+          idle: cfg.idle,
+          host: cfg.host,
+          imageUrls: cfg.imageUrls,
+        }, msgid);
+        return msgid;
+      }
+    } catch (err) {
+      console.error('[dispatch-queue] publish error', task.taskId, err);
+      throw err;
+    }
+  });
 
   const user = process.env.MQTT_USER;
   const pass = process.env.MQTT_PASSWORD;

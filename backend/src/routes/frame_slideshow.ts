@@ -1,6 +1,7 @@
 import { notifyPlaylistSent } from "../services/wechat_subscribe_notify";
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
+import { dispatchQueue } from "../services/dispatch_queue";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
@@ -191,34 +192,31 @@ export function frameSlideshowRouter(): Router {
 
     if (isMqttConnected()) {
       if (publishMac) {
-        publishStrategyCommand(publishMac, {
-          strategy: isRandomStrategy(strategy) ? 2 : 1,
-          intervalMinutes,
-          begintime,
-          endtime,
-          idle,
-          imageUrls,
-        })
-          .then(() => {
-            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", publishMac, imageUrls.length);
-            // Immediate first-photo push: when the client asked for the first
-            // image to render now (skipPlay=false OR immediatePlay=true), fire a
-            // dedicated `play` command so the device refreshes without waiting
-            // for the first interval timer tick. We do this AFTER strategy_bin
-            // so the firmware has the manifest it needs to resolve the URL.
-            if (immediatePlay && imageUrls.length > 0) {
-              const firstUrl = imageUrls[0];
-              const publicHost = process.env.PUBLIC_BASE_URL
-                ? new URL(process.env.PUBLIC_BASE_URL).hostname
-                : "myframe.ink";
-              publishPlayImage(publishMac, firstUrl, publicHost)
-                .then(() => console.log("[slideshow] immediate first-photo pushed mac=%s", publishMac))
-                .catch((e) => console.warn("[slideshow] immediate first-photo failed", publishMac, e));
-            }
-          })
-          .catch((e) => {
-            console.warn("[slideshow] mqtt strategy failed", publishMac, e);
+        // PROTOCOL COMPLIANCE: dispatch the playlist via the per-frame FIFO
+        // queue (strategy_bin + immediate first-photo). The firmware must ACK
+        // any prior task before this one is pushed to the device.
+        const taskId = `pl-${now}-${Math.random().toString(16).slice(2, 8)}`;
+        try {
+          dispatchQueue.enqueue({
+            taskId,
+            frameMac: publishMac,
+            type: "playlist",
+            payload: {
+              strategy: isRandomStrategy(strategy) ? 2 : 1,
+              intervalMinutes,
+              begintime,
+              endtime,
+              idle,
+              imageUrls,
+              immediatePlay,
+              msgid: String(now),
+            },
+            displayName: `Playlist (${ids.length})`,
           });
+          console.log("[slideshow] playlist queued mac=%s imgs=%d taskId=%s", publishMac, imageUrls.length, taskId);
+        } catch (e) {
+          console.warn("[slideshow] dispatch queue enqueue failed", publishMac, e);
+        }
       } else {
         console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
       }
