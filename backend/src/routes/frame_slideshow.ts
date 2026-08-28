@@ -190,12 +190,13 @@ export function frameSlideshowRouter(): Router {
       })
       .filter((url): url is string => url !== null);
 
+    let taskId: string | null = null;
     if (isMqttConnected()) {
       if (publishMac) {
         // PROTOCOL COMPLIANCE: dispatch the playlist via the per-frame FIFO
         // queue (strategy_bin + immediate first-photo). The firmware must ACK
         // any prior task before this one is pushed to the device.
-        const taskId = `pl-${now}-${Math.random().toString(16).slice(2, 8)}`;
+        taskId = `pl-${now}-${Math.random().toString(16).slice(2, 8)}`;
         try {
           dispatchQueue.enqueue({
             taskId,
@@ -216,6 +217,7 @@ export function frameSlideshowRouter(): Router {
           console.log("[slideshow] playlist queued mac=%s imgs=%d taskId=%s", publishMac, imageUrls.length, taskId);
         } catch (e) {
           console.warn("[slideshow] dispatch queue enqueue failed", publishMac, e);
+          taskId = null;
         }
       } else {
         console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
@@ -225,7 +227,7 @@ export function frameSlideshowRouter(): Router {
     }
 
     notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, intervalUnit, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay, immediatePlay });
+    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, intervalUnit, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay, immediatePlay, task_id: taskId });
   });
 
   // GET /api/v1/frames/manifest?mac=<MAC> — firmware polls this over plain HTTP
