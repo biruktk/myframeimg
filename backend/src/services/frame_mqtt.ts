@@ -145,15 +145,21 @@ export function frameMediaOrigin(): { base: string; host: string; port: number }
  * Origin the FRAME uses to fetch the DYNAMIC manifest
  * (`strategy_bin.data.host/port` + `path`).
  *
- * This must differ from [frameMediaOrigin]: the raw-IP :80 vhost is an nginx
- * block that only serves `/frame-media/` + `/firmware/` (everything else 404s),
- * while `myframe.ink:80` proxies the API but serves `.bin` through an untuned
- * block that the ESP32 fails to download from. So the frame fetches the
- * manifest straight from the Node API port (no DNS, no nginx) and then
- * downloads images from the tuned static origin advertised in the manifest
- * body itself.
+ * The device fetches BOTH the manifest and the `.bin` images from the SAME
+ * host/port given in `strategy_bin.data` (field-verified: when the manifest
+ * was served from :3001, the device also tried to download images from
+ * :3001 and 2/3 failed — it does NOT use the host/port advertised inside the
+ * manifest body). So the manifest must be reachable on the SAME tuned
+ * plain-HTTP vhost that reliably serves image downloads (:80).
  *
- * Override with `FRAME_MANIFEST_BASE_URL` (e.g. http://47.76.164.162:3001).
+ * The raw-IP :80 vhost (sites-enabled/frame-media) now proxies
+ * `/api/v1/frames/manifest` to the Node API (:3001) and serves `.bin` via the
+ * ESP32-tuned static block, so a single origin works for both. We default to
+ * the media origin host/port so nothing depends on Express static for image
+ * delivery.
+ *
+ * Override with `FRAME_MANIFEST_BASE_URL` if the manifest must live on a
+ * different host/port.
  */
 export function frameManifestOrigin(): { host: string; port: number } {
   const override = process.env.FRAME_MANIFEST_BASE_URL?.trim();
@@ -168,9 +174,10 @@ export function frameManifestOrigin(): { host: string; port: number } {
       /* fall through */
     }
   }
+  // Manifest + images share the tuned :80 vhost (nginx proxies /api/v1/frames/manifest).
   const media = frameMediaOrigin();
-  const apiPort = Number(process.env.FRAME_MANIFEST_PORT ?? process.env.PORT ?? 3001) || 3001;
-  return { host: media.host, port: apiPort };
+  const port = Number(process.env.FRAME_MANIFEST_PORT ?? media.port) || media.port;
+  return { host: media.host, port };
 }
 
 const frames = new Map<string, FrameRecord>();
