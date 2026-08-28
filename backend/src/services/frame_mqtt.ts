@@ -119,7 +119,7 @@ const DEFAULT_MQTT_PASS = "framepass2026";
  * origin MUST come from `PUBLIC_MEDIA_BASE_URL` (plain-HTTP media host),
  * never from `PUBLIC_BASE_URL` (the HTTPS marketing site).
  */
-export function frameMediaOrigin(): { base: string; host: string; port: number } {
+export function frameMediaOrigin(): { base: string; host: string; port: number; protocol: string } {
   const raw =
     process.env.PUBLIC_MEDIA_BASE_URL?.trim() ||
     process.env.PUBLIC_BASE_URL?.trim() ||
@@ -135,10 +135,11 @@ export function frameMediaOrigin(): { base: string; host: string; port: number }
       base: raw.replace(/\/$/, ""),
       host: u.hostname,
       port,
+      protocol: u.protocol.replace(/:$/, ""),
     };
   } catch {
     const fallbackPort = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80;
-    return { base: "", host: DEFAULT_MQTT_BROKER_HOST, port: fallbackPort };
+    return { base: "", host: DEFAULT_MQTT_BROKER_HOST, port: fallbackPort, protocol: "http" };
   }
 }
 
@@ -998,9 +999,17 @@ export function publishStrategyCommand(
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
 
-  // Use configured host or default to myframe.ink
-  const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "myframe.ink");
-  const port = Number(process.env.FRAME_MANIFEST_PORT ?? 80) || 80; // Firmware downloads over plain HTTP (never TLS)
+  /**
+   * Host/port the firmware uses to fetch the manifest + images. The ESP32 has
+   * no TLS stack and fails hostname lookups, so we point it at the plain-HTTP
+   * media origin (47.76.164.162:80) instead of PUBLIC_BASE_URL's myframe.ink
+   * (which is HTTPS marketing / no DNS resolution on the device). Caller can
+   * still override via config.host.
+   */
+  const media = frameMediaOrigin();
+  const plainHttpMedia = media.protocol === "http:";
+  const host = config.host ?? (plainHttpMedia ? media.host : "myframe.ink");
+  const port = Number(process.env.FRAME_MANIFEST_PORT ?? media.port ?? 80) || 80;
 
   // The firmware `begintime`/`endtime` is a DAILY playback window ("HH:MM").
   // Firmware confirmed: "00:00"–"00:00" is a ZERO-length window and the frame
