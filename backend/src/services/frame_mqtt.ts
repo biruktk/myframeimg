@@ -53,6 +53,14 @@ export type FrameRecord = {
   battery?: number;
   storageTotal?: number;
   storageUsed?: number;
+  /** Live Wi-Fi RSSI (dBm, typically -30..-90) from the device heartbeat. */
+  wifiRssi?: number;
+  /** Live Wi-Fi channel from the device heartbeat. */
+  wifiChannel?: number;
+  /** Live Wi-Fi SSID reported by the device (may differ from provisioned SSID). */
+  wifiName?: string;
+  /** Latest firmware version reported by the device (e.g. "0.0.1"). */
+  firmwareVersion?: string;
   config: Record<string, unknown>;
   delivery?: DeliveryProgress;
 };
@@ -427,6 +435,14 @@ function handleMessage(topic: string, raw: Buffer) {
     if (Number.isFinite(tfSize) && tfSize > 0) rec.storageTotal = tfSize;
     var tfUsed = Number(d.tfused);
     if (Number.isFinite(tfUsed) && tfUsed >= 0) rec.storageUsed = tfUsed;
+    var rssi = Number(d.wifi_rssi);
+    if (Number.isFinite(rssi)) rec.wifiRssi = rssi;
+    var wifiCh = Number(d.wifi_ch);
+    if (Number.isFinite(wifiCh)) rec.wifiChannel = wifiCh;
+    if (d.wifi_name && typeof d.wifi_name === "string") rec.wifiName = d.wifi_name;
+    if (d.wifi && typeof d.wifi === "string") rec.wifiName = d.wifi;
+    var fwLive = normalizeFirmwareVersion(String(d.version ?? d.ver ?? ""));
+    if (fwLive && fwLive !== "0.0.0") rec.firmwareVersion = fwLive;
   }
 
 

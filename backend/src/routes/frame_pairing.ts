@@ -72,7 +72,7 @@ function frameStatusPayload(macRaw: string) {
   var onlineForApp = presence !== "offline";
   var apiMqtt = isMqttConnected();
   var delivery = rec?.delivery ?? paired?.deliveryProgress ?? null;
-  var fw = paired?.firmwareVersion || null;
+  var fw = rec?.firmwareVersion ?? paired?.firmwareVersion ?? null;
   var latest = latestFirmwareRelease();
   var hasUpdate = !!fw && isFirmwareVersionNewer(latest.version, fw);
 
@@ -82,6 +82,24 @@ function frameStatusPayload(macRaw: string) {
   // than flashing a "Frame not paired" error dialog during the first ~30s after
   // BluFi provisioning completes.
   var provisioning = !frameAlive && !!paired && lastSeen === 0;
+
+  // Prefer LIVE telemetry captured from the device heartbeat over the stale
+  // paired/provisioned row. `0` IS a valid battery/tfused value, so guard with
+  // null/undefined (??), never truthiness, to avoid masking a real 0.
+  var liveBattery = rec?.battery != null ? rec.battery : paired?.battery;
+  var liveWifi = rec?.wifiName || paired?.wifiSsid || data.device.room || "";
+  var liveStorageUsed =
+    rec?.storageUsed != null
+      ? rec.storageUsed
+      : paired?.storageUsed != null
+        ? paired.storageUsed
+        : Math.round(data.device.usedBytes / 1024 / 1024);
+  var liveStorageTotal =
+    rec?.storageTotal != null
+      ? rec.storageTotal
+      : paired?.storageTotal != null
+        ? paired.storageTotal
+        : 32000;
 
   return {
     ok: true,
@@ -97,10 +115,14 @@ function frameStatusPayload(macRaw: string) {
     // True when the frame was provisioned via BluFi but hasn't heartbeated yet.
     // Clients should keep polling (not show error) during the provisioning window.
     provisioning: provisioning,
-    battery: rec?.battery ?? paired?.battery ?? 100,
-    wifi: paired?.wifiSsid ?? data.device.room ?? "",
-    storage_used_mb: rec?.storageUsed ?? paired?.storageUsed ?? Math.round(data.device.usedBytes / 1024 / 1024),
-    storage_total_mb: rec?.storageTotal ?? paired?.storageTotal ?? 32000,
+    battery: liveBattery ?? 100,
+    wifi: liveWifi,
+    // Live Wi-Fi telemetry from the device heartbeat (rssi dBm, channel, ssid).
+    wifi_rssi: rec?.wifiRssi != null ? rec.wifiRssi : null,
+    wifi_ch: rec?.wifiChannel != null ? rec.wifiChannel : null,
+    wifi_ssid: liveWifi || null,
+    storage_used_mb: liveStorageUsed,
+    storage_total_mb: liveStorageTotal,
     photo_count: paired?.pendingQueue?.length ?? paired?.photoQueueDepth ?? data.device.photoCount ?? 0,
     mqtt_connected: frameReachable,
     api_mqtt_connected: apiMqtt,
@@ -124,6 +146,8 @@ function frameStatusPayload(macRaw: string) {
     delivery_stopped_at_ms: delivery?.stoppedAtMs ?? null,
     delivery_ack_msgid: delivery?.ackMsgid ?? null,
     firmwareVersion: fw,
+    // Snake-case alias for clients that parse `firmware_version`.
+    firmware_version: fw,
     fpgaVersion: paired?.fpgaVersion ?? null,
     ota: {
       hasUpdate: hasUpdate,
