@@ -87,7 +87,13 @@ function frameStatusPayload(macRaw: string) {
   // paired/provisioned row. `0` IS a valid battery/tfused value, so guard with
   // null/undefined (??), never truthiness, to avoid masking a real 0.
   var liveBattery = rec?.battery != null ? rec.battery : paired?.battery;
-  var liveWifi = rec?.wifiName || paired?.wifiSsid || data.device.room || "";
+  var liveWifiRaw = rec?.wifiName || paired?.wifiSsid || data.device.room || "";
+  // The heartbeat reports wifi:"on"/"off" (a radio status flag, not an SSID) —
+  // only use it when it looks like a real network name.
+  var liveWifi =
+    liveWifiRaw && liveWifiRaw !== "on" && liveWifiRaw !== "off"
+      ? liveWifiRaw
+      : paired?.wifiSsid || data.device.room || "";
   var liveStorageUsed =
     rec?.storageUsed != null
       ? rec.storageUsed

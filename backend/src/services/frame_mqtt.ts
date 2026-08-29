@@ -440,7 +440,9 @@ function handleMessage(topic: string, raw: Buffer) {
     var wifiCh = Number(d.wifi_ch);
     if (Number.isFinite(wifiCh)) rec.wifiChannel = wifiCh;
     if (d.wifi_name && typeof d.wifi_name === "string") rec.wifiName = d.wifi_name;
-    if (d.wifi && typeof d.wifi === "string") rec.wifiName = d.wifi;
+    else if (d.wifi && typeof d.wifi === "string" && d.wifi !== "on" && d.wifi !== "off") {
+      rec.wifiName = d.wifi;
+    }
     var fwLive = normalizeFirmwareVersion(String(d.version ?? d.ver ?? ""));
     if (fwLive && fwLive !== "0.0.0") rec.firmwareVersion = fwLive;
   }
