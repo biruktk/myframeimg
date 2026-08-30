@@ -10,7 +10,24 @@ import {
   publishStrategyCommand,
   resolveFrameMediaUrl,
   resolveMqttHardwareMac,
+  getFrame,
 } from "../services/frame_mqtt";
+
+/** Reject if the frame has not heartbeated recently (defensive offline guard). */
+function requireFrameOnline(macOrDeviceId: string, res: express.Response): boolean {
+  const mac = resolveMqttHardwareMac(macOrDeviceId) ?? macOrDeviceId;
+  const rec = getFrame(mac);
+  const MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes — 1.5x the 10-min heartbeat interval
+  if (rec && rec.age > MAX_AGE_MS) {
+    res.status(409).json({
+      ok: false,
+      error: "FRAME_OFFLINE",
+      message: "The frame is currently offline and cannot receive new photos. Please check the frame\'s Wi-Fi connection.",
+    });
+    return false;
+  }
+  return true;
+}
 
 function normalizeMacKey(raw: string): string {
   try {
@@ -50,6 +67,19 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
     }
 
     const macKey = normalizeMacKey(String(req.params.mac ?? ""));
+    {
+      const checkMac = resolveMqttHardwareMac(macKey) ?? macKey;
+      const rec = getFrame(checkMac);
+      const MAX_AGE_MS = 15 * 60 * 1000;
+      if (rec && rec.age > MAX_AGE_MS) {
+        res.status(409).json({
+          ok: false,
+          error: "FRAME_OFFLINE",
+          message: "The frame is currently offline and cannot receive a new playlist. Please check the frame\'s Wi-Fi connection.",
+        });
+        return;
+      }
+    }
     if (macKey.length < 8) {
       res.status(400).json({ ok: false, error: "invalid_mac", message: "MAC / device identifier too short" });
       return;

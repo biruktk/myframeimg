@@ -7,7 +7,7 @@ import path from "path";
 import { db } from "../db/store";
 import { requirePairingToken, uploadRateLimit } from "../middleware/security";
 import { verifyUserJwtBearer, platformFromRequest } from "../services/app_user_jwt";
-import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveFrameMediaUrl, resolveMqttHardwareMac } from "../services/frame_mqtt";
+import { isMqttConnected, frameMediaOrigin, publishPlayImage, publishStrategyCommand, resolveFrameMediaUrl, resolveMqttHardwareMac, getFrame } from "../services/frame_mqtt";
 import { sendLocalizedPushToFrameSubscribers } from "../services/firebase_admin";
 import {
   enqueueUpload,
@@ -24,6 +24,22 @@ import {
   XT_BIN_TOTAL_BYTES,
 } from "../services/myfm_encode";
 
+
+/** Reject if the frame has not heartbeated recently (defensive offline guard). */
+function requireFrameOnline(macOrDeviceId: string, res: express.Response): boolean {
+  const mac = resolveMqttHardwareMac(macOrDeviceId) ?? macOrDeviceId;
+  const rec = getFrame(mac);
+  const MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes — 1.5x the 10-min heartbeat interval
+  if (rec && rec.age > MAX_AGE_MS) {
+    res.status(409).json({
+      ok: false,
+      error: "FRAME_OFFLINE",
+      message: "The frame is currently offline and cannot receive new photos. Please check the frame\'s Wi-Fi connection.",
+    });
+    return false;
+  }
+  return true;
+}
 /**
  * POST /api/photo/upload
  * Multipart: field `file` (binary), body fields: filename, device_id, checksum, size
@@ -332,6 +348,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
   });
 
   async function handleFrameUpload(req: express.Request, res: express.Response, deviceId: string) {
+  if (!requireFrameOnline(deviceId, res)) return;
     try {
       const file = req.file;
       if (!file) {
@@ -675,6 +692,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
     if (!mac) {
       res.status(400).json({ ok: false, error: "invalid_mac" });
       return;
+    if (!requireFrameOnline(mac ?? "", res)) return;
     }
     const body = (req.body ?? {}) as {
       photo_ids?: unknown;
