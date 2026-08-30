@@ -621,6 +621,35 @@ function readDbRaw(): MyframeDb {
   if (!parsed.slideshowsByBleMac || typeof parsed.slideshowsByBleMac !== "object") {
     parsed.slideshowsByBleMac = {};
   }
+
+  // Lazy backfill of upload.source / playlistId / albumId for legacy records.
+  // Idempotent — only assigns when the field is missing. Allows the personal-
+  // album query to filter cleanly even for uploads that predate the source
+  // tagging in POST /api/photo/upload + POST /api/frames/:mac/upload.
+  if (Array.isArray(parsed.uploads)) {
+    const playlistIdSet = new Set<string>();
+    for (const pl of parsed.playlists || []) {
+      for (const pid of pl.photoIds || []) {
+        if (typeof pid === "string" && pid) playlistIdSet.add(pid);
+      }
+    }
+    for (const u of parsed.uploads) {
+      if (!u || typeof u !== "object") continue;
+      if (typeof u.source === "string" && u.source) continue; // already tagged
+      // 1) gallery_sync → personal_album
+      if (u.deliveryMode === "gallery_sync") {
+        u.source = "personal_album";
+        continue;
+      }
+      // 2) id referenced by any playlist → playlist (+playlistId)
+      if (typeof u.id === "string" && playlistIdSet.has(u.id)) {
+        u.source = "playlist";
+        continue;
+      }
+      // 3) default → direct_cast (covers quick cast + single send + frameside plays)
+      u.source = "direct_cast";
+    }
+  }
   return parsed;
 }
 
