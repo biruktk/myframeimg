@@ -70,7 +70,7 @@ exports.frameFirmwareRouter.post("/frames/:mac/firmware/update", async (req, res
     const publicBaseUrl = String(process.env.PUBLIC_MEDIA_BASE_URL || process.env.PUBLIC_BASE_URL || "https://myframe.ink").replace(/\/$/, "");
     const downloadUrl = `${publicBaseUrl}/firmware/${encodeURIComponent(latest.filename)}`;
     try {
-        await (0, frame_mqtt_1.publishJson)(`/inkjoyap/${mac}`, {
+        await (0, frame_mqtt_1.publishJson)(`/myframe/${mac}`, {
             msgid: Date.now().toString(),
             action: "ota",
             stamac: mac,

@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Optional MQTT bridge to frames on your broker.
- * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
+ * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/myframe/{MAC}` matches stock firmware.
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -78,7 +78,7 @@ function frameAckEnabled() {
 function normalizeMac(mac) {
     return mac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase();
 }
-/** 12‑hex Wi‑Fi MAC for `/inkjoyap/{MAC}` and `play` payloads; strips BLE names like `IJ_D0CF13F0161C`. */
+/** 12‑hex Wi‑Fi MAC for `/myframe/{MAC}` and `play` payloads; strips BLE names like `IJ_D0CF13F0161C`. */
 function resolveMqttHardwareMac(raw) {
     let s = raw.trim();
     if (!s)
@@ -187,7 +187,7 @@ function publishFrameCommand(stamac, payload, qos, label, retain = false) {
             reject(new Error("MQTT not connected"));
             return;
         }
-        const topic = `/inkjoyap/${stamac}`;
+        const topic = `/myframe/${stamac}`;
         const body = JSON.stringify(payload);
         mqttDebugTx(topic, body);
         mqttClient.publish(topic, body, { qos, retain }, (err) => {
@@ -272,7 +272,7 @@ function handleMessage(topic, raw) {
             };
             if (frameAckEnabled()) {
                 // Working backup behavior: login_ack only, NOT retained, NO mqtt_config on login.
-                // Retained login_ack/mqtt_config on /inkjoyap/{MAC} overwrites retained play and
+                // Retained login_ack/mqtt_config on /myframe/{MAC} overwrites retained play and
                 // causes reconnect loops that abort .bin downloads.
                 const msgid = String(data.msgid ?? Date.now());
                 void publishToStationAndBleMac(stamac, { action: "login_ack", msgid, stamac }, 1, "login_ack", false).catch((err) => {
@@ -423,7 +423,7 @@ async function publishLoginAck(macRaw, msgidRaw) {
     }
     const msgid = msgidRaw != null && msgidRaw.trim().length > 0 ? msgidRaw.trim() : Date.now().toString();
     // Do NOT publish mqtt_config here (BLE / explicit /mqtt-config only).
-    // Do NOT retain login_ack — it shares /inkjoyap/{MAC} with play and would clobber retained play.
+    // Do NOT retain login_ack — it shares /myframe/{MAC} with play and would clobber retained play.
     await publishToStationAndBleMac(mac, { action: "login_ack", msgid, stamac: mac }, 1, "login_ack", false);
     await publishToStationAndBleMac(mac, { action: "wifimode", msgid: String(Date.now()), stamac: mac, data: { mode: 0 } }, 0, "wifi_sleep_off", false).catch((err) => {
         console.error("[MQTT] wifi_sleep off publish failed:", err);
@@ -482,7 +482,7 @@ function publishPlayImage(macRaw, imageUrl, publicHost) {
             // Publish play to all sibling MACs (frame may connect with different client ID)
             let published = 0;
             for (const playMac of playMacs) {
-                const topic = `/inkjoyap/${playMac}`;
+                const topic = `/myframe/${playMac}`;
                 const body = JSON.stringify(payload);
                 mqttDebugTx(topic, body);
                 mqttClient.publish(topic, body, { qos: 1, retain: true }, (err) => {
@@ -542,7 +542,7 @@ async function publishManualMqttCommand(clientidRaw, payload) {
         throw new Error("missing_clientid");
     if (!mqttClient?.connected)
         throw new Error("mqtt_disconnected");
-    const topic = `/inkjoyap/${clientid}`;
+    const topic = `/myframe/${clientid}`;
     const body = JSON.stringify(payload);
     mqttDebugTx(topic, body);
     await new Promise((resolve, reject) => {

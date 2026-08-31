@@ -209,7 +209,7 @@ exports.deviceRouter.post("/device/send", async (req, res) => {
             source: "api",
             mac: hwMac.replace(/[^a-fA-F0-9]/gi, "").toUpperCase(),
             frameName: data.device.name || deviceId,
-            topic: `/inkjoyap/${hwMac}`,
+            topic: `/myframe/${hwMac}`,
             action: "play",
             payload: JSON.stringify({ imageUrl, source: "api_device_send" }),
         });

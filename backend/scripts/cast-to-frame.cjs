@@ -165,7 +165,7 @@ async function main() {
   }
 
   const payload = buildPlayPayload(mac, absoluteUrl, fbHost, fbPort);
-  const topic = `/inkjoyap/${mac}`;
+  const topic = `/myframe/${mac}`;
   const body = JSON.stringify(payload);
 
   console.log("[cast-frame] MQTT publish:", topic);

@@ -98,7 +98,7 @@ function validateActionPayload(action: string, data: Record<string, unknown>): s
 
 /**
  * POST /api/frames/:mac/mqtt-command
- * Relay an app-issued MQTT payload (`wifi_sleep`) to /inkjoyap/{MAC}
+ * Relay an app-issued MQTT payload (`wifi_sleep`) to /myframe/{MAC}
  * and briefly poll /device/report for the ack result (100/113 = success, 112 = failure).
  * Guarded by the shared pairing token (same as /mqtt-config).
  */

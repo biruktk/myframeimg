@@ -1,6 +1,6 @@
 /**
  * Optional MQTT bridge to frames on your broker.
- * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
+ * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/myframe/{MAC}` matches MyFrame firmware.
  */
 
 import crypto from "crypto";
@@ -262,7 +262,7 @@ function addMacOffset(mac: string, offset: number): string {
 /** Resolve any device identifier to its 12‑hex station (MQTT/Wi‑Fi STA) MAC.
  *  - A BLE MAC (or any 12‑hex that is not the station MAC) is resolved to the
  *    frame's Wi‑Fi STA MAC (ESP32: BLE + 2) so downlinks land on the topic the
- *    frame actually subscribes to: `/inkjoyap/{STA_MAC}`.
+ *    frame actually subscribes to: `/myframe/{STA_MAC}`.
  *  - Non‑12‑hex identifiers are looked up in the DB (bleMac/id → stationMac).
  */
 export function resolveMqttHardwareMac(raw: string): string | null {
@@ -648,9 +648,11 @@ export function startFrameMqtt(): void {
     mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
     });
-    // Firmware publishes ACKs on /inkjoyap/{MAC}/ack as well as /device/report/{MAC}.
-    mqttClient?.subscribe("/inkjoyap/+/ack", { qos: 1 }, (err) => {
-      if (err) console.error("[frame-mqtt] subscribe /inkjoyap/+/ack error", err);
+    // Firmware publishes ACKs on /myframe/{MAC}/ack (and legacy /inkjoyap/{MAC}/ack)
+    // as well as /device/report/{MAC}. Support both ACK topics during the
+    // inkjoy → myframe transition so legacy frames keep working.
+    mqttClient?.subscribe(["/myframe/+/ack", "/inkjoyap/+/ack"], { qos: 1 }, (err) => {
+      if (err) console.error("[frame-mqtt] subscribe ACK topics error", err);
     });
   });
 
@@ -754,13 +756,13 @@ function publishJson(topic: string, payload: Record<string, unknown>, retain = f
   });
 }
 
-/** Retained mqtt_config on `/inkjoyap/{MAC}` — frame applies broker settings after Wi‑Fi. */
+/** Retained mqtt_config on `/myframe/{MAC}` — frame applies broker settings after Wi‑Fi. */
 export function publishRetainedMqttConfig(macRaw: string, msgid?: string): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
   const broker = mqttBrokerDefaults();
   return publishJson(
-    `/inkjoyap/${mac}`,
+    `/myframe/${mac}`,
     {
       msgid: msgid ?? Date.now().toString(),
       action: "mqtt_config",
@@ -780,7 +782,7 @@ export function publishRetainedMqttConfig(macRaw: string, msgid?: string): Promi
 export function publishLoginAck(macRaw: string, msgid?: string): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
-  return publishJson(`/inkjoyap/${mac}`, {
+  return publishJson(`/myframe/${mac}`, {
     msgid: msgid ?? Date.now().toString(),
     action: "login_ack",
     stamac: mac,
@@ -909,7 +911,7 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
       },
     };
 
-    const topic = `/inkjoyap/${mac}`;
+    const topic = `/myframe/${mac}`;
     const body = JSON.stringify(payload);
     mqttDebugTx(topic, body);
     mqttClient.publish(topic, body, { qos: 1 }, (err) => {
@@ -919,11 +921,11 @@ export function publishPlayImage(macRaw: string, imageUrl: string, publicHost?: 
   });
 }
 
-/** Publish an MQTT action command (sleep/wake) to /inkjoyap/{MAC}. */
+/** Publish an MQTT action command (sleep/wake) to /myframe/{MAC}. */
 export function publishMqttAction(macRaw: string, action: string, msgid?: string): Promise<void> {
   const mac = resolveMqttHardwareMac(macRaw);
   if (!mac) return Promise.reject(new Error("invalid_mac"));
-  return publishJson(`/inkjoyap/${mac}`, {
+  return publishJson(`/myframe/${mac}`, {
     msgid: msgid ?? Date.now().toString(),
     action: action,
     stamac: mac,
@@ -944,7 +946,7 @@ export function publishSleepConfig(
   const sleepEnd = localToUtcHHMM(config.endTime, offset);
   // Retained so reconnecting frames keep the latest sleep/wake preference.
   return publishJson(
-    "/inkjoyap/" + mac,
+    "/myframe/" + mac,
     {
       msgid: msgid ?? Date.now().toString(),
       action: "config",
@@ -1053,7 +1055,7 @@ export function publishStrategyCommand(
   };
 
 
-  return publishJson("/inkjoyap/" + mac, {
+  return publishJson("/myframe/" + mac, {
     msgid: msgid ?? Date.now().toString(),
     action: "strategy_bin",
     stamac: mac,
@@ -1062,7 +1064,7 @@ export function publishStrategyCommand(
 }
 
 /**
- * Publish a raw app-issued command (wifi_sleep) to /inkjoyap/{MAC}.
+ * Publish a raw app-issued command (wifi_sleep) to /myframe/{MAC}.
  * `data` passes through verbatim per the strict firmware protocol.
  */
 export function publishFrameCommand(
@@ -1130,7 +1132,7 @@ export function publishFrameCommand(
     }
   }
 
-  return publishJson(`/inkjoyap/${mac}`, {
+  return publishJson(`/myframe/${mac}`, {
     msgid: msgid ?? Date.now().toString(),
     action: action,
     stamac: mac,
@@ -1161,7 +1163,7 @@ export function publishMqttConfig(
   const host = frameManifestOrigin().host;
   const port = frameManifestOrigin().port; // manifest is served by the Node API, not the static vhost
 
-  return publishJson(`/inkjoyap/${mac}`, {
+  return publishJson(`/myframe/${mac}`, {
     msgid: mid,
     action: config.action,
     stamac: mac,

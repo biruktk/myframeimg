@@ -99,7 +99,7 @@ function seedFrameLogsFromAudit(auditRows) {
             source: "audit",
             mac,
             frameName: row.target,
-            topic: row.action === "device_send" ? `/inkjoyap/${mac}` : `/device/report/${mac}`,
+            topic: row.action === "device_send" ? `/myframe/${mac}` : `/device/report/${mac}`,
             action: row.action,
             payload: JSON.stringify(row.meta ?? { action: row.action }),
         });

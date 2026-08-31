@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Optional MQTT bridge to frames on your broker.
- * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/inkjoyap/{MAC}` matches stock firmware.
+ * Enable with MQTT_URL (e.g. mqtt://127.0.0.1:1883). Device command topic `/myframe/{MAC}` matches stock firmware.
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -303,13 +303,13 @@ function publishJson(topic, payload, retain = false) {
         });
     });
 }
-/** Retained mqtt_config on `/inkjoyap/{MAC}` — frame applies broker settings after Wi‑Fi. */
+/** Retained mqtt_config on `/myframe/{MAC}` — frame applies broker settings after Wi‑Fi. */
 function publishRetainedMqttConfig(macRaw, msgid) {
     const mac = resolveMqttHardwareMac(macRaw);
     if (!mac)
         return Promise.reject(new Error("invalid_mac"));
     const broker = mqttBrokerDefaults();
-    return publishJson(`/inkjoyap/${mac}`, {
+    return publishJson(`/myframe/${mac}`, {
         msgid: msgid ?? Date.now().toString(),
         action: "mqtt_config",
         stamac: mac,
@@ -326,7 +326,7 @@ function publishLoginAck(macRaw, msgid) {
     const mac = resolveMqttHardwareMac(macRaw);
     if (!mac)
         return Promise.reject(new Error("invalid_mac"));
-    return publishJson(`/inkjoyap/${mac}`, {
+    return publishJson(`/myframe/${mac}`, {
         msgid: msgid ?? Date.now().toString(),
         action: "login_ack",
         stamac: mac,
@@ -427,7 +427,7 @@ function publishPlayImage(macRaw, imageUrl, publicHost) {
                 imgs: [{ imgid: msgid, imgurl: imgurlForPlay }],
             },
         };
-        const topic = `/inkjoyap/${mac}`;
+        const topic = `/myframe/${mac}`;
         const body = JSON.stringify(payload);
         mqttDebugTx(topic, body);
         mqttClient.publish(topic, body, { qos: 1 }, (err) => {
@@ -438,12 +438,12 @@ function publishPlayImage(macRaw, imageUrl, publicHost) {
         });
     });
 }
-/** Publish an MQTT action command (sleep/wake) to /inkjoyap/{MAC}. */
+/** Publish an MQTT action command (sleep/wake) to /myframe/{MAC}. */
 function publishMqttAction(macRaw, action, msgid) {
     const mac = resolveMqttHardwareMac(macRaw);
     if (!mac)
         return Promise.reject(new Error("invalid_mac"));
-    return publishJson(`/inkjoyap/${mac}`, {
+    return publishJson(`/myframe/${mac}`, {
         msgid: msgid ?? Date.now().toString(),
         action: action,
         stamac: mac,
@@ -455,7 +455,7 @@ function publishSleepConfig(macRaw, config, msgid) {
     if (!mac)
         return Promise.reject(new Error("invalid_mac"));
     // Retained so reconnecting frames keep the latest sleep/wake preference.
-    return publishJson("/inkjoyap/" + mac, {
+    return publishJson("/myframe/" + mac, {
         msgid: msgid ?? Date.now().toString(),
         action: "config",
         stamac: mac,
@@ -487,7 +487,7 @@ function publishStrategyCommand(macRaw, config, msgid) {
         return Promise.reject(new Error("invalid_mac"));
     const host = config.host ?? (process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL).hostname : "");
     const port = process.env.PUBLIC_BASE_URL?.startsWith("https") ? 443 : 80;
-    return publishJson("/inkjoyap/" + mac, {
+    return publishJson("/myframe/" + mac, {
         msgid: msgid ?? Date.now().toString(),
         action: "strategy",
         stamac: mac,
