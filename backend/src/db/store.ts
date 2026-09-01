@@ -204,7 +204,11 @@ export type MyframeDb = {
     pendingQueue: string[];
     nextDeliveryAtMs: number | null;
     location?: { lat: number; lng: number };
-    ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "failed" | "success" };
+    ota: { targetVersion: string | null; status: "idle" | "queued" | "updating" | "downloading" | "failed" | "success" };
+    /** User opt-in for automatic OTA firmware installs (persisted per frame). */
+    autoUpdateEnabled?: boolean;
+    /** Last reported OTA progress (0–100) or status string from the device. */
+    lastOtaProgress?: number | string | null;
     sleepConfig?: { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number };
     playbackConfig?: { intervalMinutes: number; mode: "sequential" | "random"; durationHours: number };
     playbackConfigUpdatedAtMs?: number;

@@ -63,6 +63,10 @@ export type FrameRecord = {
   firmwareVersion?: string;
   config: Record<string, unknown>;
   delivery?: DeliveryProgress;
+  /** OTA lifecycle state surfaced to client apps. */
+  otaStatus?: "idle" | "downloading" | "success" | "failed";
+  /** Latest OTA progress reported by the device (0–100 or status string). */
+  lastOtaProgress?: number | string | null;
 };
 
 /** Default user timezone offset when the client does not send one (UTC+8). */
@@ -615,6 +619,61 @@ function handleMessage(topic: string, raw: Buffer) {
           if (match) match.stationMac = mac;
         });
       }
+      break;
+    }
+    case "ota":
+    case "ota_ack":
+    case "ota_progress": {
+      // Firmware reports OTA download/flash progress. Keep the in-memory and DB
+      // ota state in sync so the client apps can show live progress.
+      const pct = asCount(d?.progress ?? d?.percent ?? d?.downloaded);
+      const progress: number | string | null =
+        typeof d?.progress === "string" ? d.progress : pct ?? null;
+      rec.otaStatus = "downloading";
+      rec.lastOtaProgress = progress;
+      db.mutate((draft) => {
+        const f = draft.frames.find(
+          (x) => normalizeMac(x.bleMac) === mac || normalizeMac(x.stationMac ?? "") === mac || normalizeMac(x.id) === mac,
+        );
+        if (f) {
+          if (f.ota.status !== "success") f.ota.status = "downloading";
+          f.lastOtaProgress = progress;
+        }
+      });
+      break;
+    }
+    case "ota_success": {
+      rec.otaStatus = "success";
+      rec.lastOtaProgress = 100;
+      db.mutate((draft) => {
+        const f = draft.frames.find(
+          (x) => normalizeMac(x.bleMac) === mac || normalizeMac(x.stationMac ?? "") === mac || normalizeMac(x.id) === mac,
+        );
+        if (f) {
+          f.ota.status = "success";
+          f.lastOtaProgress = 100;
+        }
+      });
+      break;
+    }
+    case "ota_failed": {
+      const failInfo: number | string | null =
+        typeof d?.progress === "number" || typeof d?.progress === "string"
+          ? (d.progress as number | string)
+          : typeof d?.reason === "string"
+            ? d.reason
+            : null;
+      rec.otaStatus = "failed";
+      rec.lastOtaProgress = failInfo;
+      db.mutate((draft) => {
+        const f = draft.frames.find(
+          (x) => normalizeMac(x.bleMac) === mac || normalizeMac(x.stationMac ?? "") === mac || normalizeMac(x.id) === mac,
+        );
+        if (f) {
+          f.ota.status = "failed";
+          f.lastOtaProgress = failInfo;
+        }
+      });
       break;
     }
     default:

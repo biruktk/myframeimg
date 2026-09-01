@@ -172,36 +172,6 @@ framePairingRouter.get("/frames/:mac/status", function(req, res) {
   res.json(payload);
 });
 
-/** Firmware + OTA availability for a frame (dynamic, no hardcoded versions). */
-framePairingRouter.get("/frames/:mac/firmware", function(req, res) {
-  var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
-  if (!mac) {
-    res.status(400).json({ ok: false, error: "invalid_mac" });
-    return;
-  }
-  var data = db.read();
-  var macNorm = normalizeMac(mac);
-  var paired = data.frames.find(function (f) {
-    return [f.id, f.bleMac, f.stationMac ?? ""].some(function (id) {
-      if (!id) return false;
-      if (resolveMqttHardwareMac(id) === mac) return true;
-      return normalizeMac(id) === macNorm || normalizeMac(id).slice(0, 10) === macNorm.slice(0, 10);
-    });
-  });
-  var fw = paired?.firmwareVersion || null;
-  var latest = latestFirmwareRelease();
-  res.json({
-    ok: true,
-    currentVersion: fw,
-    latestVersion: latest.version,
-    hasUpdate: !!fw && isFirmwareVersionNewer(latest.version, fw),
-    fpgaVersion: paired?.fpgaVersion ?? null,
-    releaseNotes: latest.releaseNotes,
-    frameOnline: paired?.wifiStatus === "online",
-    otaStatus: paired?.ota?.status ?? "idle",
-  });
-});
-
 framePairingRouter.post("/frames/:mac/login-ack", requirePairingToken, async function(req, res) {
   var mac = resolveMqttHardwareMac(String(req.params.mac ?? ""));
   if (!mac) {
