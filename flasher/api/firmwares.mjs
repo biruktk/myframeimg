@@ -1,24 +1,28 @@
-// GET    /api/firmwares                     — public list (merged Blob + disk)
-// POST   /api/firmwares (JSON body)         — client-upload token exchange
-//                                             (fires when @vercel/blob/client
-//                                              upload() calls handleUploadUrl)
-// DELETE /api/firmwares?name=x              — admin delete (Blob-hosted only)
+// GET    /api/firmwares                              — public list (disk directory scan)
+// POST   /api/firmwares?name=<file>.bin              — direct stream upload to disk
+//           Content-Type: application/octet-stream
+//           Query params:
+//             name  — required, must match [A-Za-z0-9._-]+\.bin
+//             force — "1" to overwrite an existing .bin
+//           Body: raw bytes, streamed straight to public/firmware/<name>
+// DELETE /api/firmwares?name=<file>.bin              — admin delete (disk-backed only)
 //
-// The old raw-octet-stream POST path was removed because Vercel's default
-// request-body cap rejected 15 MB firmware .bin uploads with a 413 before
-// the function ever ran. Client-side direct-to-Blob upload has no such
-// limit — the browser PUTs directly to blob.vercel-storage.com with a
-// short-lived signed token minted here.
+// Migration note: replaced Vercel Blob client-token upload with native VPS
+// disk streaming. The browser now POSTs raw bytes here (no third-party CDN
+// dependency). Files are persisted under public/firmware/ so they are
+// served as static assets via nginx + the local Express static middleware.
 
-import {
-  listFirmwares, deleteFirmware, isValidFirmwareName,
-} from './_lib/blob.mjs';
 import { handler, json, isAdmin } from './_lib/http.mjs';
+import { isValidFirmwareName } from './_lib/blob.mjs';
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 
-const MAX_UPLOAD = 100 * 1024 * 1024;
+const MAX_UPLOAD = 100 * 1024 * 1024; // 100 MB hard cap (mirrors prior blob cap)
+const FIRMWARE_DIR = path.join(process.cwd(), 'public', 'firmware');
 
 function versionKey(name) {
-  const m = name.toLowerCase().match(/fw[-_]?(\d+(?:\.\d+)+)/);
+  const m = name.toLowerCase().match(/fw[-_.]?(\d+(?:\.\d+)+)/);
   if (!m) return [-1];
   return m[1].split('.').map(Number);
 }
@@ -31,89 +35,137 @@ function cmpVersion(a, b) {
   return a.id.localeCompare(b.id);
 }
 
+async function listDiskFirmwares() {
+  try {
+    await fsp.mkdir(FIRMWARE_DIR, { recursive: true });
+    const files = await fsp.readdir(FIRMWARE_DIR);
+    const bins = [];
+    for (const f of files) {
+      if (!f.toLowerCase().endsWith('.bin')) continue;
+      const st = await fsp.stat(path.join(FIRMWARE_DIR, f));
+      bins.push({
+        id: f,
+        size: st.size,
+        mtimeIso: st.mtime.toISOString(),
+        source: 'disk',
+        deletable: true,
+      });
+    }
+    return bins;
+  } catch {
+    return [];
+  }
+}
+
 export default handler(async (req, res) => {
   if (req.method === 'GET') {
-    const bins = (await listFirmwares()).sort(cmpVersion);
+    const bins = (await listDiskFirmwares()).sort(cmpVersion);
     const firmwares = bins.map((b) => ({
       id: b.id,
-      label: `${b.id} (${b.size.toLocaleString()} B)`,
-      url: `firmware/${b.id}`,
+      label: b.id + ' (' + b.size.toLocaleString() + ' B)',
+      url: 'firmware/' + b.id,
       size: b.size,
       mtimeIso: b.mtimeIso,
-      source: b.source,          // 'blob' (deletable) or 'disk' (immutable)
-      deletable: b.source === 'blob',
+      source: 'disk',
+      deletable: true,
     }));
     return json(res, 200, { firmwares });
   }
 
   if (req.method === 'POST') {
-    // Mint a short-lived client-upload token for one specific firmware
-    // pathname. The browser PUTs the .bin directly to blob.vercel-storage.com
-    // using this token — no large body ever traverses this function, so
-    // Vercel's default body cap doesn't reject 15 MB firmware uploads.
-    // Admin auth happens HERE (before mint), not on the Blob PUT.
     if (!(await isAdmin(req))) {
       return json(res, 401, { error: 'admin bearer required' });
     }
     const name = req.query?.name;
     if (!isValidFirmwareName(name)) {
-      return json(res, 400, { error: 'invalid name — must match [A-Za-z0-9._-]+.bin' });
+      return json(res, 400, {
+        error: 'invalid name — must match [A-Za-z0-9._-]+\.bin and length 1-128',
+      });
     }
-    // Overwrite policy — same-name upload is REFUSED unless the caller
-    // passes ?force=1. This blocks the "stolen admin token replaces
-    // shipped firmware" supply-chain attack (see audit H3). Force also
-    // requires a same-request confirm flag so a stale bookmark can't
-    // trigger it silently.
+
     const force = req.query?.force === '1';
-    const { listFirmwares } = await import('./_lib/blob.mjs');
-    const existing = (await listFirmwares()).find((f) => f.id === name);
-    if (existing && !force) {
+    const targetPath = path.join(FIRMWARE_DIR, name);
+
+    if (fs.existsSync(targetPath) && !force) {
+      const st = fs.statSync(targetPath);
       return json(res, 409, {
-        error: `firmware ${name} already exists (source=${existing.source}); rename or pass ?force=1 to replace`,
+        error: 'firmware ' + name + ' already exists (size=' + st.size + 'B); rename or pass ?force=1 to replace',
         code: 'FIRMWARE_EXISTS',
-        existing: { source: existing.source, size: existing.size, mtimeIso: existing.mtimeIso },
+        existing: { source: 'disk', size: st.size, mtimeIso: st.mtime.toISOString() },
       });
     }
-    if (existing?.source === 'disk') {
-      // Disk-hosted firmware is baked into the deploy — cannot be
-      // overwritten by a client upload even with ?force. Rename instead.
-      return json(res, 409, {
-        error: `firmware ${name} is built-in (disk-hosted); rename your upload to a different filename`,
-        code: 'FIRMWARE_BUILTIN',
+
+    const declaredLen = Number(req.headers['content-length'] || 0);
+    if (declaredLen === 0) {
+      return json(res, 400, { error: 'empty body' });
+    }
+    if (declaredLen > MAX_UPLOAD) {
+      return json(res, 413, {
+        error: 'payload too large: ' + declaredLen + ' bytes (max ' + MAX_UPLOAD + ')',
       });
     }
-    // TTL kept short so a leaked token can only replay for ~60s.
-    // 100 MB uploads over a residential link finish inside 60 s at 15+ Mbps.
+
+    fs.mkdirSync(FIRMWARE_DIR, { recursive: true });
+
+    const writeStream = fs.createWriteStream(targetPath, { mode: 0o644 });
+    let bytesWritten = 0;
+    let aborted = false;
+
+    const onAbort = () => {
+      if (aborted) return;
+      aborted = true;
+      console.warn('[api] firmware upload aborted mid-stream for ' + name);
+      req.destroy();
+      writeStream.destroy();
+      fsp.unlink(targetPath).catch(() => {});
+    };
+
+    req.on('aborted', onAbort);
+    res.on('close', () => { if (!res.writableEnded) onAbort(); });
+
+    req.on('data', (chunk) => { bytesWritten += chunk.length; });
+
     try {
-      const { generateClientTokenFromReadWriteToken } = await import('@vercel/blob/client');
-      const clientToken = await generateClientTokenFromReadWriteToken({
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        pathname: `firmware/${name}`,
-        validUntil: Date.now() + 60 * 1000,
-        allowedContentTypes: ['application/octet-stream'],
-        addRandomSuffix: false,
-        allowOverwrite: force,
-        maximumSizeInBytes: MAX_UPLOAD,
-        onUploadCompleted: undefined,
+      await new Promise((resolve, reject) => {
+        req.pipe(writeStream);
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+        req.on('error', reject);
       });
-      console.log(`[api] minted client-upload token for firmware/${name} (force=${force})`);
-      return json(res, 200, { clientToken, pathname: `firmware/${name}` });
     } catch (e) {
-      console.error('[api] mint client token failed:', e.message);
-      return json(res, 500, { error: e.message });
+      try { await fsp.unlink(targetPath); } catch {}
+      console.error('[api] firmware upload failed for ' + name + ': ' + e.message);
+      return json(res, 500, { error: 'upload failed: ' + e.message });
     }
+
+    if (aborted) return json(res, 499, { error: 'client disconnected' });
+
+    try { fs.chmodSync(targetPath, 0o644); }
+    catch (e) { console.warn('[api] chmod 644 failed for ' + name + ': ' + e.message); }
+
+    console.log('[api] firmware uploaded: ' + name + ' · ' + bytesWritten + ' B → ' + targetPath);
+    return json(res, 200, {
+      ok: true,
+      name: name,
+      path: '/firmware/' + name,
+      size: bytesWritten,
+    });
   }
 
   if (req.method === 'DELETE') {
     if (!(await isAdmin(req))) return json(res, 401, { error: 'admin bearer required' });
     const name = req.query?.name;
     if (!isValidFirmwareName(name)) return json(res, 400, { error: 'invalid name' });
+    const targetPath = path.join(FIRMWARE_DIR, name);
     try {
-      const result = await deleteFirmware(name);
-      console.log(`[api] firmware deleted: ${name}`);
-      return json(res, 200, result);
+      await fsp.unlink(targetPath);
+      console.log('[api] firmware deleted: ' + name);
+      return json(res, 200, { ok: true, name: name, deleted: true });
     } catch (e) {
-      return json(res, 400, { error: e.message });
+      if (e.code === 'ENOENT') {
+        return json(res, 404, { error: 'firmware ' + name + ' not found on disk' });
+      }
+      return json(res, 500, { error: e.message });
     }
   }
 

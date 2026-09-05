@@ -2,6 +2,10 @@ export type FirmwareRelease = {
   version: string;
   filename: string;
   releaseNotes: string;
+  /** User-friendly changelog bullets (zh) shown in Flutter + Mini-Program. */
+  changelogZh: string[];
+  /** User-friendly changelog bullets (en) shown in Flutter + Mini-Program. */
+  changelogEn: string[];
   sizeBytes: number;
   publishedAtMs: number;
   /** Plain-HTTP host the ESP32 fetches the .bin from (no TLS, no DNS on device). */
@@ -18,8 +22,26 @@ const DEFAULT_RELEASE: FirmwareRelease = {
   version: "0.0.2",
   filename: "myframe-firmware-0.0.2.bin",
   releaseNotes:
-    "1. Customizable default boot screen via down_int_img\n2. Added screen_size to login/heartbeat\n3. Exponential backoff for Wi-Fi reconnection (5s → 10s → 20s → 40s → 60s) with light sleep fallback\n4. Fixed 5-second long press reprovisioning\n5. MQTT topic unified to /myframe/{mac}\n6. BLUFI prefix unified as MF_\n7. Added MAC address display to provisioning page.",
-  sizeBytes: 15728640,
+    "Added support for custom startup/boot screens\n" +
+    "Improved Wi-Fi connection stability and power efficiency\n" +
+    "Smoother device pairing and reset experience\n" +
+    "Network setup page now displays frame identifier\n" +
+    "General system stability and bug fixes",
+  changelogZh: [
+    "支持自定义相框开机画面",
+    "优化 Wi-Fi 连接稳定性与省电表现",
+    "改进设备重置与配网体验",
+    "配网页面支持显示设备标识",
+    "修复已知问题并提升系统稳定性",
+  ],
+  changelogEn: [
+    "Added support for custom startup/boot screens",
+    "Improved Wi-Fi connection stability and power efficiency",
+    "Smoother device pairing and reset experience",
+    "Network setup page now displays frame identifier",
+    "General system stability and bug fixes",
+  ],
+  sizeBytes: 1682048,
   publishedAtMs: Date.UTC(2026, 8, 1),
   host: "47.76.164.162",
   port: 80,
@@ -41,6 +63,8 @@ export function latestFirmwareRelease(): FirmwareRelease {
     version: version.replace(/^v/i, ""),
     filename,
     releaseNotes,
+    changelogZh: DEFAULT_RELEASE.changelogZh,
+    changelogEn: DEFAULT_RELEASE.changelogEn,
     sizeBytes,
     publishedAtMs: DEFAULT_RELEASE.publishedAtMs,
     host,

@@ -162,6 +162,82 @@ async function loadWorkorderOptions() {
     if (prev) auditSel.value = prev;
   }
   if (_workorders[0]) await loadWorkorderRules(_workorders[0].id);
+  _syncBuildDownloadVisibility();
+  _syncAuditDownloadVisibility();
+}
+
+
+// Stream a built workorder's .myfw package to the admin's local Downloads
+// folder. Uses the same /package/<woId> endpoint the build-success CTA
+// uses, so blob- and disk-backed packages both work via the authed path.
+async function downloadWorkorderPackage(woId) {
+  if (!woId || typeof woId !== 'string') return;
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) { showLogin(); return; }
+  const btn = document.querySelector('#downloadMyfwBtn, #auditDownloadBtn');
+  const prevLabel = btn ? btn.textContent : '';
+  const prevDisabled = btn ? btn.disabled : false;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t('admin.build.downloading_myfw');
+  }
+  log(`Downloading ${woId}.myfw …`);
+  try {
+    const res = await fetch(`${SERVER}/package/${encodeURIComponent(woId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`.trim();
+      try {
+        const body = await res.json();
+        if (body && body.error) msg = body.error;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = woId + '.myfw';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    log(`✓ Downloaded ${woId}.myfw (${blob.size.toLocaleString()} B)`);
+  } catch (e) {
+    log(`✕ Download failed for ${woId}: ${e.message}`);
+    alert(t('admin.build.download_failed', { msg: e.message }));
+  } finally {
+    if (btn) {
+      btn.disabled = prevDisabled;
+      btn.textContent = prevLabel || t('admin.build.download_myfw');
+    }
+  }
+}
+
+// Show the build-form Download button only when the selected workorder
+// has a built .myfw package stored.
+function _syncBuildDownloadVisibility() {
+  const buildSel = $('woId');
+  const btn = $('downloadMyfwBtn');
+  if (!buildSel || !btn) return;
+  const wid = buildSel.value;
+  if (!wid) {
+    btn.style.display = 'none';
+    return;
+  }
+  const wo = (_workorders || []).find((w) => w.id === wid);
+  btn.style.display = wo && wo.hasPackage ? '' : 'none';
+}
+
+// Show the audit-section Download button only when the audited workorder
+// has a built package (license object present in the response).
+function _syncAuditDownloadVisibility() {
+  const btn = $('auditDownloadBtn');
+  if (!btn) return;
+  const wid = $('auditWoId')?.value;
+  const wo = (_workorders || []).find((w) => w.id === wid);
+  btn.style.display = wo && wo.hasPackage ? '' : 'none';
 }
 
 async function loadWorkorderRules(woId) {
@@ -187,7 +263,7 @@ async function loadWorkorderRules(woId) {
     log(`Load workorder failed: ${e.message}`);
   }
 }
-$('woId').addEventListener('change', () => loadWorkorderRules($('woId').value));
+$('woId').addEventListener('change', () => { loadWorkorderRules($('woId').value); _syncBuildDownloadVisibility(); });
 
 // Create a fresh workorder id — the one-shot policy in build-package.mjs
 // rejects any rebuild attempt, so admin must POST a new id each batch.
@@ -222,6 +298,12 @@ async function createWorkorder() {
 }
 $('newWoBtn').addEventListener('click', createWorkorder);
 $('newWoId').addEventListener('keydown', (e) => { if (e.key === 'Enter') createWorkorder(); });
+
+// Build-form direct .myfw download (visible when the selected workorder has a built package).
+$('downloadMyfwBtn')?.addEventListener('click', () => {
+  const wid = $('woId')?.value;
+  if (wid) downloadWorkorderPackage(wid);
+});
 
 // Suggest a fresh id: WO-YYYYMMDD-<seq>
 function suggestNewWoId() {
@@ -289,74 +371,87 @@ function renderFirmwareManager(firmwares) {
   }
 }
 
-// Direct-to-Blob upload — bypasses Vercel Functions' request-body cap by
-// PUTing the firmware .bin straight to blob.vercel-storage.com with a
-// server-minted short-lived token. Flow:
-//   1) admin.js  → POST /api/firmwares?name=xxx.bin   (admin bearer)
-//                → server verifies auth + name shape, mints client token
-//   2) admin.js  → put(pathname, file, {token})       (via @vercel/blob/client)
-//                → browser PUTs bytes directly to Blob CDN, reports progress
-//   3) admin.js  → refresh firmware list from server
-// The client library is CDN-loaded because our public/ folder is served
-// as static assets (no bundler to resolve node_modules/@vercel/blob).
+
+// Direct-to-VPS-disk upload — POSTs raw .bin bytes straight to the local
+// Node/Express runner, which streams them into public/firmware/<name> with
+// no Blob CDN in the path.
+//
+// Flow:
+//   1) admin.js  → POST /firmwares?name=xxx.bin?force=0|1
+//                    headers: Authorization: Bearer <admin>, Content-Type: application/octet-stream
+//                    body: file (File / Blob — Content-Length auto-set)
+//   2) server    → pipes req → writeStream → public/firmware/<name>
+//                  chmod 644, returns { ok, name, path, size }
+//   3) admin.js  → refresh firmware list from server, auto-select new entry
+//
+// We use XMLHttpRequest rather than fetch because XHR exposes real
+// upload-progress events (xhr.upload.onprogress); fetch's body stream
+// doesn't progress-report reliably across browsers when the body is a
+// File. There is no third-party CDN dependency in this path.
 async function uploadFirmware(file) {
   const status = $('fwUploadStatus');
   status.className = 'admin-form__status';
-  status.innerHTML = `
-    <span class="progress-line">
-      <span class="progress-line__label">${t('admin.fw.uploading', { name: file.name })}</span>
-      <progress class="progress-line__bar" max="100" value="0" style="width:180px;vertical-align:middle;margin:0 8px;"></progress>
-      <span class="progress-line__pct">0%</span>
-    </span>`;
+  status.innerHTML = '<span class="progress-line">' +
+    '<span class="progress-line__label">' + t('admin.fw.uploading', { name: file.name }) + '</span>' +
+    '<progress class="progress-line__bar" max="100" value="0" style="width:180px;vertical-align:middle;margin:0 8px;"></progress>' +
+    '<span class="progress-line__pct">0%</span></span>';
   const bar = status.querySelector('progress');
   const pct = status.querySelector('.progress-line__pct');
 
-  try {
-    // Step 1 — mint upload token (server-side auth happens here).
-    // On 409 FIRMWARE_EXISTS we prompt for explicit overwrite consent;
-    // FIRMWARE_BUILTIN is never overwritable (git-shipped bin).
-    let tokRes = await fetch(`${SERVER}/firmwares?name=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` },
-    });
-    let tokBody = await tokRes.json().catch(() => ({}));
-    if (tokRes.status === 409 && tokBody.code === 'FIRMWARE_EXISTS') {
-      const ex = tokBody.existing || {};
-      const msg = `固件 ${file.name} 已存在 (${ex.source}, ${(ex.size/1024/1024).toFixed(2)} MB, ${ex.mtimeIso || '?'})。\n` +
-                  `Firmware exists · overwrite?`;
-      if (!confirm(msg)) throw new Error('user cancelled overwrite');
-      tokRes = await fetch(`${SERVER}/firmwares?name=${encodeURIComponent(file.name)}&force=1`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` },
-      });
-      tokBody = await tokRes.json().catch(() => ({}));
-    }
-    if (!tokRes.ok) throw new Error(tokBody.error || `token mint HTTP ${tokRes.status}`);
-    const { clientToken, pathname } = tokBody;
-    if (!clientToken) throw new Error('server did not return a client token');
+  const token = localStorage.getItem(TOKEN_KEY);
+  const doUpload = (force) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = SERVER + '/firmwares?name=' + encodeURIComponent(file.name) + (force ? '&force=1' : '');
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const p = Math.round((e.loaded / e.total) * 100);
+      bar.value = p;
+      pct.textContent = p + '% \u00b7 ' + (e.loaded / 1024 / 1024).toFixed(2) + '/' + (e.total / 1024 / 1024).toFixed(2) + ' MB';
+    };
+    xhr.onload = () => {
+      let body = {};
+      try { body = JSON.parse(xhr.responseText || '{}'); } catch {}
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body);
+      } else {
+        const err = new Error(body.error || ('HTTP ' + xhr.status));
+        err.status = xhr.status;
+        err.code = body.code;
+        err.body = body;
+        reject(err);
+      }
+    };
+    xhr.onerror = () => reject(new Error('network error'));
+    xhr.onabort = () => reject(new Error('upload aborted'));
+    xhr.send(file);
+  });
 
-    // Step 2 — direct upload to Blob CDN using the Vercel client library.
-    // Bundled locally via esbuild (see public/vendor/vercel-blob-client.js)
-    // so there's no third-party CDN dependency in the upload path — a
-    // hijacked esm.sh can't inject code into admin sessions.
-    const { put } = await import('./vendor/vercel-blob-client.js');
-    const blob = await put(pathname, file, {
-      access: 'public',
-      token: clientToken,
-      contentType: 'application/octet-stream',
-      onUploadProgress: ({ loaded, total, percentage }) => {
-        const p = Math.round(percentage);
-        bar.value = p;
-        pct.textContent = `${p}% · ${(loaded / 1024 / 1024).toFixed(2)}/${(total / 1024 / 1024).toFixed(2)} MB`;
-      },
-    });
+  try {
+    let result;
+    try {
+      result = await doUpload(false);
+    } catch (e) {
+      if (e.status === 409 && e.code === 'FIRMWARE_EXISTS') {
+        const ex = e.body.existing || {};
+        const msg = '\u56fa\u4ef6 ' + file.name + ' \u5df2\u5b58\u5728 (' + (ex.source || 'disk') + ', ' +
+                    (ex.size / 1024 / 1024).toFixed(2) + ' MB, ' + (ex.mtimeIso || '?') + ')\u3002\n' +
+                    'Firmware exists \u00b7 overwrite?';
+        if (!confirm(msg)) throw new Error('user cancelled overwrite');
+        bar.value = 0;
+        result = await doUpload(true);
+      } else {
+        throw e;
+      }
+    }
 
     status.className = 'admin-form__status success';
-    status.textContent = `✓ ${file.name} · ${file.size.toLocaleString()} B`;
-    log(`✓ Uploaded firmware ${file.name} (${file.size.toLocaleString()} B) → ${blob.pathname}`);
+    status.textContent = '\u2713 ' + file.name + ' \u00b7 ' + (result.size || file.size).toLocaleString() + ' B';
+    log('\u2713 Uploaded firmware ' + file.name + ' (' + (result.size || file.size).toLocaleString() + ' B) \u2192 ' +
+        (result.path || ('/firmware/' + file.name)));
     await loadFirmwareOptions();
-    // Auto-select the just-uploaded firmware so the operator's next build
-    // uses it without a manual dropdown hunt.
     const fwSel = $('fwName');
     if (fwSel) {
       const opt = Array.from(fwSel.options).find((o) => o.value === file.name);
@@ -364,8 +459,8 @@ async function uploadFirmware(file) {
     }
   } catch (e) {
     status.className = 'admin-form__status error';
-    status.textContent = `✕ ${e.message}`;
-    log(`✕ Upload failed: ${e.message}`);
+    status.textContent = '\u2715 ' + e.message;
+    log('\u2715 Upload failed: ' + e.message);
     if (/401/.test(e.message)) showLogin();
   }
 }
@@ -565,8 +660,12 @@ async function runAuditQuery() {
 // Wire the query button — using a fallback since DOMContentLoaded may have fired.
 setTimeout(() => {
   $('auditRefreshBtn')?.addEventListener('click', runAuditQuery);
-  $('auditWoId')?.addEventListener('change', runAuditQuery);
+  $('auditWoId')?.addEventListener('change', () => { runAuditQuery(); _syncAuditDownloadVisibility(); });
   $('auditExportBtn')?.addEventListener('click', exportAuditCsv);
+  $('auditDownloadBtn')?.addEventListener('click', () => {
+    const wid = $('auditWoId')?.value;
+    if (wid) downloadWorkorderPackage(wid);
+  });
 }, 0);
 
 // Blob URL from the previous build — revoked before the next one runs, so
@@ -628,10 +727,12 @@ $('buildBtn').addEventListener('click', async () => {
       if (!meta.url) throw new Error('server did not return blob URL');
       const expected = Number(meta.size || 0);
 
-      // Step 2 — fetch the Blob CDN directly. Public Blob URLs are CORS-
-      // enabled and set Content-Length, so the reader loop can update
-      // the bar with real numbers.
-      const r = await fetch(meta.url);
+      // Step 2 — fetch the package. Public Blob URLs are CORS-enabled and
+      // need no auth header; same-origin local-disk packages DO need the
+      // admin bearer, which we attach only when the URL is relative (so a
+      // cross-origin Blob URL never leaks the token).
+      const token = localStorage.getItem(TOKEN_KEY);
+      const r = await fetch(meta.url, meta.url.startsWith('/') ? { headers: { Authorization: 'Bearer ' + token } } : undefined);
       if (!r.ok) throw new Error(`${r.status}: ${await r.text().catch(() => '')}`);
       const clen = Number(r.headers.get('Content-Length') || 0);
       const total = clen || expected;   // fall back to server-reported size
@@ -685,6 +786,10 @@ $('buildBtn').addEventListener('click', async () => {
         <a href="${flasherUrl}" target="_blank" rel="noopener" class="btn btn--primary btn--small" style="margin-left:8px;">${t('admin.panel.open_flasher')}</a>
       </span>`;
       status.textContent = `✓ ${blob.size.toLocaleString()} B · ${t('admin.build.saved')}`;
+      // Refresh workorder list + re-sync visibility (the just-built WO is now built=read-only).
+      await loadWorkorderOptions();
+      _syncBuildDownloadVisibility();
+      _syncAuditDownloadVisibility();
     } catch (e) {
       log(`✕ Download failed: ${e.message}`);
       status.className = 'admin-form__status error';

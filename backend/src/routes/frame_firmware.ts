@@ -55,6 +55,8 @@ frameFirmwareRouter.get("/frames/:mac/firmware", (req, res) => {
     latestVersion: latest.version,
     hasUpdate: isFirmwareVersionNewer(latest.version, current),
     releaseNotes: latest.releaseNotes,
+    changelogZh: latest.changelogZh,
+    changelogEn: latest.changelogEn,
     sizeBytes: latest.sizeBytes,
     downloadUrl: latest.downloadUrl,
     frameOnline: isFrameMqttFresh(mac),

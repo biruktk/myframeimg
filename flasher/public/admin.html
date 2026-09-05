@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MyFrame Admin · Production Center</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="/firmware/styles.css" />
+  <link rel="stylesheet" href="/firmware/admin.css" />
 </head>
 <body>
   <!-- ── Login-only language toggle (panel has its own inline one) ── -->
@@ -108,6 +108,7 @@
 
           <div class="admin-form__actions">
             <button id="buildBtn" class="btn btn--primary" data-i18n="admin.build.button">生成固件包</button>
+            <button id="downloadMyfwBtn" type="button" class="btn btn--outline" style="display:none" data-i18n="admin.build.download_myfw" data-i18n-attr="title:admin.build.download_myfw" title="⬇ 下载 .myfw">⬇ 下载 .myfw 包</button>
             <span id="buildStatus" class="admin-form__status"></span>
           </div>
         </div>
@@ -127,6 +128,7 @@
             <select id="auditWoId" class="admin-form__control"></select>
             <button id="auditRefreshBtn" type="button" class="btn btn--outline btn--small" data-i18n="admin.audit.query">查询</button>
             <button id="auditExportBtn" type="button" class="btn btn--outline btn--small" data-i18n="admin.audit.export">导出 CSV</button>
+            <button id="auditDownloadBtn" type="button" class="btn btn--outline btn--small" style="display:none" data-i18n="admin.build.download_myfw" title="⬇ 下载 .myfw">⬇ 下载 .myfw</button>
           </div>
         </div>
         <div id="auditSummary" class="fw-selected" style="margin-top:12px;"></div>
@@ -140,6 +142,6 @@
     </main>
   </section>
 
-  <script type="module" src="./admin.js"></script>
+  <script type="module" src="/firmware/admin.js"></script>
 </body>
 </html>

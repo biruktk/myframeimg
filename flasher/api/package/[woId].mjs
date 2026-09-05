@@ -32,10 +32,21 @@ export default handler(async (req, res) => {
     res.setHeader('X-Package-Type', 'myfw-aesgcm');
     return res.redirect(302, wo.packageBlobUrl);
   }
-  // Local dev — stream from /tmp with Content-Disposition so browser saves.
+  // Local dev / no-BLOB storage — serve the file directly from disk.
+  // For ?url=1 we return the same endpoint URL so the admin UI's fetch()
+  // can stream it (same-origin, exposes Content-Length for the progress bar).
+  if (req.query.url === '1') {
+    const buf = await readLocalPackage(woId);
+    return json(res, 200, {
+      url: '/firmware/api/package/' + woId,
+      size: buf.length,
+      type: 'application/octet-stream',
+      filename: woId + '.myfw',
+    });
+  }
   const buf = await readLocalPackage(woId);
   res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="${woId}.myfw"`);
+  res.setHeader('Content-Disposition', 'attachment; filename="' + woId + '.myfw"');
   res.setHeader('Content-Length', buf.length);
   res.setHeader('X-Package-Type', 'myfw-aesgcm');
   res.status(200).send(buf);

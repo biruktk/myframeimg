@@ -23,9 +23,17 @@ const ROOT = __dirname;
 
 const app = express();
 app.disable('x-powered-by');
+
+// JSON body parser — only fires on matching Content-Type, so the raw
+// `application/octet-stream` firmware upload bypasses it and reaches our
+// handler with `req` still a readable stream. 120 MB is well above the
+// 50 MB task requirement (and above the largest known firmware .bin).
 app.use(express.json({ limit: '120mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static frontend — relative asset paths resolve under any base path (/firmware).
+// `maxContentLength` doesn't apply to static GETs, but `express.static` does
+// respect Range requests which the ESP32 OTA path uses for partial download.
 app.use(express.static(path.join(ROOT, 'public')));
 
 // Vercel rewrites: / -> index.html, /admin -> admin.html
@@ -39,11 +47,18 @@ async function load(modPath) {
 
 // Wrap a handler: merge Express :params into req.query (Vercel handlers read
 // req.query.id / req.query.woId), then invoke with error isolation.
+//
+// Express 5 gotcha: `req.query` is a read-only prototype getter - plain
+// assignments like `req.query[k] = v` are silently dropped. We shadow it
+// with an own writable property so handlers can read `req.query.woId` etc.
 function route(modPath) {
   return async (req, res) => {
-    for (const [k, v] of Object.entries(req.params || {})) {
-      if (req.query[k] === undefined) req.query[k] = v;
-    }
+    // Own-property shadow of the read-only Express 5 getter.
+    Object.defineProperty(req, 'query', {
+      value: Object.assign({}, req.query, req.params),
+      configurable: true,
+      writable: true,
+    });
     try {
       const h = await load(modPath);
       await h(req, res);
@@ -74,5 +89,5 @@ app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 
 const port = Number(process.env.PORT || 3002);
 app.listen(port, () => {
-  console.log(`[flasher] listening on :${port}`);
+  console.log(`[flasher] listening on :${port} · express.json 120mb / urlencoded 50mb / direct disk-stream firmware upload`);
 });
