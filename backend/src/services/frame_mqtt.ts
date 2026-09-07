@@ -236,6 +236,63 @@ export function resolveFrameMediaUrl(
 
 const frames = new Map<string, FrameRecord>();
 
+/** MAC slugs permanently unbound (tombstones). The MQTT heartbeat MUST NOT
+ *  auto-create a new frame for one of these: that is exactly what resurrected a
+ *  deleted device ~30s after removal. Seeded from persisted DB on start and
+ *  kept in sync by [recordUnboundFrame]/[clearUnboundFrame]. */
+const unboundMacs = new Set<string>();
+
+function seedUnboundMacs(): void {
+  try {
+    const data = db.read();
+    unboundMacs.clear();
+    for (const slug of data.unboundFrames || []) {
+      const n = normalizeMac(slug);
+      if (n && n.length === 12) unboundMacs.add(n);
+    }
+  } catch (_) {
+    /* keep current in-memory set */
+  }
+}
+
+function macSlug(raw: string): string {
+  return normalizeMac(raw).toUpperCase();
+}
+
+/** Persist a MAC permanently unbound so heartbeats cannot re-create the row. */
+export function recordUnboundFrame(macRaw: string): void {
+  const slug = macSlug(macRaw);
+  if (!slug) return;
+  unboundMacs.add(slug);
+  db.mutate((draft) => {
+    if (!draft.unboundFrames) draft.unboundFrames = [];
+    if (!draft.unboundFrames.includes(slug)) draft.unboundFrames.push(slug);
+  });
+}
+
+/** Drop a tombstone (re-pair / re-grant). Removes the row + sibling keys. */
+export function clearUnboundFrame(macRaw: string): void {
+  const slug = macSlug(macRaw);
+  unboundMacs.delete(slug);
+  db.mutate((draft) => {
+    draft.unboundFrames = (draft.unboundFrames || []).filter((u) => u.toUpperCase() !== slug);
+  });
+}
+
+function isUnboundMac(macRaw: string): boolean {
+  const slug = macSlug(macRaw);
+  if (!slug) return false;
+  if (unboundMacs.has(slug)) return true;
+  const si = parseInt(slug, 16);
+  if (!Number.isNaN(si)) {
+    for (const k of unboundMacs) {
+      const ki = parseInt(k, 16);
+      if (!Number.isNaN(ki) && Math.abs(ki - si) === 2) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Latest confirmed `strategy_stop_ack` (result 113) downlink msgid per MAC.
  * The firmware re-transmits earlier `strategy_bin_ack` / `download_complete`
@@ -562,6 +619,24 @@ function handleMessage(topic: string, raw: Buffer) {
       };
     }
   }
+  // A frame the user unbound/deleted must NOT be resurrected by its heartbeat.
+  // The row was hard-deleted server-side; auto-creating it here re-surfaces it
+  // in every owner's frame list ~30s after removal. Skip telemetry writes for
+  // tombstoned MACs entirely.
+  if (isUnboundMac(mac)) {
+    appendFrameLog({
+      id: `log_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+      atMs: Date.now(),
+      direction: "rx",
+      source: "frame",
+      mac,
+      frameName: frameDisplayName(mac),
+      topic,
+      action: action ? `blocked_unbound_${action}` : undefined,
+      payload: raw.toString().slice(0, 2000),
+    });
+    return;
+  }
   db.mutate((draft) => {
     const prefix10 = mac.slice(0, 10);
     let match = draft.frames.find(
@@ -704,6 +779,7 @@ export function startFrameMqtt(): void {
 
   mqttClient.on("connect", () => {
     console.log("[frame-mqtt] connected");
+    seedUnboundMacs();
     mqttClient?.subscribe("/device/report/+", { qos: 1 }, (err) => {
       if (err) console.error("[frame-mqtt] subscribe error", err);
     });

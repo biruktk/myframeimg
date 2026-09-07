@@ -236,6 +236,10 @@ export type MyframeDb = {
       updatedAtMs: number;
     };
   }>;
+  /** MAC slugs (BLE/STA) permanently unbound by the user; the MQTT heartbeat
+   *  must NOT re-create these as new frames, which is what resurrected a
+   *  deleted device ~30s after removal. */
+  unboundFrames: string[];
   device: {
     id: string;
     name: string;
@@ -463,6 +467,7 @@ function createInitialDb(): MyframeDb {
     users: [],
     familyGroups: [],
     frames: [],
+    unboundFrames: [],
     device: {
       id: "YX-133P-001",
       name: "MyFrame (Primary)",
@@ -544,6 +549,9 @@ function readDbRaw(): MyframeDb {
   }
   if (!Array.isArray(parsed.enterpriseApiKeys)) {
     parsed.enterpriseApiKeys = [];
+  }
+  if (!Array.isArray(parsed.unboundFrames)) {
+    parsed.unboundFrames = [];
   }
   if (Array.isArray(parsed.frames)) {
     const fallbackOrgId = parsed.organizations[0]?.id ?? "org_default";

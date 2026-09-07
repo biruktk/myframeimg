@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { db, type MyframeDb } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
-import { normalizeMac } from "../services/frame_mqtt";
+import { normalizeMac, recordUnboundFrame, publishMqttAction } from "../services/frame_mqtt";
 import { bumpUserSyncVersion, bumpFamilyMembersSync, visibleFramesForUser, playlistsMetaForUser, findFrameByMac, frameDisplayName, relatedMacKeys, attachFrameToOwnerFamily } from "../services/account_sync_state";
 import {
   grantBluetoothCoOwner,
@@ -537,6 +537,34 @@ const hardDeleteFrameHandler = (req: Request, res: Response) => {
   });
 
   const account = db.read().users.find((u) => u.id === user.userId);
+
+  // Tombstone every MAC identity of the removed frame (id / BLE / STA + ±2 BLE
+  // siblings) so the MQTT heartbeat cannot re-create the row ~30s later. This
+  // is the definitive fix for device resurrection after Remove.
+  const removedMacs = new Set<string>();
+  for (const candidate of [frame.id, frame.bleMac, frame.stationMac, removedId, frameId]) {
+    const c = normalizeMac(candidate || "");
+    if (c && c.length === 12) removedMacs.add(c);
+  }
+  for (const mac of [...removedMacs]) {
+    const v = parseInt(mac, 16);
+    if (Number.isFinite(v)) {
+      const minus = (v - 2).toString(16).toUpperCase().padStart(12, "0");
+      const plus = (v + 2).toString(16).toUpperCase().padStart(12, "0");
+      if (minus.length === 12) removedMacs.add(minus);
+      if (plus.length === 12) removedMacs.add(plus);
+    }
+  }
+  for (const mac of removedMacs) recordUnboundFrame(mac);
+
+  // Tell the frame to clear its NVS / pairing state so it stops reporting to
+  // this account. Best-effort: an offline frame simply stays tombstoned.
+  if (removedId) {
+    publishMqttAction(removedId, "unbind").catch((err: unknown) => {
+      console.error("[unbind] mqtt publish failed", err);
+    });
+  }
+
   res.json({
     ok: true,
     frame_id: removedId,
