@@ -112,7 +112,7 @@ function completeWeChatLogin(profile: {
         u.id === user!.id
           ? {
               ...u,
-              name: u.name?.trim() ? u.name : name,
+              name: name.trim() ? name : (u.name?.trim() ? u.name : "WeChat User"),
               lastSeenAtMs: now,
               iosOpenId: u.iosOpenId ?? profile.openid,
               wechatUnionId: u.wechatUnionId ?? profile.unionid,
