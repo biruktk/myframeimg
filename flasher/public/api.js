@@ -50,6 +50,10 @@ export async function bootstrap() {
   const workorderFromUrl = params.get('workorder');
   cfg = {
     isDev,
+// Diagnostic mode: dumps raw esptool-js output and internal state around
+    // chip detection. Turn on with ?diag=1 in the URL. Independent of dev
+    // mode so it can be used against a real prod workorder while debugging.
+    diag:              params.get('diag') === '1' || params.has('diag') && params.get('diag') !== '0',
     workorderId:       workorderFromUrl || (isDev ? manifest.devMode.mockWorkorder.id : null),
     workorderExplicit: !!workorderFromUrl,
     token:             urlToken || (isDev ? 'demo' : null),

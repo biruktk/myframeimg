@@ -83,6 +83,7 @@ const STRINGS = {
 
     // Errors
     'err.wrong_chip':     '非 MyFrame 主板 (检测到 {chip})',
+    'err.chip_undetected':'未识别到 MyFrame 主板 · 请按住 BOOT 键再上电后重试，或检查 USB 连接',
     'err.smoke_timeout':  '主板启动检查超时：未收到启动信号',
     'err.env_blocked':    '环境不满足要求，无法烧录。请用 Chrome 89+ 或 Edge 89+ 并通过 localhost / https 访问。',
     'err.wo_load':        '工单加载失败：{msg}',
@@ -252,6 +253,7 @@ const STRINGS = {
     'log.baud_fallback':  'Baud escalation failed, falling back to {baud}: {msg}',
 
     'err.wrong_chip':     'Not a MyFrame board (detected {chip})',
+    'err.chip_undetected':'MyFrame board not detected · hold BOOT while powering on and retry, or check USB',
     'err.smoke_timeout':  'Board boot check timed out: no boot signal received',
     'err.env_blocked':    'Environment check failed. Use Chrome 89+ or Edge 89+ via localhost / https.',
     'err.wo_load':        'Failed to load work order: {msg}',

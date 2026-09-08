@@ -5,7 +5,13 @@
 // Upstream reference: https://github.com/espressif/esptool (Python) and
 // https://github.com/espressif/esptool-js (JS port used here).
 
-import { ESPLoader, Transport } from 'https://unpkg.com/esptool-js@0.6.0/bundle.js';
+// Vendored esptool-js@0.6.1 with an extra ESP32-C5 magic value patched in.
+// MyFrame production C5 silicon reports magic 0x30E1706F (ECO1) which
+// esptool.py v4.9.0 added upstream but esptool-js has not yet released.
+// See public/vendor/esptool-js-0.6.1-c5-eco1.js header for details.
+// Drop the vendored copy and swap back to unpkg once a newer esptool-js
+// includes this magic natively.
+import { ESPLoader, Transport } from './vendor/esptool-js-0.6.1-c5-eco1.js';
 import * as api from './api.js';
 import { decryptFirmware } from './crypto.js';
 import { verifySN } from './sn.js';
@@ -272,6 +278,11 @@ export async function flashOne(port, cfg, wo) {
   setState(t('state.working'), 'working');
   setStage(t('stage.connect'));
 
+  // Per-slot buffer for esptool-js per-char writes; flushed on newline
+  // when diag mode is on. Kept local to this call so parallel boards
+  // don't interleave their bytes.
+  let _rawWriteBuf = '';
+
   const transport = new Transport(port, /* enableTracing */ false);
   // Baud handling in esptool-js@0.6:
   //   - `baudrate` in options is the TARGET transfer baud.
@@ -290,11 +301,30 @@ export async function flashOne(port, cfg, wo) {
       // Rewrite esptool-js verbose output so the UI only shows MyFrame-branded
       // strings — engineers still get the substance, just without any ESP /
       // esptool / chip-family names leaking to the operator or screenshots.
+      //
+      // Diagnostic mode: `[fw-raw]` line dumps the untouched esptool-js text
+      // (may leak vendor words) so R&D can see every sync/detect line while
+      // chasing a bug. Enabled by ?diag=1 in the URL. Prod ops never touch it.
       writeLine(s) {
+        if (cfg.diag) {
+          const raw = (s || '').replace(/\n+$/, '');
+          if (raw) slog(`[fw-raw] ${raw}`);
+        }
         const clean = rewriteVendorStrings(s);
         if (clean) slog(`[fw] ${clean}`);
       },
-      write(_s) { /* per-char stream, ignore */ },
+      write(s) {
+        // Per-char stream. In diag mode buffer up until newline so we don't
+        // spam one line per byte, and flush the buffer as [fw-raw-w].
+        if (!cfg.diag || !s) return;
+        _rawWriteBuf += s;
+        let nl;
+        while ((nl = _rawWriteBuf.indexOf('\n')) >= 0) {
+          const line = _rawWriteBuf.slice(0, nl).replace(/\r$/, '');
+          _rawWriteBuf = _rawWriteBuf.slice(nl + 1);
+          if (line) slog(`[fw-raw-w] ${line}`);
+        }
+      },
     },
   });
 
@@ -306,7 +336,35 @@ export async function flashOne(port, cfg, wo) {
   try {
     // 1. detect chip
     setStage(t('stage.detect'));
-    const chip = await esploader.main();
+    if (cfg.diag) {
+      slog(`[diag] port=${portLabel(port)} · targetBaud=${cfg.manifest.transferBaud} · romBaud=115200`);
+      slog(`[diag] calling esploader.main() — awaiting sync + magic value`);
+    }
+    const detectT0 = Date.now();
+    let chip;
+    try {
+      chip = await esploader.main();
+      if (cfg.diag) slog(`[diag] esploader.main() returned "${chip}" in ${Date.now() - detectT0}ms`);
+    } catch (e) {
+      const rawMsg = String(e?.message || e);
+      const errName = e?.name || 'Error';
+      const stackHead = String(e?.stack || '').split('\n').slice(0, 4).join(' | ');
+      const chipRef = esploader.chip
+        ? (esploader.chip.CHIP_NAME || esploader.chip.constructor?.name || 'set')
+        : 'null';
+      slog(`[diag] esploader.main() threw after ${Date.now() - detectT0}ms · ${errName}: ${rawMsg}`, 'err');
+      slog(`[diag] esploader.chip = ${chipRef} · IS_STUB=${esploader.IS_STUB} · baudrate=${esploader.baudrate}`, 'err');
+      slog(`[diag] stack: ${stackHead}`, 'err');
+      // Null-chip pattern: esptool-js sync succeeded but the returned magic
+      // value did not map to any known chip class → this.chip stayed null,
+      // then main() tried to call this.chip.getChipDescription() and NRE'd.
+      // Translate this specific case into an operator-actionable message
+      // instead of the raw JS error text.
+      if (/getChipDescription|Cannot read properties of null|reading 'get/i.test(rawMsg)) {
+        throw new Error(t('err.chip_undetected'));
+      }
+      throw e;
+    }
     if (!/ESP32-?C5/i.test(chip)) {
       // Keep the real chip name in the thrown error so R&D can still see it
       // in the console, but the slot displays a MyFrame-branded label only.
