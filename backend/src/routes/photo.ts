@@ -285,8 +285,8 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         });
       });
 
-      // Notify frame subscribers + uploader (MAC-normalized lookup on server)
-      {
+      // Playlist clients announce completion once after publishing the full batch.
+      if (!(source === "playlist" && String(req.body.silent ?? "") === "true")) {
         // Quota banking: client reports a granted wx subscription on this upload.
         if (String(req.body.subscription_granted ?? "") === "true") {
           incrementWechatMessageQuota(verifyUserJwtBearer(req)?.userId);
@@ -549,7 +549,7 @@ export function photoRouter(uploadDir: string, publicBaseUrl: string) {
         });
       });
 
-      {
+      if (!(source === "playlist" && String(req.body.silent ?? "") === "true")) {
         // Quota banking: client reports a granted wx subscription on this upload.
         if (String(req.body.subscription_granted ?? "") === "true") {
           incrementWechatMessageQuota(verifyUserJwtBearer(req)?.userId);
