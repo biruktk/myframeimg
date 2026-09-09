@@ -6,6 +6,7 @@ import { isFirmwareVersionNewer, latestFirmwareRelease } from "../data/firmware_
 import {
   classifyFramePresence,
   DEFAULT_UTC_OFFSET_MINUTES,
+  timezoneOffsetForCountry,
   FRAME_HEART_INTERVAL_MS,
   getFrame,
   HEARTBEAT_ONLINE_MS,
@@ -26,14 +27,16 @@ export const framePairingRouter = Router();
  * `sleepConfig` (ntp) path. Both store LOCAL wall-clock times + a timezone offset.
  */
 function isInSleepWindow(data: ReturnType<typeof db.read>, mac: string, paired: {
+  timezoneOffsetMinutes?: number;
+  countryCode?: string;
   sleepConfig?: { enabled: boolean; startTime: string; endTime: string; timezoneOffsetMinutes?: number };
 } | undefined): boolean {
   var ws = data.wifiSleepByBleMac?.[normalizeMac(mac)];
   if (ws && Number(ws.mode) !== 0 && ws.begintime && ws.endtime) {
-    return isTimeInWindow(new Date(), ws.begintime, ws.endtime, ws.timezoneOffsetMinutes ?? DEFAULT_UTC_OFFSET_MINUTES);
+    return isTimeInWindow(new Date(), ws.begintime, ws.endtime, ws.timezoneOffsetMinutes ?? paired?.timezoneOffsetMinutes ?? timezoneOffsetForCountry(paired?.countryCode) ?? DEFAULT_UTC_OFFSET_MINUTES);
   }
   if (paired?.sleepConfig?.enabled) {
-    return isTimeInWindow(new Date(), paired.sleepConfig.startTime, paired.sleepConfig.endTime, paired.sleepConfig.timezoneOffsetMinutes ?? DEFAULT_UTC_OFFSET_MINUTES);
+    return isTimeInWindow(new Date(), paired.sleepConfig.startTime, paired.sleepConfig.endTime, paired.sleepConfig.timezoneOffsetMinutes ?? paired.timezoneOffsetMinutes ?? timezoneOffsetForCountry(paired.countryCode) ?? DEFAULT_UTC_OFFSET_MINUTES);
   }
   return false;
 }
@@ -68,8 +71,11 @@ function frameStatusPayload(macRaw: string) {
   // scheduled sleep window (never for a dead/offline frame).
   var sleeping = frameAlive && isInSleepWindow(data, mac, paired);
   var presence = classifyFramePresence(ageMs, sleeping);
-  // App "online" means reachable (fresh or idle within grace), not only last 2 minutes.
-  var onlineForApp = presence !== "offline";
+  // App "online" means a FRESH heartbeat (online) or sleeping — an "idle"
+  // frame (no heartbeat for 15-30 min) is treated as OFFLINE for the client so
+  // a frame that lost Wi-Fi stops showing "online" ~15 min after it went quiet.
+  var onlineForApp = presence === "online" || presence === "sleeping";
+  var reachableForApp = onlineForApp;
   var apiMqtt = isMqttConnected();
   var delivery = rec?.delivery ?? paired?.deliveryProgress ?? null;
   var fw = rec?.firmwareVersion ?? paired?.firmwareVersion ?? null;
@@ -116,15 +122,23 @@ function frameStatusPayload(macRaw: string) {
     is_network_sleeping: sleeping,
     isNetworkSleeping: sleeping,
     status: presence,
-    reachable: frameReachable || presence === "idle" || presence === "online",
+    reachable: reachableForApp,
     app_paired: !!paired,
     // True when the frame was provisioned via BluFi but hasn't heartbeated yet.
     // Clients should keep polling (not show error) during the provisioning window.
     provisioning: provisioning,
     battery: liveBattery ?? 100,
+    // Battery charging state reported live by the device (is_charging).
+    is_charging: rec?.isCharging ?? paired?.isCharging ?? null,
+    // SD card status reported live by the device (mounted / total_mb / free_mb).
+    sd_card: rec?.sdCard ?? paired?.sdCard ?? null,
+    sdcard_mounted: (rec?.sdCard ?? paired?.sdCard)?.mounted ?? null,
+    sdcard_total_mb: (rec?.sdCard ?? paired?.sdCard)?.totalMb ?? null,
+    sdcard_free_mb: (rec?.sdCard ?? paired?.sdCard)?.freeMb ?? null,
     wifi: liveWifi,
     // Live Wi-Fi telemetry from the device heartbeat (rssi dBm, channel, ssid).
-    wifi_rssi: rec?.wifiRssi != null ? rec.wifiRssi : null,
+    wifi_rssi: rec?.wifiRssi != null ? rec.wifiRssi : (paired?.rssi ?? null),
+    wifi_signal_dbm: rec?.wifiRssi != null ? rec.wifiRssi : (paired?.rssi ?? null),
     wifi_ch: rec?.wifiChannel != null ? rec.wifiChannel : null,
     wifi_ssid: liveWifi || null,
     storage_used_mb: liveStorageUsed,
@@ -139,6 +153,16 @@ function frameStatusPayload(macRaw: string) {
     heartbeat_interval_ms: FRAME_HEART_INTERVAL_MS,
     online_grace_ms: HEARTBEAT_ONLINE_MS,
     offline_grace_ms: HEARTBEAT_TIMEOUT_MS,
+    // Configured sleep window (LOCAL wall-clock HH:mm) so clients can render a
+    // "Scheduled wake-up at …" subtext under the In-Sleep-Mode badge.
+    // Resolve the sleep window directly (the `ws`/`paired` references are in
+    // scope earlier in this function; recompute for the payload).
+    sleep_start: (db.read().wifiSleepByBleMac?.[normalizeMac(mac)]?.begintime) ?? paired?.sleepConfig?.startTime ?? null,
+    sleep_end: (db.read().wifiSleepByBleMac?.[normalizeMac(mac)]?.endtime) ?? paired?.sleepConfig?.endTime ?? null,
+    sleep_timezone_offset_minutes: (db.read().wifiSleepByBleMac?.[normalizeMac(mac)]?.timezoneOffsetMinutes) ?? paired?.sleepConfig?.timezoneOffsetMinutes ?? paired?.timezoneOffsetMinutes ?? timezoneOffsetForCountry(paired?.countryCode) ?? null,
+    country_code: paired?.countryCode ?? null,
+    timezone: paired?.timezone ?? null,
+    timezone_offset_minutes: paired?.timezoneOffsetMinutes ?? timezoneOffsetForCountry(paired?.countryCode) ?? null,
     result: rec?.lastResult ?? null,
     lastResult: rec?.lastResult ?? null,
     displayCode: rec?.lastResult ?? null,

@@ -10,6 +10,7 @@ import mqtt from "mqtt";
 import path from "path";
 import { db } from "../db/store";
 import { appendFrameLog } from "./frame_logs";
+import { handleDownloadComplete, handlePlayAck, handlePlaylistRenderAck, touchActivePlaylist } from "./push_queue";
 
 /**
  * Frame firmware (0.5.x) emits MQTT `heart` about every ~10 minutes and often
@@ -55,6 +56,13 @@ export type FrameRecord = {
   storageUsed?: number;
   /** Live Wi-Fi RSSI (dBm, typically -30..-90) from the device heartbeat. */
   wifiRssi?: number;
+  /** Battery charging state reported by the device (is_charging). */
+  isCharging?: boolean;
+  /** SD card status (mounted, total_mb, free_mb) reported by the device. */
+  sdCard?: { mounted?: boolean; totalMb?: number; freeMb?: number };
+  countryCode?: string;
+  timezone?: string;
+  timezoneOffsetMinutes?: number;
   /** Live Wi-Fi channel from the device heartbeat. */
   wifiChannel?: number;
   /** Live Wi-Fi SSID reported by the device (may differ from provisioned SSID). */
@@ -70,7 +78,29 @@ export type FrameRecord = {
 };
 
 /** Default user timezone offset when the client does not send one (UTC+8). */
-export const DEFAULT_UTC_OFFSET_MINUTES = 8 * 60;
+export const DEFAULT_UTC_OFFSET_MINUTES = 0;
+
+/** Best-effort fixed-offset fallback for country-only records. Prefer the
+ * phone-provided timezone_offset_minutes because countries such as US/AU span
+ * multiple zones and daylight-saving changes. */
+export function timezoneOffsetForCountry(countryRaw: unknown): number | undefined {
+  const c = String(countryRaw ?? "").trim().toUpperCase();
+  const fixed: Record<string, number> = {
+    KR: 540,
+    JP: 540,
+    CN: 480,
+    HK: 480,
+    TW: 480,
+    SG: 480,
+    MY: 480,
+    TH: 420,
+    VN: 420,
+    IN: 330,
+    GB: 0,
+    IE: 0,
+  };
+  return fixed[c];
+}
 
 /** Clamp a client-supplied timezone offset (minutes east of UTC) to a sane range. */
 export function normalizeTzOffset(raw: unknown): number {
@@ -302,6 +332,7 @@ function isUnboundMac(macRaw: string): boolean {
 const stopAckMsgidByMac = new Map<string, string>();
 
 let mqttClient: mqtt.MqttClient | null = null;
+const localeSyncAt = new Map<string, number>();
 
 let onPlayAckCb: ((mac: string) => void) | null = null;
 
@@ -413,6 +444,34 @@ function isStalePreStopAck(mac: string, ackMsgidRaw: unknown): boolean {
   return a < s;
 }
 
+function maybeSyncFrameLocale(mac: string, data: Record<string, unknown>): void {
+  const reported = String(data.country_code ?? data.countryCode ?? "").trim().toUpperCase();
+  const timezone = String(data.timezone ?? data.timeZone ?? "").trim();
+  const offsetRaw = Number(data.timezone_offset_minutes ?? data.timezoneOffsetMinutes);
+  const offset = Number.isFinite(offsetRaw) && offsetRaw >= -840 && offsetRaw <= 840 ? offsetRaw : undefined;
+  if (!reported && !timezone && offset == null) return;
+  const now = Date.now();
+  const frame = db.read().frames.find((f) => {
+    const ids = [f.id, f.bleMac, f.stationMac ?? ""];
+    return ids.some((id) => id && (normalizeMac(id) === mac || resolveMqttHardwareMac(id) === mac));
+  });
+  const desiredCountry = frame?.countryCode?.trim().toUpperCase();
+  const desiredOffset = frame?.timezoneOffsetMinutes;
+  const countryMismatch = !!desiredCountry && !!reported && desiredCountry !== reported;
+  const offsetMismatch = desiredOffset != null && offset != null && desiredOffset !== offset;
+  if ((countryMismatch || offsetMismatch) && now - (localeSyncAt.get(mac) ?? 0) > 5 * 60 * 1000) {
+    localeSyncAt.set(mac, now);
+    publishJson(`/myframe/${mac}`, {
+      action: "update_config",
+      msgid: now.toString(),
+      stamac: mac,
+      country_code: desiredCountry,
+      timezone: frame?.timezone,
+      timezone_offset_minutes: desiredOffset,
+    }).catch(() => {});
+  }
+}
+
 function handleMessage(topic: string, raw: Buffer) {
   mqttDebugRx(topic, raw);
   let data: Record<string, unknown>;
@@ -451,6 +510,12 @@ function handleMessage(topic: string, raw: Buffer) {
   if (mac.length !== 12) return;
 
   const action = String(data.action ?? "");
+
+  // Playlist jobs download EVERY image before the first render can be ACKed
+  // (minutes on the real frame), so refresh the tracked playlist timeout on
+  // every device uplink — including the ~1/min hearts — so a healthy frame that
+  // is still downloading never trips a false 180s "Push failed, timed out".
+  touchActivePlaylist(mac);
   appendFrameLog({
     id: `log_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
     atMs: Date.now(),
@@ -492,12 +557,24 @@ function handleMessage(topic: string, raw: Buffer) {
   if (d && typeof d === "object") {
     var bat = Number(d.battery);
     if (Number.isFinite(bat) && bat >= 0) rec.battery = bat;
+    if (typeof d.is_charging === "boolean") rec.isCharging = d.is_charging;
     var tfSize = Number(d.tfsize);
     if (Number.isFinite(tfSize) && tfSize > 0) rec.storageTotal = tfSize;
     var tfUsed = Number(d.tfused);
     if (Number.isFinite(tfUsed) && tfUsed >= 0) rec.storageUsed = tfUsed;
     var rssi = Number(d.wifi_rssi);
     if (Number.isFinite(rssi)) rec.wifiRssi = rssi;
+    if (d.sd_card && typeof d.sd_card === "object") {
+      const sd = d.sd_card as Record<string, unknown>;
+      const mounted = typeof sd.mounted === "boolean" ? sd.mounted : undefined;
+      const totalMb = Number(sd.total_mb ?? sd.totalMb);
+      const freeMb = Number(sd.free_mb ?? sd.freeMb);
+      rec.sdCard = {
+        mounted,
+        totalMb: Number.isFinite(totalMb) && totalMb > 0 ? totalMb : undefined,
+        freeMb: Number.isFinite(freeMb) && freeMb >= 0 ? freeMb : undefined,
+      };
+    }
     var wifiCh = Number(d.wifi_ch);
     if (Number.isFinite(wifiCh)) rec.wifiChannel = wifiCh;
     if (d.wifi_name && typeof d.wifi_name === "string") rec.wifiName = d.wifi_name;
@@ -520,6 +597,16 @@ function handleMessage(topic: string, raw: Buffer) {
       rec.delivery = { status: "displayed", updatedAtMs: Date.now() };
       if (onPlayAckCb) onPlayAckCb(mac);
     }
+  }
+
+  // Async push queue: firmware confirmed E-Ink display refresh complete for a
+  // `play` command it was sent. Advance the matching job to completed (1.00)
+  // and immediately dispatch the next queued push for this MAC.
+  if (action === "play_ack") {
+    // Normalize msgid from string OR number (firmware counters are numeric).
+    const ackMsgid = String(data.msgid ?? data.ack_msgid ?? d?.ack_msgid ?? "").trim();
+    // Undefined => push_queue falls back to the active job for this MAC.
+    handlePlayAck(mac, ackMsgid || undefined);
   }
 
   // Hardware uplink ACK tracking — firmware reports true device progress.
@@ -619,6 +706,37 @@ function handleMessage(topic: string, raw: Buffer) {
       };
     }
   }
+
+  // Async push queue: firmware finished downloading the `play` command's
+  // images. Advance the matching job to downloaded (0.65); the later play_ack
+  // completes it and unblocks the queue. result 112 (download FAILED) marks the
+  // job as failed instead of leaving it parked at "downloaded" forever.
+  if (action === "download_complete") {
+    const ackMsgid = String(data.msgid ?? d?.ack_msgid ?? data.ack_msgid ?? "").trim();
+    const res = Number(result);
+    handleDownloadComplete(mac, ackMsgid || undefined, Number.isFinite(res) ? res : undefined);
+  }
+
+  // Async push queue: tracked PLAYLIST jobs (strategy_bin + manifest) complete
+  // on the FIRST confirmed render — strategy_bin_ack result 113 (rendered),
+  // refresh_ack / refresh_complete, or a play_ack (which the generic handler
+  // above already completes when it matches the active job). A result 112 means
+  // the download/render failed, so the job is failed rather than left parked.
+  // Once the first image is displayed the job is done; the rest of the playlist
+  // cycles on the frame in the background. Only playlist jobs are touched.
+  if (action === "strategy_bin_ack") {
+    const res = Number(result);
+    const ackMsgid = String(data.msgid ?? d?.ack_msgid ?? data.ack_msgid ?? "").trim();
+    if (res === 113) {
+      handlePlaylistRenderAck(mac, ackMsgid || undefined);
+    } else if (res === 112) {
+      handleDownloadComplete(mac, ackMsgid || undefined, 112);
+    }
+  } else if (action === "refresh_complete" || action === "refresh_ack") {
+    const ackMsgid = String(data.msgid ?? d?.ack_msgid ?? data.ack_msgid ?? "").trim();
+    handlePlaylistRenderAck(mac, ackMsgid || undefined);
+  }
+
   // A frame the user unbound/deleted must NOT be resurrected by its heartbeat.
   // The row was hard-deleted server-side; auto-creating it here re-surfaces it
   // in every owner's frame list ~30s after removal. Skip telemetry writes for
@@ -670,6 +788,28 @@ function handleMessage(topic: string, raw: Buffer) {
     if (d && typeof d === "object") {
       const bat = Number(d.battery);
       if (Number.isFinite(bat) && bat >= 0) match.battery = bat;
+      if (typeof d.is_charging === "boolean") match.isCharging = d.is_charging;
+      const rssiRaw = Number(d.wifi_rssi);
+      if (Number.isFinite(rssiRaw)) match.rssi = rssiRaw;
+      if (d.sd_card && typeof d.sd_card === "object") {
+        const sd = d.sd_card as Record<string, unknown>;
+        const totalMb = Number(sd.total_mb ?? sd.totalMb);
+        const freeMb = Number(sd.free_mb ?? sd.freeMb);
+        match.sdCard = {
+          mounted: typeof sd.mounted === "boolean" ? sd.mounted : undefined,
+          totalMb: Number.isFinite(totalMb) && totalMb > 0 ? totalMb : undefined,
+          freeMb: Number.isFinite(freeMb) && freeMb >= 0 ? freeMb : undefined,
+        };
+      }
+      const cc = String(data.country_code ?? data.countryCode ?? "").trim().toUpperCase();
+      // Client provisioning is authoritative for country. Heartbeats can carry
+      // stale/default firmware values (e.g. CN on hardware operating in KR), so
+      // only seed the field from telemetry when no client locale is persisted.
+      if (/^[A-Z]{2}$/.test(cc) && !match.countryCode) match.countryCode = cc;
+      const tz = String(data.timezone ?? data.timeZone ?? "").trim();
+      if (tz) match.timezone = tz;
+      const tzOffset = Number(data.timezone_offset_minutes ?? data.timezoneOffsetMinutes);
+      if (Number.isFinite(tzOffset) && tzOffset >= -840 && tzOffset <= 840) match.timezoneOffsetMinutes = tzOffset;
       const fv = normalizeFirmwareVersion(String(d.version ?? d.ver ?? ""));
       if (fv && fv !== "0.0.0") match.firmwareVersion = fv;
       const fg = normalizeFirmwareVersion(String(d.fpga_ver ?? d.fpgaVersion ?? ""));
@@ -678,6 +818,7 @@ function handleMessage(topic: string, raw: Buffer) {
     }
   });
 
+  maybeSyncFrameLocale(mac, data);
 
   switch (action) {
     case "login": {
@@ -786,9 +927,13 @@ export function startFrameMqtt(): void {
     // Firmware publishes ACKs on /myframe/{MAC}/ack (and legacy /inkjoyap/{MAC}/ack)
     // as well as /device/report/{MAC}. Support both ACK topics during the
     // inkjoy → myframe transition so legacy frames keep working.
-    mqttClient?.subscribe(["/myframe/+/ack", "/inkjoyap/+/ack"], { qos: 1 }, (err) => {
-      if (err) console.error("[frame-mqtt] subscribe ACK topics error", err);
-    });
+    mqttClient?.subscribe(
+      ["/device/ack/+", "/myframe/+/ack", "/inkjoyap/+/ack"],
+      { qos: 1 },
+      (err) => {
+        if (err) console.error("[frame-mqtt] subscribe ACK topics error", err);
+      },
+    );
   });
 
   mqttClient.on("message", (topic, msg) => handleMessage(topic, msg));
@@ -868,6 +1013,53 @@ export function classifyFramePresence(ageMs: number | null | undefined, sleeping
   return "idle";
 }
 
+/**
+ * True when a device is CURRENTLY in its scheduled sleep window AND is still
+ * alive (recent heartbeat), i.e. it powered down its radio for power saving
+ * rather than being unexpectedly offline. Shared by the push gate so commands
+ * to a sleeping frame are rejected with FRAME_ASLEEP instead of timing out.
+ */
+export function isDeviceSleeping(macRaw: string): boolean {
+  const mac = resolveMqttHardwareMac(macRaw) ?? normalizeMac(macRaw);
+  const data = db.read();
+  const rec = getFrame(mac);
+  const now = Date.now();
+  // Alive = recent heartbeat from either the live telemetry map OR the paired
+  // DB row (mirrors frameStatusPayload, so a frame seen recently but with no
+  // in-memory record is still not misclassified as offline).
+  const pairedFrame = data.frames.find((f) => {
+    const ids = [f.id, f.bleMac, f.stationMac ?? ""];
+    return ids.some(
+      (id) => id && (normalizeMac(id) === normalizeMac(mac) || resolveMqttHardwareMac(id) === mac),
+    );
+  });
+  const lastSeen = Math.max(rec?.lastSeen ?? 0, pairedFrame?.lastSeenAtMs ?? 0);
+  const alive = lastSeen > 0 && now - lastSeen < HEARTBEAT_TIMEOUT_MS;
+  if (!alive) return false;
+
+  // Active wifi_sleep config first.
+  const ws = data.wifiSleepByBleMac?.[normalizeMac(mac)];
+  if (ws && Number(ws.mode) !== 0 && ws.begintime && ws.endtime) {
+    return isTimeInWindow(
+      new Date(),
+      ws.begintime,
+      ws.endtime,
+      ws.timezoneOffsetMinutes ?? pairedFrame?.timezoneOffsetMinutes ?? timezoneOffsetForCountry(pairedFrame?.countryCode) ?? DEFAULT_UTC_OFFSET_MINUTES,
+    );
+  }
+  // Legacy paired sleepConfig (ntp) fallback.
+  const sc = (pairedFrame as { sleepConfig?: { enabled?: boolean; startTime?: string; endTime?: string; timezoneOffsetMinutes?: number } } | undefined)?.sleepConfig;
+  if (sc?.enabled && sc.startTime && sc.endTime) {
+    return isTimeInWindow(
+      new Date(),
+      sc.startTime,
+      sc.endTime,
+      sc.timezoneOffsetMinutes ?? pairedFrame?.timezoneOffsetMinutes ?? timezoneOffsetForCountry(pairedFrame?.countryCode) ?? DEFAULT_UTC_OFFSET_MINUTES,
+    );
+  }
+  return false;
+}
+
 function mqttBrokerDefaults() {
   const host = String(process.env.FRAME_MQTT_BROKER_HOST ?? DEFAULT_MQTT_BROKER_HOST).trim();
   const port = Number(process.env.FRAME_MQTT_BROKER_PORT ?? DEFAULT_MQTT_BROKER_PORT) || DEFAULT_MQTT_BROKER_PORT;
@@ -876,7 +1068,7 @@ function mqttBrokerDefaults() {
   return { host, port, usr, pwd };
 }
 
-function publishJson(topic: string, payload: Record<string, unknown>, retain = false): Promise<void> {
+export function publishJson(topic: string, payload: Record<string, unknown>, retain = false): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!mqttClient?.connected) {
       reject(new Error("MQTT not connected"));

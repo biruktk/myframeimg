@@ -1,12 +1,15 @@
+import crypto from "crypto";
 import { notifyPlaylistSent } from "../services/wechat_subscribe_notify";
 import express, { Request, Response, Router } from "express";
 import { db } from "../db/store";
 import { verifyUserJwtBearer } from "../services/app_user_jwt";
 import { stopPlaybackForMacKeys } from "../services/slideshow_stop";
 import { isRandomStrategy, seedCurrentIndex } from "../services/slideshow_index";
+import { trackPlaylistPush } from "../services/push_queue";
 import {
   frameMediaOrigin,
   isMqttConnected,
+  publishPlayImage,
   publishStrategyCommand,
   resolveFrameMediaUrl,
   resolveMqttHardwareMac,
@@ -35,6 +38,98 @@ function normalizeMacKey(raw: string): string {
   } catch {
     return raw.replace(/[^a-fA-F0-9]/g, "").toUpperCase();
   }
+}
+
+/**
+ * Persist an EXTERNAL multi-image share (iOS Share Extension / Android, which
+ * publish slideshows with source === "direct_cast") into the user's cloud
+ * "My Playlist" album. The Share Extension runs outside the Flutter app, so a
+ * local-only album may never be created on device; writing it server-side makes
+ * the Playlists tab show the share on ANY app via the normal account sync —
+ * independent of the file hand-off.
+ *
+ * Idempotent: one "My Playlist" per user; photo ids (upload row ids) are
+ * appended once. Falls back to the original token when an upload row can't be
+ * resolved yet (it will simply not render until resolvable).
+ */
+function persistExternalShareToUserPlaylist(
+  userId: string,
+  frameMacKey: string,
+  imageIdTokens: string[],
+): void {
+  const tokens = [...new Set(imageIdTokens.map((t) => String(t).trim()).filter(Boolean))];
+  if (!userId || tokens.length < 2) return;
+
+  const now = Date.now();
+  db.mutate((draft) => {
+    const uploadIds = new Set<string>();
+    const unresolved: string[] = [];
+    for (const tok of tokens) {
+      const row = draft.uploads.find(
+        (u) => u.id === tok || u.filename === tok || u.filename?.split("/").pop() === tok,
+      );
+      if (row?.id) {
+        uploadIds.add(row.id);
+        // Tag the upload as playlist-owned so playlist views never bleed into
+        // the Personal gallery feed.
+        if (row.source === "direct_cast" || !row.source) {
+          row.source = "playlist";
+          row.playlistId = undefined; // assigned once a playlist id exists below
+        }
+      } else {
+        unresolved.push(tok);
+      }
+    }
+
+    // Resolve a canonical "My Playlist" row for this user (title-insensitive),
+    // creating it lazily on first external multi-share.
+    let mine = draft.playlists.find(
+      (p) =>
+        p.ownerUserId === userId &&
+        String(p.title ?? "").trim().toLowerCase() === "my playlist",
+    );
+    if (!mine) {
+      mine = {
+        id: `pl_${now}_${Math.random().toString(16).slice(2, 8)}`,
+        title: "My Playlist",
+        photoIds: [],
+        scheduleRule: null,
+        assignedFrameIds: frameMacKey ? [frameMacKey] : [],
+        system: false,
+        ownerUserId: userId,
+      };
+      draft.playlists.push(mine);
+    }
+    if (frameMacKey && mine.assignedFrameIds && !mine.assignedFrameIds.includes(frameMacKey)) {
+      mine.assignedFrameIds.push(frameMacKey);
+    }
+    const existing = new Set(Array.isArray(mine.photoIds) ? mine.photoIds : []);
+    let added = 0;
+    for (const id of uploadIds) {
+      if (!existing.has(id)) {
+        mine.photoIds.push(id);
+        existing.add(id);
+        added++;
+        // Tag upload with playlistId so the strict playlist-photos view includes it.
+        const row = draft.uploads.find((x) => x.id === id);
+        if (row) row.playlistId = mine.id;
+      }
+    }
+    // Keep unresolved tokens too — they may resolve after a later upload sync.
+    for (const tok of unresolved) {
+      if (!existing.has(tok) && !mine.photoIds.includes(tok)) {
+        mine.photoIds.push(tok);
+        existing.add(tok);
+      }
+    }
+
+    const u = draft.users.find((x) => x.id === userId);
+    if (u) {
+      u.syncVersion = (u.syncVersion ?? 0) + 1;
+      u.syncUpdatedAtMs = now;
+    }
+    console.log("[slideshow] external share → My Playlist userId=%s frame=%s photos=%d added=%d", userId, frameMacKey, tokens.length, added);
+  });
 }
 
 /** Idempotency guard: MAC -> last successful strategy_stop dispatch (ms). */
@@ -203,6 +298,16 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
       };
     });
 
+    // External multi-image shares (native Share Extension / Android intents)
+    // publish slideshows tagged source === "direct_cast". Persist them into the
+    // owner's cloud "My Playlist" so the Playlists tab shows the share via
+    // account sync on ANY app build — even when the on-device file hand-off was
+    // never completed. In-app album/playlist sends (source "playlist") already
+    // manage their own albums, so they are intentionally untouched.
+    if (u && ids.length > 1 && String((req.body as Record<string, unknown>)?.source ?? "").trim() === "direct_cast") {
+      persistExternalShareToUserPlaylist(u.userId, macKey, ids);
+    }
+
     // PROTOCOL COMPLIANCE: dispatch `strategy_bin` SYNCHRONOUSLY inside the
     // request lifecycle (<500ms) so the frame starts cycling immediately.
     // The app sends imageIds as upload filenames (e.g. 1..._slideshow_x.bin),
@@ -217,8 +322,14 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
       .map((id) => resolveFrameMediaUrl(id, mediaDir))
       .filter((url): url is string => url !== null);
 
+    // Set when this publish created a backend-tracked playlist push job.
+    let trackedMsgid: string | undefined;
+
     if (isMqttConnected()) {
       if (publishMac) {
+        // Command msgid doubles as the tracked push-job msgid the client polls,
+        // so the playlist banner can observe the firmware's first-render ACK.
+        const commandMsgid = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
         // 1037346b contract: fire-and-forget strategy_bin dispatch from the
         // request lifecycle (<500ms) so the frame starts cycling immediately.
         // The frame autonomously fetches the manifest + .bin files and
@@ -231,13 +342,39 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
           endtime,
           idle,
           imageUrls,
-        })
+        }, commandMsgid)
           .then(() => {
-            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d", publishMac, imageUrls.length);
+            console.log("[slideshow] strategy_bin dispatched mac=%s imgs=%d msgid=%s", publishMac, imageUrls.length, commandMsgid);
           })
           .catch((e) => {
             console.warn("[slideshow] mqtt strategy failed", publishMac, e);
           });
+        // Only true multi-image playlists get a tracked job (single-image
+        // slideshows are completed by their own `play` push). Latest wins.
+        if (ids.length > 1) {
+          trackPlaylistPush(publishMac, commandMsgid);
+          trackedMsgid = commandMsgid;
+        }
+
+        // STOPPED-STATE RECOVERY: after a "Stop Playback" the frame is holding
+        // on its last image (strategy_stop). A bare strategy_bin sometimes never
+        // starts downloading while the panel is in that halted state. If the
+        // frame's last confirmed delivery is "stopped", wake it by ALSO sending
+        // an immediate single `play` of image[0] — the panel wakes, shows photo
+        // 1 right away, and the strategy then takes over the rotation.
+        if (imageUrls.length > 0) {
+          const live = getFrame(publishMac);
+          const wasStopped = live?.delivery?.status === "stopped" || live?.lastAction === "strategy_stop";
+          if (wasStopped) {
+            publishPlayImage(publishMac, imageUrls[0]!)
+              .then(() => {
+                console.log("[slideshow] post-stop wake play mac=%s img=%s", publishMac, imageUrls[0]);
+              })
+              .catch((e) => {
+                console.warn("[slideshow] post-stop wake play failed", publishMac, e);
+              });
+          }
+        }
       } else {
         console.warn("[slideshow] strategy_bin skipped (no mqtt mac for)", macKey);
       }
@@ -246,7 +383,18 @@ export function frameSlideshowRouter(uploadDir?: string): Router {
     }
 
     notifyPlaylistSent({ uploaderUserId: u?.userId, playlistTitle: "Playlist", photoCount: ids.length, frameName: macKey }).catch((e: unknown) => console.warn("[slideshow] notify error", e));
-    res.json({ ok: true, macKey, imageIds: ids, intervalMinutes, strategy: isRandomStrategy(strategy) ? 2 : 1, begintime, endtime, idle, skipPlay });
+    res.json({
+      ok: true,
+      macKey,
+      imageIds: ids,
+      intervalMinutes,
+      strategy: isRandomStrategy(strategy) ? 2 : 1,
+      begintime,
+      endtime,
+      idle,
+      skipPlay,
+      ...(trackedMsgid ? { msgid: trackedMsgid } : {}),
+    });
   });
 
   // GET /api/v1/frames/manifest?mac=<MAC> — firmware polls this over plain HTTP

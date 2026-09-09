@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { db, type MyframeDb } from "../db/store";
 import { verifyUserJwtBearer, type AuthedUser } from "../services/app_user_jwt";
-import { normalizeMac, recordUnboundFrame, publishMqttAction } from "../services/frame_mqtt";
+import { normalizeMac, recordUnboundFrame, clearUnboundFrame, publishMqttAction } from "../services/frame_mqtt";
 import { bumpUserSyncVersion, bumpFamilyMembersSync, visibleFramesForUser, playlistsMetaForUser, findFrameByMac, frameDisplayName, relatedMacKeys, attachFrameToOwnerFamily } from "../services/account_sync_state";
 import {
   grantBluetoothCoOwner,
@@ -293,6 +293,13 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
   const setPrimary = req.body?.set_primary !== false;
   const frameNameIn = String(req.body?.frame_name ?? req.body?.display_name ?? req.body?.custom_name ?? req.body?.alias ?? "").trim();
   const wifiSsidIn = String(req.body?.wifi_ssid ?? req.body?.wifiSsid ?? "").trim();
+  const countryCodeIn = String(req.body?.country_code ?? req.body?.countryCode ?? "").trim().toUpperCase();
+  const timezoneIn = String(req.body?.timezone ?? req.body?.timeZone ?? "").trim();
+  const timezoneOffsetIn = Number(req.body?.timezone_offset_minutes ?? req.body?.timezoneOffsetMinutes);
+  const validCountryCode = /^[A-Z]{2}$/.test(countryCodeIn) ? countryCodeIn : "";
+  const validTimezoneOffset = Number.isFinite(timezoneOffsetIn) && timezoneOffsetIn >= -840 && timezoneOffsetIn <= 840
+    ? timezoneOffsetIn
+    : null;
   let frameId = "";
   let bleMacOut = norm;
 
@@ -339,6 +346,9 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
         existing!.wifiStatus = "offline";
       }
     }
+    if (validCountryCode) existing!.countryCode = validCountryCode;
+    if (timezoneIn) existing!.timezone = timezoneIn;
+    if (validTimezoneOffset != null) existing!.timezoneOffsetMinutes = validTimezoneOffset;
 
     frameId = existing!.id;
     bleMacOut = normalizeMac(existing!.bleMac || norm);
@@ -362,6 +372,11 @@ userProfileRouter.post("/v1/user/frames/bind", (req: Request, res: Response) => 
       return false; // drop ghost
     });
   });
+
+  // Intentional re-pair wins over a previous Remove: clear the persisted server
+  // tombstones for BLE/STA and their ±2 MAC siblings so new heartbeats are
+  // accepted immediately after the device is paired again.
+  for (const key of relatedMacKeys(bleMacOut)) clearUnboundFrame(key);
 
   const account = db.read().users.find((u) => u.id === user.userId);
   res.json({

@@ -33,6 +33,8 @@ import { wechatMobileAuthRouter } from "./routes/wechat_mobile_auth";
 import { wechatPhoneRouter } from "./routes/wechat_phone";
 import { isGoogleOAuthRedirectConfigured } from "./services/google_oauth_mobile";
 import { startFrameMqtt } from "./services/frame_mqtt";
+import { pushRouter } from "./routes/push_routes";
+import { seedPushQueue } from "./services/push_queue";
 
 /** PM2 often sets `cwd` to the repo root; default dotenv loads `.env` there and misses `backend/.env`. */
 const packageRoot = path.resolve(__dirname, "..");
@@ -170,6 +172,11 @@ app.use("/api", mobileGoogleAuthRouter);
 app.use("/api", wechatMobileAuthRouter);
 app.use("/api", wechatPhoneRouter);
 app.use("/api", enterpriseRouter(uploadDir, mediaPublicBaseUrl));
+// pushRouter is a public/token-scoped router — it MUST be mounted before the
+// blanket-guarded routers (devsRouter/adminRouter apply requireAdminToken to
+// every request that reaches them, which would 401 the push-status poll and
+// log the client out).
+app.use("/api", pushRouter);
 app.use("/api", devsRouter);
 app.use("/api", adminRouter);
 
@@ -202,5 +209,6 @@ app.listen(port, () => {
   } catch {
     /* ignore */
   }
+  seedPushQueue();
   startFrameMqtt();
 });

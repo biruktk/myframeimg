@@ -86,6 +86,34 @@ export function marketingCmsSeed(): MarketingCmsState {
   };
 }
 
+/** A single async image-push job for a device MAC (FIFO per MAC). */
+export type PushJobStatus =
+  | "queued"
+  | "dispatched"
+  | "downloaded"
+  | "completed"
+  | "timeout_failed"
+  | "failed";
+
+export type PushJob = {
+  msgid: string;
+  mac: string;
+  type: "single" | "playlist";
+  imgs: Array<{ imgid: string; imgurl: string }>;
+  status: PushJobStatus;
+  /** 0..1 — 0.30 dispatched, 0.65 downloaded, 1.00 completed. */
+  progress: number;
+  queuedAtMs: number;
+  dispatchedAtMs?: number;
+  downloadedAtMs?: number;
+  completedAtMs?: number;
+  updatedAtMs: number;
+  /** Set when the hard ACK timeout fires (used for late-ACK grace recovery). */
+  timeoutAtMs?: number;
+  /** Publish failed (MQTT disconnected / relay error) before any ACK. */
+  error?: string;
+};
+
 export type MyframeDb = {
   organizations: Array<{
     id: string;
@@ -217,6 +245,16 @@ export type MyframeDb = {
     storageUsed?: number;
     storageTotal?: number;
     photoQueueDepth?: number;
+    /** Battery charging state reported by the device (is_charging). */
+    isCharging?: boolean;
+    /** Live Wi-Fi RSSI (dBm) persisted from the heartbeat/report. */
+    rssi?: number;
+    /** SD card status (mounted, total_mb, free_mb) reported by the device. */
+    sdCard?: { mounted?: boolean; totalMb?: number; freeMb?: number };
+    /** Locale captured from phone provisioning / device heartbeat. */
+    countryCode?: string;
+    timezone?: string;
+    timezoneOffsetMinutes?: number;
     /** Last firmware uplink ACK progress (strategy_bin_ack / download_complete / refresh_complete / strategy_stop_ack). */
     deliveryProgress?: {
       status:
@@ -240,6 +278,8 @@ export type MyframeDb = {
    *  must NOT re-create these as new frames, which is what resurrected a
    *  deleted device ~30s after removal. */
   unboundFrames: string[];
+  /** Async image-push queue jobs keyed by STA MAC (FIFO per device). */
+  pushJobs?: Record<string, PushJob[]>;
   device: {
     id: string;
     name: string;
@@ -468,6 +508,7 @@ function createInitialDb(): MyframeDb {
     familyGroups: [],
     frames: [],
     unboundFrames: [],
+    pushJobs: {},
     device: {
       id: "YX-133P-001",
       name: "MyFrame (Primary)",
@@ -552,6 +593,9 @@ function readDbRaw(): MyframeDb {
   }
   if (!Array.isArray(parsed.unboundFrames)) {
     parsed.unboundFrames = [];
+  }
+  if (!parsed.pushJobs || typeof parsed.pushJobs !== "object") {
+    parsed.pushJobs = {};
   }
   if (Array.isArray(parsed.frames)) {
     const fallbackOrgId = parsed.organizations[0]?.id ?? "org_default";
